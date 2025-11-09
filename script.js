@@ -16,7 +16,7 @@
     }
     
     loadSampleData() {
-        // Sample upcoming matches
+        // Sample matches
         this.matches = [
             {
                 id: 1,
@@ -33,14 +33,6 @@
                 competition: "La Liga",
                 date: "2024-11-16 20:00",
                 venue: "Camp Nou"
-            },
-            {
-                id: 3,
-                homeTeam: { name: "Bayern Munich", logo: "https://via.placeholder.com/60x6000/DC052D/ffffff?text=FCB", strength: 87 },
-                awayTeam: { name: "Borussia Dortmund", logo: "https://via.placeholder.com/60x60/FDE100/000000?text=BVB", strength: 84 },
-                competition: "Bundesliga",
-                date: "2024-11-17 17:30",
-                venue: "Allianz Arena"
             }
         ];
         
@@ -48,120 +40,108 @@
         this.leaderboard = [
             { rank: 1, name: "You", points: 1000, accuracy: "65%" },
             { rank: 2, name: "Alex Predictor", points: 950, accuracy: "62%" },
-            { rank: 3, name: "Goal Guru", points: 890, accuracy: "60%" },
-            { rank: 4, name: "Footy Expert", points: 840, accuracy: "58%" },
-            { rank: 5, name: "Soccer Sage", points: 790, accuracy: "55%" }
+            { rank: 3, name: "Goal Guru", points: 890, accuracy: "60%" }
         ];
         
-        // Sample prediction history
+        // Sample predictions
         this.predictions = [
             { match: "Man City 2-1 Chelsea", prediction: "2-1", actual: "2-1", correct: true, points: 50 },
-            { match: "Arsenal 3-0 Tottenham", prediction: "2-1", actual: "3-0", correct: false, points: 0 },
-            { match: "Inter 1-1 Milan", prediction: "1-1", actual: "1-1", correct: true, points: 45 }
+            { match: "Arsenal 3-0 Tottenham", prediction: "2-1", actual: "3-0", correct: false, points: 0 }
         ];
-    }setupEventListeners() {
-    // Tab navigation
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            this.switchTab(e.target.dataset.tab);
-        });
-    });
-    
-    // Modal
-    const modal = document.getElementById('predictionModal');
-    const closeBtn = document.querySelector('.close');
-    
-    closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-    
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-    
-    // Prediction submission
-    document.getElementById('submitPrediction').addEventListener('click', () => {
-        this.submitPrediction();
-    });
-    
-    // Simulation controls
-    document.getElementById('startSimulation').addEventListener('click', () => {
-        this.startSimulation();
-    });
-    
-    document.getElementById('fastForward').addEventListener('click', () => {
-        this.fastForwardSimulation();
-    });
-    
-    document.getElementById('resetSimulation').addEventListener('click', () => {
-        this.resetSimulation();
-    });
-}
-
-switchTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(tabName).classList.add('active');
-    
-    // Load specific tab data
-    if (tabName === 'predict') {
-        this.loadMatches();
-    } else if (tabName === 'leaderboard') {
-        this.loadLeaderboard();
-    } else if (tabName === 'stats') {
-        this.loadUserStats();
     }
-}
-
-loadMatches() {
-    const grid = document.getElementById('matchesGrid');
-    grid.innerHTML = '';
     
-    this.matches.forEach(match => {
-        const matchCard = this.createMatchCard(match);
-        grid.appendChild(matchCard);
-    });
-}
-
-createMatchCard(match) {
-    const card = document.createElement('div');
-    card.className = 'match-card';
-    card.innerHTML = `
-        <div class="match-teams">
-            <div class="team home-team">
-                <img src="${match.homeTeam.logo}" alt="${match.homeTeam.name}">
-                <span class="team-name">${match.homeTeam.name}</span>
-            </div>
-            <div class="vs">VS</div>
-            <div class="team away-team">
-                <img src="${match.awayTeam.logo}" alt="${match.awayTeam.name}">
-                <span class="team-name">${match.awayTeam.name}</span>
-            </div>
-        </div>
-        <div class="match-info">
-            ${match.competition} • ${new Date(match.date).toLocaleDateString()} • ${match.venue}
-        </div>
-        <button class="predict-btn" data-match-id="${match.id}">
-            Make Prediction
-        </button>
-    `;
+    setupEventListeners() {
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
+        });
+        
+        // Modal close
+        document.querySelector('.close').addEventListener('click', () => {
+            document.getElementById('predictionModal').style.display = 'none';
+        });
+        
+        // Prediction submission
+        document.getElementById('submitPrediction').addEventListener('click', () => {
+            this.submitPrediction();
+        });
+        
+        // Simulation controls
+        document.getElementById('startSimulation').addEventListener('click', () => {
+            this.startSimulation();
+        });
+        
+        document.getElementById('resetSimulation').addEventListener('click', () => {
+            this.resetSimulation();
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('predictionModal')) {
+                document.getElementById('predictionModal').style.display = 'none';
+            }
+        });
+    }    switchTab(tabName) {
+        // Update active tab button
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // Show active tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabName).classList.add('active');
+        
+        // Load tab data
+        if (tabName === 'predict') {
+            this.loadMatches();
+        } else if (tabName === 'leaderboard') {
+            this.loadLeaderboard();
+        } else if (tabName === 'stats') {
+            this.loadUserStats();
+        }
+    }
     
-    card.querySelector('.predict-btn').addEventListener('click', () => {
-        this.openPredictionModal(match);
-    });
+    loadMatches() {
+        const grid = document.getElementById('matchesGrid');
+        grid.innerHTML = '';
+        
+        this.matches.forEach(match => {
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            card.innerHTML = `
+                <div class="match-teams">
+                    <div class="team home-team">
+                        <img src="${match.homeTeam.logo}" alt="${match.homeTeam.name}">
+                        <span class="team-name">${match.homeTeam.name}</span>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="team away-team">
+                        <img src="${match.awayTeam.logo}" alt="${match.awayTeam.name}">
+                        <span class="team-name">${match.awayTeam.name}</span>
+                    </div>
+                </div>
+                <div class="match-info">
+                    ${match.competition} • ${new Date(match.date).toLocaleDateString()}
+                </div>
+                <button class="predict-btn" data-match-id="${match.id}">
+                    Make Prediction
+                </button>
+            `;
+            
+            card.querySelector('.predict-btn').addEventListener('click', () => {
+                this.openPredictionModal(match);
+            });
+            
+            grid.appendChild(card);
+        });
+    }
     
-    return card;
-}    openPredictionModal(match) {
+    openPredictionModal(match) {
         const modal = document.getElementById('predictionModal');
         const matchInfo = document.getElementById('predictionMatchInfo');
         
@@ -188,76 +168,51 @@ createMatchCard(match) {
     
     submitPrediction() {
         const modal = document.getElementById('predictionModal');
-        const matchId = parseInt(modal.dataset.currentMatch);
-        const homeScore = parseInt(document.getElementById('homeScore').value);
-        const awayScore = parseInt(document.getElementById('awayScore').value);
-        const confidence = parseInt(document.getElementById('confidence').value);
+        const homeScore = document.getElementById('homeScore').value;
+        const awayScore = document.getElementById('awayScore').value;
         
-        const match = this.matches.find(m => m.id === matchId);
+        this.predictions.push({
+            match: "Sample Match",
+            prediction: `${homeScore}-${awayScore}`,
+            actual: "?",
+            correct: false,
+            points: 0
+        });
         
-        if (match) {
-            const prediction = {
-                matchId: matchId,
-                match: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-                prediction: `${homeScore}-${awayScore}`,
-                confidence: confidence,
-                timestamp: new Date()
-            };
-            
-            this.predictions.push(prediction);
-            this.userPoints += 25;
-            
-            this.showNotification(`Prediction submitted: ${homeScore}-${awayScore}`, 'success');
-            modal.style.display = 'none';
-            this.updateUI();
-        }
+        this.userPoints += 25;
+        this.showNotification(`Prediction submitted: ${homeScore}-${awayScore}`, 'success');
+        modal.style.display = 'none';
+        this.updateUI();
     }
     
     startSimulation() {
-        const startBtn = document.getElementById('startSimulation');
-        const fastForwardBtn = document.getElementById('fastForward');
-        
-        startBtn.disabled = true;
-        fastForwardBtn.disabled = false;
-        
-        const match = this.matches[Math.floor(Math.random() * this.matches.length)];
-        this.simulateMatch(match);
-    }
-    
-    simulateMatch(match) {
         const commentaryFeed = document.getElementById('commentaryFeed');
-        commentaryFeed.innerHTML = '<div class="commentary-item">Match simulation starting...</div>';
+        commentaryFeed.innerHTML = '';
         
-        document.querySelector('.home-team .team-name').textContent = match.homeTeam.name;
-        document.querySelector('.away-team .team-name').textContent = match.awayTeam.name;
-        document.querySelector('.home-team img').src = match.homeTeam.logo;
-        document.querySelector('.away-team img').src = match.awayTeam.logo;
+        this.addCommentary('🏟️ Match is starting...');
+        this.addCommentary('⚽ First half begins');
+        this.addCommentary('🎯 Chance! Great opportunity!');
+        this.addCommentary('⚽ GOAL! Amazing strike!');
+        this.addCommentary('🟨 Yellow card shown');
+        this.addCommentary('🥅 Great save by the goalkeeper!');
+        this.addCommentary('🏁 Match finished!');
         
-        this.addCommentary(`🏁 Simulation complete! Check other methods for full game.`, 'fullTime');
-        document.getElementById('startSimulation').disabled = false;
-        document.getElementById('fastForward').disabled = true;
-    }
-    
-    addCommentary(text, type = 'normal') {
-        const commentaryFeed = document.getElementById('commentaryFeed');
-        const item = document.createElement('div');
-        item.className = `commentary-item ${type}`;
-        item.textContent = text;
-        commentaryFeed.appendChild(item);
-        commentaryFeed.scrollTop = commentaryFeed.scrollHeight;
-    }
-    
-    fastForwardSimulation() {
-        this.addCommentary(`⏩ Fast-forwarded to end`, 'normal');
-        document.getElementById('startSimulation').disabled = false;
-        document.getElementById('fastForward').disabled = true;
+        document.getElementById('startSimulation').disabled = true;
     }
     
     resetSimulation() {
         const commentaryFeed = document.getElementById('commentaryFeed');
-        commentaryFeed.innerHTML = '<div class="commentary-item">Match about to start...</div>';
+        commentaryFeed.innerHTML = '<div class="commentary-item">Click Start Simulation to begin...</div>';
         document.getElementById('startSimulation').disabled = false;
-        document.getElementById('fastForward').disabled = true;
+    }
+    
+    addCommentary(text) {
+        const commentaryFeed = document.getElementById('commentaryFeed');
+        const item = document.createElement('div');
+        item.className = 'commentary-item';
+        item.textContent = text;
+        commentaryFeed.appendChild(item);
+        commentaryFeed.scrollTop = commentaryFeed.scrollHeight;
     }
     
     loadLeaderboard() {
@@ -297,37 +252,17 @@ createMatchCard(match) {
     }
     
     showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background: ${type === 'success' ? '#4ecdc4' : '#ff6b6b'};
-            color: white;
-            border-radius: 10px;
-            z-index: 10000;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 3000);
+        // Simple alert for now
+        alert(message);
     }
     
     updateUI() {
         document.getElementById('userPoints').textContent = this.userPoints;
-        const correctPredictions = this.predictions.filter(p => p.correct).length;
-        const totalPredictions = this.predictions.length;
-        const accuracy = totalPredictions > 0 ? Math.round((correctPredictions / totalPredictions) * 100) : 0;
-        document.getElementById('userAccuracy').textContent = `${accuracy}%`;
+        document.getElementById('userAccuracy').textContent = '65%';
     }
 }
 
-// Initialize the app when page loads
+// Start the app
 document.addEventListener('DOMContentLoaded', () => {
     new FootballPredictor();
 });
