@@ -1,144 +1,230 @@
- const API_KEY = 'uPBrckouMX9YFjJNKxfj6fPcTAZLtImfEnMeIyka27BQDGsVSx5HTCwiU0Uu';
-const API_URL = 'https://api.football-data.org/v4/matches';
-
-async function fetchLiveScores() {
-    const loadingElement = document.getElementById('loading');
-    const scoresElement = document.getElementById('scores');
+class PenaltyShootout {
+    constructor() {
+        this.playerScore = 0;
+        this.cpuScore = 0;
+        this.currentPenalty = 1;
+        this.totalPenalties = 5;
+        this.gameActive = false;
+        this.difficulty = 'easy';
+        
+        this.ball = document.getElementById('ball');
+        this.goalkeeper = document.getElementById('goalkeeper');
+        this.messageEl = document.getElementById('message');
+        this.playerScoreEl = document.querySelector('.player-score');
+        this.cpuScoreEl = document.querySelector('.cpu-score');
+        this.penaltyCountEl = document.querySelector('.penalty-count');
+        this.startBtn = document.getElementById('startBtn');
+        this.restartBtn = document.getElementById('restartBtn');
+        
+        this.sounds = {
+            kick: document.getElementById('kickSound'),
+            goal: document.getElementById('goalSound'),
+            save: document.getElementById('saveSound'),
+            crowd: document.getElementById('crowdSound')
+        };
+        
+        this.init();
+    }
     
-    loadingElement.style.display = 'block';
-    scoresElement.innerHTML = '';
-
-    try {
-        const response = await fetch(API_URL, {
-            headers: {
-                'X-Auth-Token': API_KEY
-            }
+    init() {
+        this.setupEventListeners();
+        this.showMessage('Click START GAME to begin!', '#ffd700');
+    }
+    
+    setupEventListeners() {
+        // Shot areas
+        document.querySelectorAll('.area').forEach(area => {
+            area.addEventListener('click', (e) => {
+                if (!this.gameActive) return;
+                this.takeShot(e.target.dataset.pos);
+            });
         });
-
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        loadingElement.style.display = 'none';
         
-        if (data.matches && data.matches.length > 0) {
-            displayScores(data.matches);
+        // Difficulty buttons
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.difficulty = e.target.dataset.difficulty;
+            });
+        });
+        
+        // Start/Restart buttons
+        this.startBtn.addEventListener('click', () => this.startGame());
+        this.restartBtn.addEventListener('click', () => this.restartGame());
+        
+        // Ball click (alternative shooting method)
+        this.ball.addEventListener('click', () => {
+            if (!this.gameActive) return;
+            this.showMessage('Click on goal areas to shoot!', '#ffd700');
+        });
+    }
+    
+    startGame() {
+        this.gameActive = true;
+        this.playerScore = 0;
+        this.cpuScore = 0;
+        this.currentPenalty = 1;
+        
+        this.updateScoreboard();
+        this.startBtn.style.display = 'none';
+        this.restartBtn.style.display = 'inline-block';
+        this.ball.classList.add('ready');
+        
+        this.sounds.crowd.play();
+        this.showMessage('Click where you want to shoot!', '#4ecdc4');
+    }
+    
+    restartGame() {
+        this.startGame();
+    }
+    
+    takeShot(position) {
+        if (!this.gameActive) return;
+        
+        this.ball.classList.remove('ready');
+        this.sounds.kick.play();
+        
+        // Animate ball
+        this.animateBall(position);
+        
+        // Goalkeeper reaction
+        setTimeout(() => {
+            const saved = this.goalkeeperSaves(position);
+            
+            if (saved) {
+                this.sounds.save.play();
+                this.showMessage('AMAZING SAVE! 🧤', '#ff6b6b');
+                this.goalkeeper.classList.add('save-animation');
+            } else {
+                this.playerScore++;
+                this.sounds.goal.play();
+                this.showMessage('GOOOOAL! ⚽', '#4ecdc4');
+                document.querySelector('.field').classList.add('goal-animation');
+            }
+            
+            this.updateScoreboard();
+            
+            // Reset animations
+            setTimeout(() => {
+                this.resetPositions();
+                this.currentPenalty++;
+                
+                if (this.currentPenalty > this.totalPenalties) {
+                    this.endGame();
+                } else {
+                    this.ball.classList.add('ready');
+                    this.showMessage(`Penalty ${this.currentPenalty}/${this.totalPenalties} - Click to shoot!`, '#ffd700');
+                }
+            }, 2000);
+            
+        }, 800);
+    }
+    
+    animateBall(position) {
+        const positions = {
+            'top-left': { x: '-80px', y: '-100px', bottom: '180px' },
+            'top-right': { x: '80px', y: '-100px', bottom: '180px' },
+            'bottom-left': { x: '-60px', y: '-50px', bottom: '120px' },
+            'bottom-right': { x: '60px', y: '-50px', bottom: '120px' },
+            'center': { x: '-50%', y: '-80px', bottom: '150px' }
+        };
+        
+        const target = positions[position];
+        this.ball.style.setProperty('--target-x', target.x);
+        this.ball.style.setProperty('--target-y', target.y);
+        this.ball.style.setProperty('--target-bottom', target.bottom);
+        this.ball.classList.add('kick');
+    }
+    
+    goalkeeperSaves(shotPosition) {
+        // Difficulty-based save chances
+        const saveRates = {
+            easy: 0.3,
+            medium: 0.5,
+            hard: 0.7
+        };
+        
+        const saveRate = saveRates[this.difficulty];
+        const willSave = Math.random() < saveRate;
+        
+        if (willSave) {
+            // Choose dive direction
+            const diveOptions = ['left', 'right', 'jump'];
+            const dive = diveOptions[Math.floor(Math.random() * diveOptions.length)];
+            
+            // Animate goalkeeper
+            this.goalkeeper.classList.add(`gk-${dive}`);
+            
+            // Check if save is successful based on shot position
+            return this.checkSaveSuccess(shotPosition, dive);
+        }
+        
+        return false;
+    }
+    
+    checkSaveSuccess(shotPosition, dive) {
+        const saveMap = {
+            'top-left': ['left', 'jump'],
+            'top-right': ['right', 'jump'],
+            'bottom-left': ['left'],
+            'bottom-right': ['right'],
+            'center': ['jump']
+        };
+        
+        return saveMap[shotPosition].includes(dive);
+    }
+    
+    resetPositions() {
+        // Reset ball
+        this.ball.classList.remove('kick');
+        this.ball.style.removeProperty('--target-x');
+        this.ball.style.removeProperty('--target-y');
+        this.ball.style.removeProperty('--target-bottom');
+        
+        // Reset goalkeeper
+        this.goalkeeper.className = 'goalkeeper';
+        this.goalkeeper.innerHTML = '<div class="gk-body">🧤</div>';
+        
+        // Reset field
+        document.querySelector('.field').classList.remove('goal-animation');
+    }
+    
+    updateScoreboard() {
+        this.playerScoreEl.textContent = this.playerScore;
+        this.cpuScoreEl.textContent = this.cpuScore;
+        this.penaltyCountEl.textContent = `Penalty ${this.currentPenalty}/${this.totalPenalties}`;
+    }
+    
+    endGame() {
+        this.gameActive = false;
+        this.sounds.crowd.pause();
+        
+        let message = '';
+        if (this.playerScore > 2) {
+            message = `YOU WIN! 🏆 Final Score: ${this.playerScore}-${this.cpuScore}`;
+        } else if (this.playerScore === 2) {
+            message = `DRAW! 🤝 Final Score: ${this.playerScore}-${this.cpuScore}`;
         } else {
-            showNoMatches();
+            message = `YOU LOSE! 😞 Final Score: ${this.playerScore}-${this.cpuScore}`;
         }
         
-        updateLastUpdated();
+        this.showMessage(message, '#ffd700');
+        this.showMessage('Click PLAY AGAIN for another match!', '#4ecdc4');
+    }
+    
+    showMessage(text, color = '#ffffff') {
+        this.messageEl.textContent = text;
+        this.messageEl.style.color = color;
+        this.messageEl.style.display = 'block';
         
-    } catch (error) {
-        console.error('Error fetching scores:', error);
-        loadingElement.style.display = 'none';
-        scoresElement.innerHTML = `
-            <div class="no-matches">
-                <p>⚠️ Unable to load live scores</p>
-                <p>Please check your connection and try again</p>
-                <button onclick="fetchLiveScores()" style="margin-top: 10px;">Retry</button>
-            </div>
-        `;
+        setTimeout(() => {
+            this.messageEl.style.display = 'none';
+        }, 3000);
     }
 }
 
-function displayScores(matches) {
-    const container = document.getElementById('scores');
-    container.innerHTML = '';
-
-    // Sort matches: LIVE first, then recent finished, then scheduled
-    matches.sort((a, b) => {
-        if (a.status === 'LIVE' && b.status !== 'LIVE') return -1;
-        if (a.status !== 'LIVE' && b.status === 'LIVE') return 1;
-        if (a.status === 'IN_PLAY' && b.status !== 'IN_PLAY') return -1;
-        if (a.status !== 'IN_PLAY' && b.status === 'IN_PLAY') return 1;
-        return new Date(b.utcDate) - new Date(a.utcDate);
-    });
-
-    matches.forEach(match => {
-        const matchElement = createMatchElement(match);
-        container.appendChild(matchElement);
-    });
-}
-
-function createMatchElement(match) {
-    const matchElement = document.createElement('div');
-    matchElement.className = `match ${match.status.toLowerCase().replace('_', '-')}`;
-    
-    const homeScore = match.score.fullTime?.home ?? match.score.halfTime?.home ?? '-';
-    const awayScore = match.score.fullTime?.away ?? match.score.halfTime?.away ?? '-';
-    
-    const matchTime = new Date(match.utcDate).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-    
-    matchElement.innerHTML = `
-        <div class="match-header">
-            <span class="competition">${match.competition?.name || 'Unknown Competition'}</span>
-            <span class="status ${match.status}">${getStatusText(match.status)}</span>
-        </div>
-        <div class="teams">
-            <div class="team team-home">
-                <div class="team-name">${match.homeTeam?.name || 'TBD'}</div>
-            </div>
-            <div class="score">${homeScore} - ${awayScore}</div>
-            <div class="team team-away">
-                <div class="team-name">${match.awayTeam?.name || 'TBD'}</div>
-            </div>
-        </div>
-        <div class="match-time">
-            ${getMatchTimeInfo(match)}
-        </div>
-    `;
-    
-    return matchElement;
-}
-
-function getStatusText(status) {
-    const statusMap = {
-        'LIVE': 'LIVE',
-        'IN_PLAY': 'LIVE',
-        'FINISHED': 'FT',
-        'PAUSED': 'HT',
-        'SCHEDULED': 'Upcoming',
-        'POSTPONED': 'Postponed',
-        'CANCELLED': 'Cancelled'
-    };
-    return statusMap[status] || status;
-}
-
-function getMatchTimeInfo(match) {
-    if (match.status === 'LIVE' || match.status === 'IN_PLAY') {
-        return '⚽ Live Now';
-    } else if (match.status === 'FINISHED') {
-        return '✅ Match Finished';
-    } else if (match.status === 'SCHEDULED') {
-        return `🕒 ${new Date(match.utcDate).toLocaleDateString()} ${new Date(match.utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-        return match.status;
-    }
-}
-
-function showNoMatches() {
-    const container = document.getElementById('scores');
-    container.innerHTML = `
-        <div class="no-matches">
-            <p>No live matches at the moment</p>
-            <p>Check back later for upcoming games!</p>
-        </div>
-    `;
-}
-
-function updateLastUpdated() {
-    const lastUpdatedElement = document.getElementById('lastUpdated');
-    const now = new Date();
-    lastUpdatedElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
-}
-
-// Auto-refresh every 2 minutes
-setInterval(fetchLiveScores, 120000);
-
-// Load scores when page loads
-document.addEventListener('DOMContentLoaded', fetchLiveScores);
+// Start the game when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new PenaltyShootout();
+});
