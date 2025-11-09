@@ -1,22 +1,29 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Snake Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Live Football Scores</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
-        <h1>Classic Snake Game</h1>
-        <div class="score-panel">
-            <div id="score">Score: 0</div>
-            <div id="highScore">High Score: 0</div>
+        <header>
+            <h1>⚽ Live Football Scores</h1>
+            <p>Real-time matches from around the world</p>
+        </header>
+        
+        <div class="controls">
+            <button onclick="fetchLiveScores()">Refresh Scores</button>
+            <span id="lastUpdated"></span>
         </div>
-        <div id="gameBoard">
-            </div>
-        <div id="message">Press **any arrow key** or **W, A, S, D** to start!</div>
+
+        <div id="loading">Loading live scores...</div>
+        <div id="scores" class="scores-container"></div>
+        
+        <footer>
+            <p>Data provided by Football-Data.org</p>
+        </footer>
     </div>
 
     <script src="script.js"></script>
