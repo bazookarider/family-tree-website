@@ -1,174 +1,70 @@
-<!doctype html>
+ <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Maijamaa Family Tree — Ibrahim (Root)</title>
-<style>
-  :root{
-    --main:#006677;
-    --accent:#0099aa;
-    --bg:#f8f9fa;
-    --card-bg:#fff;
-    --muted:#666;
-  }
-  *{box-sizing:border-box}
-  body{
-    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    margin:0;
-    background:var(--bg);
-    color:#222;
-    -webkit-font-smoothing:antialiased;
-    padding-bottom:220px; /* space for chat */
-  }
-  header{
-    background:linear-gradient(90deg,var(--main),var(--accent));
-    color:#fff;
-    padding:18px 12px;
-    text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,0.14);
-  }
-  header h1{margin:0;letter-spacing:2px}
-  header p{margin:6px 0 0;opacity:.95;font-size:14px}
-
-  /* top controls */
-  .controls{
-    width:min(1100px,96%);
-    margin:14px auto;
-    display:flex;
-    gap:12px;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-  }
-  .form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .form input, .form select {
-    padding:8px 10px;border-radius:8px;border:1px solid #d0d7d7;font-size:14px;
-  }
-  .form button{background:var(--main);color:#fff;border:none;padding:9px 14px;border-radius:10px;cursor:pointer}
-
-  .hint{font-size:13px;color:var(--muted)}
-
-  /* Tree area - center and allow scroll */
-  .tree-wrap{
-    width:min(1200px,98%);
-    margin:12px auto 24px;
-    padding:10px;
-    overflow:auto;
-    position:relative;
-    background:transparent;
-    border-radius:8px;
-  }
-
-  /* place the svg overlay for curved connectors */
-  #connections {
-    position:absolute;
-    left:0;top:0;
-    pointer-events:none;
-    width:100%;height:100%;
-    overflow:visible;
-  }
-
-  /* Tree (nested lists) vertical layout */
-  .tree {
-    display:flex;
-    justify-content:center;
-    padding: 20px 10px 60px;
-    min-width:700px; /* allow scroll on small screens */
-  }
-  .tree ul { padding-top: 28px; position: relative; display:inline-block; text-align:center; white-space: nowrap; }
-  .tree li {
-    display:inline-block; vertical-align:top; text-align:center; margin:0 16px; padding:0 6px 0 6px; position:relative;
-  }
-
-  /* connectors (simple short lines to the group) */
-  .tree ul::before {
-    content: ''; position: absolute; top: 0; left: 50%;
-    border-left: 2px solid rgba(0,0,0,0.07); height: 18px; transform: translateX(-50%);
-  }
-  .tree li::before, .tree li::after {
-    content:''; position:absolute; top:18px; width:12px; height:2px; border-top:2px solid rgba(0,0,0,0.07);
-  }
-  .tree li::before{ right:50% } .tree li::after{ left:50% }
-  .tree li:only-child::before, .tree li:only-child::after { display:none; }
-  .tree li:first-child::before{ display:none } .tree li:last-child::after{ display:none }
-
-  /* card */
-  .card {
-    background:var(--card-bg); border-radius:12px; padding:12px 14px; width:200px;
-    box-shadow:0 8px 18px rgba(0,0,0,0.08); border:2px solid rgba(0,0,0,0.04);
-    cursor:pointer; transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    position:relative;
-  }
-  .card:hover{ transform:translateY(-6px); box-shadow:0 14px 28px rgba(0,0,0,0.12) }
-  .name{ color:var(--main); font-weight:700; margin-bottom:4px; }
-  .role{ color:var(--muted); font-size:13px; margin-bottom:6px; }
-  .nick{ font-style:italic; color:#444; font-size:13px }
-
-  .card.selected { border-color: var(--accent); box-shadow:0 0 18px rgba(0,153,170,0.12) }
-  .card.child-highlight { box-shadow:0 0 20px rgba(0,153,170,0.18) !important; border-color:var(--accent) !important }
-
-  /* toggle button */
-  .toggle-btn {
-    position:absolute; right:8px; top:8px; width:26px; height:26px; border-radius:6px; border:none;
-    background:var(--main); color:#fff; font-weight:700; cursor:pointer; font-size:16px; display:flex;align-items:center;justify-content:center;
-  }
-  .collapsed > ul { display:none; }
-
-  /* chat fixed panel (visible) */
-  .chat-panel {
-    position:fixed; left:12px; right:12px; bottom:12px; max-width:1200px; margin:0 auto;
-    background:#fff; border-radius:12px; box-shadow:0 18px 40px rgba(0,0,0,0.18); overflow:hidden;
-    display:flex; flex-direction:column; height:200px;
-  }
-  .chat-header { background:var(--main); color:#fff; padding:8px 12px; font-weight:600; display:flex;justify-content:space-between;align-items:center;}
-  .chat-body { flex:1; padding:10px; overflow:auto; background:#fbfdfd; }
-  .chat-footer { display:flex; gap:8px; padding:10px; border-top:1px solid #eee; background:#fff; }
-  .chat-footer input, .chat-footer select { padding:8px 10px; border-radius:8px; border:1px solid #ddd; font-size:14px; }
-  .chat-footer button { background:var(--main); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; }
-
-  .message { margin-bottom:8px; padding:6px 8px; border-radius:8px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
-  .message .meta { font-size:12px; color:var(--muted); margin-bottom:4px; }
-  .message .text { font-size:14px; color:#222; }
-
-  /* responsive tweaks */
-  @media (max-width:820px){
-    .tree { min-width:900px; } /* force horizontal scroll */
-    .controls{flex-direction:column;align-items:flex-start}
-    .form input{width:120px}
-    .chat-panel{left:8px;right:8px}
-  }
-  @media (max-width:480px){
-    .card{width:150px}
-  }
-</style>
+<title>MAIJAMAA Family Tree — Shared Admin Version</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
   <header>
     <h1>MAIJAMAA Family Tree</h1>
-    <p>Vertical tree — click a person to select and highlight their direct children. Use +/- to collapse branches.</p>
+    <p>Vertical tree — click a person to select and highlight their direct children. **Data is shared live!**</p>
   </header>
+  
+  <div class="main-layout-wrapper">
+    
+    <div class="main-content">
+        <div class="controls">
+            <div class="form" id="adminLogin" style="background:#f0fff0; padding:10px; border-radius:8px; border:1px solid #d0d7d7;">
+                <input id="adminUser" placeholder="Admin Username" />
+                <input type="password" id="adminPass" placeholder="Admin Password" />
+                <button id="loginBtn">Admin Login</button>
+                <button id="logoutBtn" style="background:#ff6666; display:none;">Admin Logout</button>
+                <div id="adminStatus" style="color:red; font-weight:bold; font-size:13px;">(Logged out)</div>
+            </div>
+            <div class="form" id="dataManagement" style="opacity:0.5; pointer-events:none;">
+                <button id="exportBtn">Export JSON</button>
+                <label for="importFile" style="background:var(--accent); color:#fff; padding:9px 14px; border-radius:10px; cursor:pointer;">Import JSON</label>
+                <input type="file" id="importFile" accept=".json" style="display:none;" />
+            </div>
+            <div class="form" id="addMemberForm" style="opacity:0.5; pointer-events:none;">
+                <input id="inName" placeholder="Full name (unique id will be made)" />
+                <input id="inRole" placeholder="Role (e.g. Father)" />
+                <input id="inNick" placeholder="Nickname" />
+                <select id="inParent"><option value="">— Parent (root) —</option></select>
+                <button id="addBtn">+ Add Member</button>
+            </div>
+            <div class="hint">Tip: choose parent from dropdown to avoid duplicates. You may have same names — IDs keep them unique.</div>
+        </div>
 
-  <div class="controls">
-    <div class="form" aria-label="Add member form">
-      <input id="inName" placeholder="Full name (unique id will be made)" />
-      <input id="inRole" placeholder="Role (e.g. Father)" />
-      <input id="inNick" placeholder="Nickname" />
-      <select id="inParent"><option value="">— Parent (root) —</option></select>
-      <button id="addBtn">+ Add Member</button>
+        <div class="tree-wrap" id="treeWrap">
+            <svg id="connections" xmlns="http://www.w3.org/2000/svg"></svg>
+            <div id="treeRoot" class="tree" role="tree"></div>
+        </div>
     </div>
-    <div class="hint">Tip: choose parent from dropdown to avoid duplicates. You may have same names — IDs keep them unique.</div>
-  </div>
+    
+    <div class="events-panel" role="region" aria-label="Family Events and Announcements">
+        <div class="events-header">
+            <div>Family Events 🗓️</div>
+            <div style="font-size:13px;opacity:.9">Announcements (Shared Live)</div>
+        </div>
+        <div class="events-body" id="eventsBody"></div>
+        <div class="events-footer" id="eventsFooter" style="display:none;">
+            <input id="eventTitleInput" placeholder="Event Title (e.g., Wedding)" />
+            <input id="eventDateInput" placeholder="Date/Time (e.g., Dec 25, 2026)" />
+            <textarea id="eventDetailsInput" placeholder="Details/Location..."></textarea>
+            <button id="addEventBtn">Add Event</button>
+            <button id="clearEventsBtn" title="Clear All Events (Admin)">Clear All</button>
+        </div>
+    </div>
+    
+  </div> 
 
-  <div class="tree-wrap" id="treeWrap">
-    <!-- SVG connections overlay -->
-    <svg id="connections" xmlns="http://www.w3.org/2000/svg"></svg>
-
-    <!-- tree will render here -->
-    <div id="treeRoot" class="tree" role="tree"></div>
-  </div>
-
-  <!-- Chat (visible) -->
   <div class="chat-panel" role="region" aria-label="Family chat">
     <div class="chat-header">
       <div>Family Chat 💬</div>
@@ -183,350 +79,6 @@
     </div>
   </div>
 
-<script>
-/* ---------- Persistence keys ---------- */
-const STORAGE_KEY = 'maijamaa_family_v1';
-const CHAT_KEY = 'maijamaa_chat_v1';
-
-/* ---------- Initial family (starts with Ibrahim root) ---------- */
-/* We store each person with unique numeric id.
-   Example person:
-   { id: 1, name: "Ibrahim", role: "Ancestor", nickname: "Mai Unguwa...", parentId: null }
-*/
-let family = loadFamilyFromStorage() || [
-  { id: 1, name: "Ibrahim", role: "Ancestor", nickname: "Mai Unguwa Mai Jama'a", parentId: null }
-];
-
-/* chat messages format:
-   { id: 'm1', authorId: 1, text: 'hello', time: 169..., iso: '2025-...' }
-*/
-let chat = loadChatFromStorage() || [];
-
-/* track next id */
-let nextId = Math.max(0, ...family.map(p=>p.id)) + 1;
-
-/* DOM refs */
-const treeRoot = document.getElementById('treeRoot');
-const svg = document.getElementById('connections');
-const treeWrap = document.getElementById('treeWrap');
-const parentSelect = document.getElementById('inParent');
-const addBtn = document.getElementById('addBtn');
-const inName = document.getElementById('inName');
-const inRole = document.getElementById('inRole');
-const inNick = document.getElementById('inNick');
-
-const chatBody = document.getElementById('chatBody');
-const chatMember = document.getElementById('chatMember');
-const chatInput = document.getElementById('chatInput');
-const sendChat = document.getElementById('sendChat');
-const clearChat = document.getElementById('clearChat');
-
-/* ---------- Helpers ---------- */
-function saveFamilyToStorage(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(family));
-}
-function loadFamilyFromStorage(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){ return null; }
-}
-function saveChatToStorage(){
-  localStorage.setItem(CHAT_KEY, JSON.stringify(chat));
-}
-function loadChatFromStorage(){
-  try{
-    const raw = localStorage.getItem(CHAT_KEY);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){ return null; }
-}
-function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-/* find children quickly */
-function buildMap(){
-  const map = new Map();
-  family.forEach(p => map.set(p.id, {...p, children: []}));
-  map.forEach(node => {
-    if(node.parentId != null && map.has(node.parentId)){
-      map.get(node.parentId).children.push(node);
-    }
-  });
-  return map;
-}
-function getRoots(){
-  const map = buildMap();
-  const roots = [];
-  map.forEach(node => {
-    if(node.parentId == null || !map.has(node.parentId)) roots.push(node);
-  });
-  // sort roots by id for stable display
-  roots.sort((a,b)=>a.id-b.id);
-  return roots;
-}
-
-/* ---------- Render tree DOM ---------- */
-function renderTree(){
-  // clear existing SVG paths
-  svg.innerHTML = '';
-  // clear tree
-  treeRoot.innerHTML = '';
-
-  // prepare map and roots
-  const map = buildMap();
-  const roots = getRoots();
-
-  // create a single top-level <ul> that will contain each root as <li>
-  const ul = document.createElement('ul');
-  ul.style.display = 'inline-block';
-  ul.style.textAlign = 'center';
-
-  roots.forEach(root => {
-    const li = buildNode(root, map);
-    ul.appendChild(li);
-  });
-
-  treeRoot.appendChild(ul);
-
-  // after DOM built, draw connectors
-  requestAnimationFrame(drawConnections);
-  // refresh dropdowns & chat member list
-  rebuildParentDropdown();
-  rebuildChatMemberList();
-  saveFamilyToStorage();
-}
-
-/* build node recursively using map for children */
-function buildNode(nodeData, map){
-  const li = document.createElement('li');
-  li.dataset.id = nodeData.id; // for selection
-  // card
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <div class="name">${escapeHtml(nodeData.name)}</div>
-    <div class="role">${escapeHtml(nodeData.role)}</div>
-    <div class="nick">"${escapeHtml(nodeData.nickname || '')}"</div>
-  `;
-
-  // toggle
-  const toggle = document.createElement('button');
-  toggle.className = 'toggle-btn';
-  toggle.textContent = '-';
-  toggle.title = 'Collapse/expand branch';
-  toggle.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    li.classList.toggle('collapsed');
-    toggle.textContent = li.classList.contains('collapsed') ? '+' : '-';
-    // redraw connections because layout changed
-    requestAnimationFrame(drawConnections);
-  });
-  card.appendChild(toggle);
-
-  // click selects and highlights direct children
-  card.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    // mark selected
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    // remove previous highlights
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('child-highlight'));
-    // highlight direct children
-    const children = (map.get(nodeData.id) && map.get(nodeData.id).children) || [];
-    children.forEach(ch => {
-      const childCard = document.querySelector(`li[data-id="${ch.id}"] .card`);
-      if(childCard) childCard.classList.add('child-highlight');
-    });
-    // scroll first child into view if exists
-    if(children.length>0){
-      const first = document.querySelector(`li[data-id="${children[0].id}"]`);
-      if(first) first.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
-    }
-  });
-
-  li.appendChild(card);
-
-  // children
-  const children = (map.get(nodeData.id) && map.get(nodeData.id).children) || [];
-  if(children.length>0){
-    const subUl = document.createElement('ul');
-    children.sort((a,b)=>a.id-b.id).forEach(child => {
-      const childLi = buildNode(child, map);
-      subUl.appendChild(childLi);
-    });
-    li.appendChild(subUl);
-  }
-
-  return li;
-}
-
-/* ---------- Draw curved connectors with SVG ---------- */
-function drawConnections(){
-  // get bounding box of treeWrap and set svg size accordingly
-  const wrapRect = treeWrap.getBoundingClientRect();
-  svg.setAttribute('width', wrapRect.width);
-  svg.setAttribute('height', wrapRect.height);
-  svg.style.left = '0';
-  svg.style.top = '0';
-  // clear
-  while(svg.firstChild) svg.removeChild(svg.firstChild);
-
-  // for each parent li that has children, draw paths from parent's bottom center to child's top center
-  const lis = treeRoot.querySelectorAll('li[data-id]');
-  lis.forEach(li => {
-    const id = li.dataset.id;
-    const children = li.querySelectorAll(':scope > ul > li[data-id]');
-    if(children.length === 0) return;
-
-    // get parent card center
-    const parentCard = li.querySelector(':scope > .card');
-    if(!parentCard) return;
-    const pRect = parentCard.getBoundingClientRect();
-
-    children.forEach(childLi => {
-      const childCard = childLi.querySelector(':scope > .card');
-      if(!childCard) return;
-      const cRect = childCard.getBoundingClientRect();
-
-      // convert to svg coordinates relative to treeWrap
-      const startX = pRect.left + pRect.width/2 - wrapRect.left;
-      const startY = pRect.bottom - wrapRect.top;
-      const endX = cRect.left + cRect.width/2 - wrapRect.left;
-      const endY = cRect.top - wrapRect.top;
-
-      // draw a nice cubic Bezier curve
-      const dx = (endY - startY) * 0.6; // control vertical distance factor
-      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-      const d = `M ${startX} ${startY} C ${startX} ${startY + dx} ${endX} ${endY - dx} ${endX} ${endY}`;
-      path.setAttribute('d', d);
-      path.setAttribute('fill','none');
-      path.setAttribute('stroke','rgba(0,0,0,0.08)');
-      path.setAttribute('stroke-width','2');
-      svg.appendChild(path);
-
-      // small dot at child top to join the line
-      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-      circle.setAttribute('cx', endX);
-      circle.setAttribute('cy', endY);
-      circle.setAttribute('r', 3);
-      circle.setAttribute('fill', 'rgba(0,0,0,0.06)');
-      svg.appendChild(circle);
-    });
-  });
-}
-
-/* ---------- Dropdown helpers ---------- */
-function rebuildParentDropdown(){
-  // current selection value
-  const current = parentSelect.value;
-  parentSelect.innerHTML = '<option value="">— Parent (root) —</option>';
-  // list each family member showing "Name (id)" to disambiguate
-  family.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = String(p.id);
-    opt.textContent = `${p.name} (id:${p.id})`;
-    parentSelect.appendChild(opt);
-  });
-  // restore if possible
-  if(current && document.querySelector(`#inParent option[value="${current}"]`)) parentSelect.value = current;
-}
-
-/* ---------- Chat dropdown of members ---------- */
-function rebuildChatMemberList(){
-  const prev = chatMember.value;
-  chatMember.innerHTML = '';
-  // show first option to send as "Guest" or choose member
-  const guest = document.createElement('option');
-  guest.value = '';
-  guest.textContent = '— Choose member (send as) —';
-  chatMember.appendChild(guest);
-  family.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = String(p.id);
-    opt.textContent = `${p.name} (${p.nickname}) [id:${p.id}]`;
-    chatMember.appendChild(opt);
-  });
-  if(prev && chatMember.querySelector(`option[value="${prev}"]`)) chatMember.value = prev;
-}
-
-/* ---------- Add member action ---------- */
-addBtn.addEventListener('click', ()=>{
-  const name = inName.value.trim();
-  const role = inRole.value.trim();
-  const nick = inNick.value.trim();
-  const parentVal = parentSelect.value;
-  const parentId = parentVal ? Number(parentVal) : null;
-
-  if(!name || !role || !nick){
-    alert('Please fill Name, Role and Nickname. Parent can be left blank for root.');
-    return;
-  }
-  // create new person with unique id
-  const newPerson = { id: nextId++, name, role, nickname: nick, parentId };
-  family.push(newPerson);
-  saveFamilyToStorage();
-  // re-render and clear
-  renderTree();
-  inName.value=''; inRole.value=''; inNick.value=''; parentSelect.value='';
-});
-
-/* ---------- Chat actions ---------- */
-function renderChat(){
-  chatBody.innerHTML = '';
-  chat.forEach(m => {
-    const msg = document.createElement('div');
-    msg.className = 'message';
-    const author = family.find(p => p.id === m.authorId);
-    const authorLabel = author ? `${author.name} ("${author.nickname}")` : 'Unknown';
-    const time = new Date(m.time).toLocaleString();
-    msg.innerHTML = `<div class="meta">${escapeHtml(authorLabel)} • ${escapeHtml(time)}</div><div class="text">${escapeHtml(m.text)}</div>`;
-    chatBody.appendChild(msg);
-  });
-  chatBody.scrollTop = chatBody.scrollHeight;
-}
-
-sendChat.addEventListener('click', ()=>{
-  const text = chatInput.value.trim();
-  const authorId = chatMember.value ? Number(chatMember.value) : null;
-  if(!text) return;
-  const entry = { id: 'm'+Date.now(), authorId, text, time: Date.now() };
-  chat.push(entry);
-  saveChatToStorage();
-  renderChat();
-  chatInput.value='';
-});
-
-clearChat.addEventListener('click', ()=>{
-  if(!confirm('Clear local chat messages? This cannot be undone.')) return;
-  chat = [];
-  saveChatToStorage();
-  renderChat();
-});
-
-/* ---------- Utility: redraw on resize/scroll ---------- */
-let redrawTimer = null;
-function scheduleRedraw(){
-  if(redrawTimer) clearTimeout(redrawTimer);
-  redrawTimer = setTimeout(()=>{ requestAnimationFrame(drawConnections); }, 120);
-}
-window.addEventListener('resize', scheduleRedraw);
-treeWrap.addEventListener('scroll', scheduleRedraw);
-
-/* ---------- initialization ---------- */
-function init(){
-  rebuildParentDropdown();
-  rebuildChatMemberList();
-  renderTree();
-  renderChat();
-}
-init();
-
-/* ---------- Extra: allow selecting a person by id from URL (optional) ---------- */
-function selectById(id){
-  const card = document.querySelector(`li[data-id="${id}"] .card`);
-  if(card) card.click();
-}
-
-/* ---------- end ---------- */
-</script>
+<script src="script.js"></script>
 </body>
 </html>
