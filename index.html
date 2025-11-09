@@ -1,1 +1,69 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maijamaa Family Tree</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="script.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>🌳 Maijamaa Family Tree</h1>
+      <div class="mode-toggle">
+        <button id="toggleMode">🌞 / 🌙</button>
+      </div>
+    </header>
+
+    <!-- Admin Login Section -->
+    <section id="loginSection">
+      <h2>Admin Login</h2>
+      <input type="text" id="adminUsername" placeholder="Enter admin username" />
+      <input type="password" id="adminPassword" placeholder="Enter admin password" />
+      <button id="loginBtn">Login</button>
+      <p id="loginError" class="error"></p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="hidden">
+      <div class="admin-controls">
+        <button id="addMemberBtn">➕ Add Member</button>
+        <button id="exportJsonBtn">📦 Export JSON</button>
+        <button id="importJsonBtn">📥 Import JSON</button>
+        <input type="file" id="importFileInput" accept=".json" class="hidden" />
+        <button id="logoutBtn">🚪 Logout</button>
+      </div>
+
+      <div class="tree-container">
+        <div id="tree"></div>
+      </div>
+
+      <div class="chat-section">
+        <h3>💬 Family Chat</h3>
+        <div id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Type a message..." />
+          <button id="sendMessageBtn">Send</button>
+        </div>
+      </div>
+
+      <div class="timeline-section">
+        <h3>🕒 Family Timeline</h3>
+        <ul id="timelineList"></ul>
+      </div>
+    </section>
+
+    <!-- Add Member Modal -->
+    <div id="memberModal" class="modal hidden">
+      <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+        <h2>Add Family Member</h2>
+        <input type="text" id="memberName" placeholder="Full name" />
+        <input type="text" id="memberParent" placeholder="Parent name (optional)" />
+        <button id="saveMemberBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 
