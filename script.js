@@ -1,4 +1,4 @@
-class PenaltyShootout {
+ class PenaltyShootout {
     constructor() {
         this.playerScore = 0;
         this.cpuScore = 0;
