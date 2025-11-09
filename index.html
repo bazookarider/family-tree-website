@@ -3,32 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="pragma" content="no-cache">
-    <meta http-equiv="expires" content="0">
-    <title>Live Football Scores</title>
+    <title>⚽ Penalty Shootout Game</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>⚽ Live Football Scores</h1>
-            <p>Real-time matches from around the world</p>
+            <h1>⚽ BAZOOKA PENALTY SHOOTOUT ⚽</h1>
+            <div class="score-board">
+                <div class="score">
+                    <span class="player-score">0</span> - <span class="cpu-score">0</span>
+                </div>
+                <div class="penalty-count">Penalty 1/5</div>
+            </div>
         </header>
-        
-        <div class="controls">
-            <button onclick="fetchLiveScores()">Refresh Scores</button>
-            <span id="lastUpdated"></span>
+
+        <div class="game-area">
+            <div class="field">
+                <div class="goal">
+                    <div class="goal-post"></div>
+                    <div class="goalkeeper" id="goalkeeper">
+                        <div class="gk-body">🧤</div>
+                    </div>
+                    <div class="net"></div>
+                </div>
+                <div class="ball" id="ball">⚽</div>
+                <div class="shot-areas">
+                    <div class="area top-left" data-pos="top-left"></div>
+                    <div class="area top-right" data-pos="top-right"></div>
+                    <div class="area bottom-left" data-pos="bottom-left"></div>
+                    <div class="area bottom-right" data-pos="bottom-right"></div>
+                    <div class="area center" data-pos="center"></div>
+                </div>
+            </div>
         </div>
 
-        <div id="loading">Loading live scores...</div>
-        <div id="scores" class="scores-container"></div>
-        
-        <footer>
-            <p>Data provided by Football-Data.org</p>
-        </footer>
+        <div class="controls">
+            <div class="difficulty">
+                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+            </div>
+            <button id="startBtn" class="start-btn">START GAME</button>
+            <button id="restartBtn" class="restart-btn" style="display: none;">PLAY AGAIN</button>
+        </div>
+
+        <div class="messages">
+            <div id="message" class="message"></div>
+        </div>
+
+        <!-- Sound Elements -->
+        <audio id="kickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-football-kick-3111.mp3" preload="auto"></audio>
+        <audio id="goalSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" preload="auto"></audio>
+        <audio id="saveSound" src="https://assets.mixkit.co/sfx/preview/mixkit-sword-cutting-flesh-2780.mp3" preload="auto"></audio>
+        <audio id="crowdSound" src="https://assets.mixkit.co/sfx/preview/mixkit-crowd-cheering-loop-479.mp3" preload="auto" loop></audio>
     </div>
 
-    <script src="script.js?v=2"></script>
+    <script src="script.js"></script>
 </body>
 </html>
