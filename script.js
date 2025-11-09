@@ -1,19 +1,19 @@
-const gameBoard = document.getElementById('gameBoard');
+ const gameBoard = document.getElementById('gameBoard');
 const scoreDisplay = document.getElementById('score');
 const highScoreDisplay = document.getElementById('highScore');
 const messageDisplay = document.getElementById('message');
 
 // --- Game Settings ---
 const GRID_SIZE = 20;
-const INITIAL_SNAKE = [{ x: 10, y: 10 }]; // Start in the middle
+const INITIAL_SNAKE = [{ x: 10, y: 10 }]; 
 let snake = INITIAL_SNAKE;
 let food = {};
-let dx = 0; // x-direction velocity
-let dy = 0; // y-direction velocity
+let dx = 0; 
+let dy = 0; 
 let score = 0;
 let highScore = localStorage.getItem('snakeHighScore') || 0;
 let gameInterval;
-let gameSpeed = 150; // Milliseconds per move
+let gameSpeed = 150; 
 let isGameRunning = false;
 
 // --- Initialization ---
@@ -21,7 +21,7 @@ highScoreDisplay.textContent = `High Score: ${highScore}`;
 createGrid();
 placeFood();
 
-// Helper to update score display
+// Update score and high score
 function updateScore(newScore) {
     score = newScore;
     scoreDisplay.textContent = `Score: ${score}`;
@@ -32,20 +32,19 @@ function updateScore(newScore) {
     }
 }
 
-// 1. Create the visual grid (20x20 divs)
+// Create the visual grid (20x20 divs)
 function createGrid() {
     gameBoard.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
     gameBoard.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
-        // We'll use a data attribute for easier lookup
         cell.dataset.index = i;
         gameBoard.appendChild(cell);
     }
 }
 
-// 2. Place the food in a random cell not occupied by the snake
+// Place the food in a random, empty cell
 function placeFood() {
     let newFoodPosition;
     do {
@@ -58,7 +57,7 @@ function placeFood() {
     food = newFoodPosition;
 }
 
-// 3. Draw the game state (snake and food)
+// Draw the game state (snake and food)
 function drawGame() {
     // Clear the board
     document.querySelectorAll('.cell').forEach(cell => {
@@ -82,12 +81,12 @@ function drawGame() {
     }
 }
 
-// 4. Game Logic: Moving the snake
+// Game Logic: Moving the snake
 function moveSnake() {
-    // 4a. Create the new head position
+    // Create the new head position
     const newHead = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-    // 4b. Check for self-collision or wall collision
+    // Check for collision
     if (
         newHead.x < 0 || 
         newHead.x >= GRID_SIZE || 
@@ -102,28 +101,28 @@ function moveSnake() {
     // Add the new head to the front
     snake.unshift(newHead);
 
-    // 4c. Check if food was eaten
+    // Check if food was eaten
     if (newHead.x === food.x && newHead.y === food.y) {
         updateScore(score + 10);
-        placeFood(); // Place new food
-        // Increase speed slightly for more difficulty
+        placeFood(); 
+        // Increase speed slightly
         gameSpeed = Math.max(80, gameSpeed * 0.95); 
         clearInterval(gameInterval);
         gameInterval = setInterval(moveSnake, gameSpeed);
     } else {
-        // If no food, remove the tail (snake moves)
+        // If no food, remove the tail
         snake.pop(); 
     }
 
     drawGame();
 }
 
-// 5. Game Start/Reset
+// Game Start/Reset
 function startGame() {
     if (isGameRunning) return;
 
     snake = INITIAL_SNAKE;
-    dx = 1; // Start moving right (initial direction)
+    dx = 1; // Start moving right 
     dy = 0;
     updateScore(0);
     placeFood();
@@ -134,27 +133,26 @@ function startGame() {
     gameInterval = setInterval(moveSnake, gameSpeed);
 }
 
-// 6. Game Over
+// Game Over
 function gameOver() {
     clearInterval(gameInterval);
     isGameRunning = false;
     messageDisplay.innerHTML = `**Game Over!** Final Score: ${score}. Press **any arrow key** or **W, A, S, D** to restart.`;
 }
 
-// 7. Input Handling (Controls)
+// Input Handling (Controls)
 document.addEventListener('keydown', e => {
     let key = e.key;
 
-    // Check for a start/restart key press
+    // Start or restart the game
     if (!isGameRunning && (key.includes('Arrow') || ['w', 'a', 's', 'd'].includes(key.toLowerCase()))) {
         startGame();
         return; 
     }
 
-    // Only allow direction changes during an active game
     if (!isGameRunning) return; 
 
-    // Prevent moving back on yourself immediately
+    // Handle direction change
     switch (key) {
         case 'ArrowUp':
         case 'w':
@@ -175,5 +173,5 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Initial draw to show the starting snake
+// Initial draw
 drawGame();
