@@ -1,84 +1,24 @@
- <!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>MAIJAMAA Family Tree — Shared Admin Version</title>
-<link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Snake Game</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-  <header>
-    <h1>MAIJAMAA Family Tree</h1>
-    <p>Vertical tree — click a person to select and highlight their direct children. **Data is shared live!**</p>
-  </header>
-  
-  <div class="main-layout-wrapper">
-    
-    <div class="main-content">
-        <div class="controls">
-            <div class="form" id="adminLogin" style="background:#f0fff0; padding:10px; border-radius:8px; border:1px solid #d0d7d7;">
-                <input id="adminUser" placeholder="Admin Username" />
-                <input type="password" id="adminPass" placeholder="Admin Password" />
-                <button id="loginBtn">Admin Login</button>
-                <button id="logoutBtn" style="background:#ff6666; display:none;">Admin Logout</button>
-                <div id="adminStatus" style="color:red; font-weight:bold; font-size:13px;">(Logged out)</div>
+    <div class="container">
+        <h1>Classic Snake Game</h1>
+        <div class="score-panel">
+            <div id="score">Score: 0</div>
+            <div id="highScore">High Score: 0</div>
+        </div>
+        <div id="gameBoard">
             </div>
-            <div class="form" id="dataManagement" style="opacity:0.5; pointer-events:none;">
-                <button id="exportBtn">Export JSON</button>
-                <label for="importFile" style="background:var(--accent); color:#fff; padding:9px 14px; border-radius:10px; cursor:pointer;">Import JSON</label>
-                <input type="file" id="importFile" accept=".json" style="display:none;" />
-            </div>
-            <div class="form" id="addMemberForm" style="opacity:0.5; pointer-events:none;">
-                <input id="inName" placeholder="Full name (unique id will be made)" />
-                <input id="inRole" placeholder="Role (e.g. Father)" />
-                <input id="inNick" placeholder="Nickname" />
-                <select id="inParent"><option value="">— Parent (root) —</option></select>
-                <button id="addBtn">+ Add Member</button>
-            </div>
-            <div class="hint">Tip: choose parent from dropdown to avoid duplicates. You may have same names — IDs keep them unique.</div>
-        </div>
+        <div id="message">Press **any arrow key** or **W, A, S, D** to start!</div>
+    </div>
 
-        <div class="tree-wrap" id="treeWrap">
-            <svg id="connections" xmlns="http://www.w3.org/2000/svg"></svg>
-            <div id="treeRoot" class="tree" role="tree"></div>
-        </div>
-    </div>
-    
-    <div class="events-panel" role="region" aria-label="Family Events and Announcements">
-        <div class="events-header">
-            <div>Family Events 🗓️</div>
-            <div style="font-size:13px;opacity:.9">Announcements (Shared Live)</div>
-        </div>
-        <div class="events-body" id="eventsBody"></div>
-        <div class="events-footer" id="eventsFooter" style="display:none;">
-            <input id="eventTitleInput" placeholder="Event Title (e.g., Wedding)" />
-            <input id="eventDateInput" placeholder="Date/Time (e.g., Dec 25, 2026)" />
-            <textarea id="eventDetailsInput" placeholder="Details/Location..."></textarea>
-            <button id="addEventBtn">Add Event</button>
-            <button id="clearEventsBtn" title="Clear All Events (Admin)">Clear All</button>
-        </div>
-    </div>
-    
-  </div> 
-
-  <div class="chat-panel" role="region" aria-label="Family chat">
-    <div class="chat-header">
-      <div>Family Chat 💬</div>
-      <div style="font-size:13px;opacity:.9">Saved locally on this device</div>
-    </div>
-    <div class="chat-body" id="chatBody"></div>
-    <div class="chat-footer">
-      <select id="chatMember"></select>
-      <input id="chatInput" placeholder="Write a message..." />
-      <button id="sendChat">Send</button>
-      <button id="clearChat" title="Clear chat (local)">Clear</button>
-    </div>
-  </div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
