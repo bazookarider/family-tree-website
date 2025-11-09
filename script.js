@@ -1,4 +1,4 @@
-class FootballPredictor {
+ class FootballPredictor {
     constructor() {
         this.userPoints = 1000;
         this.predictions = [];
@@ -59,9 +59,7 @@ class FootballPredictor {
             { match: "Arsenal 3-0 Tottenham", prediction: "2-1", actual: "3-0", correct: false, points: 0 },
             { match: "Inter 1-1 Milan", prediction: "1-1", actual: "1-1", correct: true, points: 45 }
         ];
-    }
-
-setupEventListeners() {
+    }setupEventListeners() {
     // Tab navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -163,9 +161,7 @@ createMatchCard(match) {
     });
     
     return card;
-}
-
-    openPredictionModal(match) {
+}    openPredictionModal(match) {
         const modal = document.getElementById('predictionModal');
         const matchInfo = document.getElementById('predictionMatchInfo');
         
