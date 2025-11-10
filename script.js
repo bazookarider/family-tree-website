@@ -1,4 +1,4 @@
-// ====================================================================
+ // ====================================================================
 // !!! 1. YOUR FIREBASE CONFIG ATTACHED HERE !!!
 // ====================================================================
 const firebaseConfig = {
@@ -92,7 +92,6 @@ typingRef.on('value', function(snapshot) {
         if (typers.length === 1) {
             text += ' is typing...';
         } else {
-            // Format for "User 1, User 2, and User 3 are typing..."
             const lastCommaIndex = text.lastIndexOf(',');
             if (lastCommaIndex !== -1) {
                  text = text.substring(0, lastCommaIndex) + ' and' + text.substring(lastCommaIndex + 1);
@@ -117,6 +116,7 @@ messagesRef.on('child_added', function(snapshot) {
     // 2. Create the avatar placeholder
     const avatar = document.createElement('div');
     avatar.classList.add('avatar');
+    // Gets the first letter of the name
     avatar.textContent = msg.name.trim().charAt(0).toUpperCase(); 
 
     // 3. Create the message bubble
