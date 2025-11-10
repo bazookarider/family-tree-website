@@ -1,264 +1,362 @@
-
-/* 🌳 Maijamaa Family Tree – style.css */
-/* === Global Reset === */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', sans-serif;
+ * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* === Body & Theme === */
 body {
-  background-color: var(--bg);
-  color: var(--text);
-  transition: background 0.3s, color 0.3s;
-  overflow-x: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #006677, #004455);
+    min-height: 100vh;
+    color: #333;
 }
 
-:root {
-  --bg: #f2f2f2;
-  --text: #222;
-  --card: #fff;
-  --primary: #0066cc;
-  --shadow: rgba(0,0,0,0.1);
+.page {
+    min-height: 100vh;
+    padding: 20px;
 }
 
-body.dark {
-  --bg: #121212;
-  --text: #f2f2f2;
-  --card: #1e1e1e;
-  --primary: #3399ff;
-  --shadow: rgba(255,255,255,0.1);
+.hidden {
+    display: none !important;
 }
 
-/* === Header === */
+/* Login Page */
+.login-container {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px slategray;
+    max-width: 400px;
+    margin: 100px auto;
+    text-align: center;
+}
+
+.login-container h2 {
+    color: #006677;
+    margin-bottom: 30px;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.login-container input:focus {
+    border-color: #006677;
+    outline: none;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 12px;
+    background: #006677;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 10px 0;
+    transition: background 0.3s;
+}
+
+.login-container button:hover {
+    background: #004455;
+}
+
+.public-view {
+    margin-top: 20px;
+    color: #666;
+}
+
+.public-view a {
+    color: #006677;
+    text-decoration: none;
+}
+
+.public-view a:hover {
+    text-decoration: underline;
+}
+
+/* Header */
 header {
-  background: var(--card);
-  box-shadow: 0 2px 5px var(--shadow);
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px slategray;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 header h1 {
-  font-size: 1.4em;
-  font-weight: 600;
-  color: var(--primary);
+    color: #006677;
 }
 
-.mode-toggle button {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
+.logout-btn, .admin-btn {
+    background: #006677;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
 }
 
-/* === Login Section === */
-#loginSection {
-  max-width: 350px;
-  margin: 100px auto;
-  background: var(--card);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px var(--shadow);
-  text-align: center;
-}
-
-#loginSection input {
-  width: 100%;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-#loginSection button {
-  width: 100%;
-  padding: 10px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.error {
-  color: red;
-  font-size: 0.9em;
-  margin-top: 5px;
-}
-
-/* === Dashboard === */
-#dashboard {
-  padding: 20px;
-  max-width: 100%;
+.logout-btn:hover, .admin-btn:hover {
+    background: #004455;
 }
 
 /* Admin Controls */
 .admin-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px slategray;
+    margin-bottom: 25px;
 }
 
-.admin-controls button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 15px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px var(--shadow);
-  transition: 0.2s;
+.admin-controls h3 {
+    color: #006677;
+    margin-bottom: 20px;
 }
 
-.admin-controls button:hover {
-  opacity: 0.9;
+.input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 15px;
+    align-items: end;
 }
 
-/* === Tree Section === */
+.input-group input, .input-group select {
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.input-group input:focus, .input-group select:focus {
+    border-color: #006677;
+    outline: none;
+}
+
+.input-group button {
+    background: #006677;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.input-group button:hover {
+    background: #004455;
+}
+
+/* Export/Import */
+.export-import {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px slategray;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.export-import button {
+    background: #006677;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.export-import button:hover {
+    background: #004455;
+}
+
+#importFile {
+    display: none;
+}
+
+/* Members List */
+.members-list {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px slategray;
+}
+
+.members-list h3 {
+    color: #006677;
+    margin-bottom: 20px;
+}
+
+.member-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.member-card:hover {
+    transform: translateY(-2px);
+    border-color: #006677;
+}
+
+.member-info h4 {
+    color: #006677;
+    margin-bottom: 5px;
+}
+
+.member-info p {
+    color: #666;
+    font-size: 14px;
+}
+
+.member-actions button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background 0.3s;
+}
+
+.member-actions button.edit-btn {
+    background: #ffc107;
+    color: #333;
+}
+
+.member-actions button:hover {
+    opacity: 0.9;
+}
+
+/* Family Tree Visualization */
+.family-tree {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px slategray;
+}
+
 .tree-container {
-  width: 100%;
-  height: 400px;
-  background: var(--card);
-  border-radius: 12px;
-  overflow: auto;
-  cursor: grab;
-  box-shadow: 0 2px 10px var(--shadow);
-  padding: 20px;
+    overflow-x: auto;
+    padding: 20px 0;
 }
 
-.tree-container:active {
-  cursor: grabbing;
+.tree-horizontal {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    min-height: 300px;
+    position: relative;
 }
 
-#tree {
-  min-width: 1200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.ancestor-box {
+    background: #006677;
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 8px 25px slategray;
+    border: 3px solid #004455;
+    min-width: 200px;
+    position: relative;
+    z-index: 2;
 }
 
-/* === Family Member Nodes === */
-.member {
-  background: var(--primary);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 10px;
-  margin: 5px;
-  position: relative;
-  transition: transform 0.2s;
+.ancestor-box h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
 }
 
-.member:hover {
-  transform: scale(1.05);
+.ancestor-box .role {
+    font-style: italic;
+    opacity: 0.9;
+    margin-bottom: 5px;
 }
 
-/* === Hover Card === */
-.member:hover::after {
-  content: attr(data-info);
-  position: absolute;
-  bottom: 120%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--card);
-  color: var(--text);
-  padding: 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px var(--shadow);
-  font-size: 0.85em;
-  white-space: nowrap;
+.ancestor-box .nickname {
+    font-weight: bold;
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
-/* === Chat Section === */
-.chat-section {
-  margin-top: 25px;
-  background: var(--card);
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px var(--shadow);
+.member-box {
+    background: white;
+    border: 2px solid #006677;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    min-width: 180px;
+    position: relative;
+    z-index: 1;
 }
 
-#chatMessages {
-  height: 200px;
-  overflow-y: auto;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  margin-bottom: 10px;
+.member-box h4 {
+    color: #006677;
+    margin-bottom: 6px;
+    font-size: 16px;
 }
 
-.chat-message {
-  background: var(--primary);
-  color: white;
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin: 4px 0;
-  display: inline-block;
+.member-box .role {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 5px;
+    font-size: 14px;
 }
 
-.chat-input {
-  display: flex;
-  gap: 10px;
+.member-box .nickname {
+    background: #006677;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: inline-block;
 }
 
-.chat-input input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-/* === Timeline Section === */
-.timeline-section {
-  margin-top: 25px;
-  background: var(--card);
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px var(--shadow);
-}
-
-.timeline-section ul {
-  list-style: none;
-}
-
-.timeline-section li {
-  padding: 6px 0;
-  border-bottom: 1px solid #ccc;
-}
-
-/* === Modal === */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 100;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.6);
-}
-
-.modal-content {
-  background: var(--card);
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 400px;
-  margin: 100px auto;
-  box-shadow: 0 2px 10px var(--shadow);
-}
-
-.close {
-  float: right;
-  cursor: pointer;
-  font-size: 1.4em;
-}
-
-.hidden {
-  display: none !important;
+/* Responsive Design */
+@media (max-width: 768px) {
+    .input-group {
+        grid-template-columns: 1fr;
+    }
+    
+    header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .tree-horizontal {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .login-container {
+        margin: 50px 20px;
+        padding: 30px 20px;
+    }
 }
