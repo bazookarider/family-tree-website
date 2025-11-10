@@ -28,7 +28,7 @@ h1 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Footer (New Element) */
+/* Footer (Creator Credit) */
 footer {
     padding: 8px;
     text-align: center;
@@ -36,12 +36,11 @@ footer {
     color: var(--secondary-color);
     border-top: 1px solid #ddd;
     background-color: #fff;
-    flex-shrink: 0; /* Prevents it from being squeezed */
+    flex-shrink: 0;
 }
 footer p {
     margin: 0;
 }
-
 
 /* Chat Message and Indicator Area */
 #chat-container {
@@ -62,12 +61,13 @@ footer p {
 /* Message Bubble Container */
 .message-row {
     display: flex;
-    align-items: flex-end; 
+    align-items: flex-end; /* Aligns content to the bottom */
     margin-bottom: 12px;
     max-width: 90%;
+    margin-right: auto; /* Makes all bubbles align left */
 }
 
-/* Avatar Placeholder */
+/* Avatar Placeholder (The "Picture") */
 .avatar {
     width: 32px;
     height: 32px;
@@ -80,6 +80,7 @@ footer p {
     font-size: 14px;
     font-weight: bold;
     margin-right: 8px;
+    flex-shrink: 0; /* Prevents the avatar from shrinking */
 }
 
 /* Message Bubble Styling */
@@ -97,7 +98,7 @@ footer p {
 
 .message strong {
     font-weight: 600;
-    color: var(--primary-color); /* Name in the app's primary color */
+    color: var(--primary-color);
     display: block;
     font-size: 0.8em;
     margin-bottom: 2px;
