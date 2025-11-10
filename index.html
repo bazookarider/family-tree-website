@@ -48,6 +48,29 @@
   </style>
 </head>
 <body>
+<!-- LOGIN FORM -->
+<div id="loginBox">
+  <h2>Admin Login</h2>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button id="loginBtn">Login</button>
+</div>
+
+<script>
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    alert("Login successful!");
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('treeBox').style.display = 'block';
+  } catch (err) {
+    alert(err.message);
+  }
+});
+</script>
+
   <header>
     <h1>Family Tree — MVP</h1>
     <div class="auth">
