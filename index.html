@@ -3,43 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyou Chat App</title>
+    <title>Cyou Professional Chat</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-box">
-            <h1>Welcome to Cyou</h1>
-            <p>Please enter your name to join the chat.</p>
-            <input type="text" id="login-name-input" placeholder="Enter your name...">
-            <button id="join-chat-button">Join Chat</button>
-        </div>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading...</p>
     </div>
 
-    <div id="app-container">
-        <h1>Cyou</h1>
+    <div class="auth-container" id="auth-container">
         
-        <div id="chat-container">
-            <div id="messages">
+        <div class="auth-card" id="login-card">
+            <h2>Log In</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
                 </div>
-            <div id="typing-indicator"></div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <p class="auth-error" id="login-error"></p>
+                <button type="submit" class="auth-btn">Log In</button>
+            </form>
+            <p class="auth-toggle">
+                Need an account? <span id="show-signup-btn">Sign Up</span>
+            </p>
         </div>
 
-        <div class="input-area">
-            <input type="text" id="message-input" placeholder="Enter message...">
-            <button id="send-button">Send</button>
+        <div class="auth-card hidden" id="signup-card">
+            <h2>Create Account</h2>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name">Full Name</label>
+                    <input type="text" id="signup-name" placeholder="e.g., Abdulkarim Aliyu" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <div class="username-input">
+                        <span>@</span>
+                        <input type="text" id="signup-username" placeholder="e.g., legend" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" placeholder="Used for login" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Min. 6 characters" required>
+                </div>
+                <p class="auth-error" id="signup-error"></p>
+                <button type="submit" class="auth-btn">Sign Up</button>
+            </form>
+            <p class="auth-toggle">
+                Already have an account? <span id="show-login-btn">Log In</span>
+            </p>
         </div>
 
-        <footer>
-            <p>Me the CEO the creator: **Abdulkarim Aliyu (legend)**</p>
+    </div>
+
+
+    <div class="chat-container hidden" id="chat-container">
+        <header class="chat-header">
+            <div>
+                <h1>Cyou Chat</h1>
+                <div id="user-display-name"></div>
+            </div>
+            <button id="logout-btn" class="logout-btn">Logout</button>
+        </header>
+        
+        <main class="chat-messages" id="chat-messages">
+            </main>
+        
+        <footer class="chat-form-container">
+            <form id="message-form">
+                <input
+                    id="message-input"
+                    type="text"
+                    placeholder="Type your message..."
+                    required
+                    autocomplete="off"
+                />
+                <button type="submit" class="send-btn">Send</button>
+            </form>
         </footer>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
+
 </body>
 </html>
