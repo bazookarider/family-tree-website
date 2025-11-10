@@ -1,4 +1,4 @@
- // ====================================================================
+// ====================================================================
 // !!! 1. YOUR FIREBASE CONFIG ATTACHED HERE !!!
 // ====================================================================
 const firebaseConfig = {
@@ -8,9 +8,6 @@ const firebaseConfig = {
     storageBucket: "my-family-tree-16886.firebasestorage.app",
     messagingSenderId: "400708543065",
     appId: "1:400708543065:web:b401629e83ca6f9e780748"
-    // Note: If you received a databaseURL, you can add it here, 
-    // but Firebase often infers it:
-    // databaseURL: "https://my-family-tree-16886-default-rtdb.firebaseio.com"
 };
 // ====================================================================
 
@@ -34,7 +31,6 @@ const typingTimeout = 1500; // 1.5 seconds
 // Helper function to get a unique, sanitized user key
 function getCurrentUserKey() {
     const username = usernameInput.value.trim();
-    // Replaces spaces and special chars with underscores to create a valid Firebase key
     return username ? username.replace(/[^a-zA-Z0-9]/g, '_') : null;
 }
 
@@ -43,7 +39,7 @@ function stopTyping() {
     isTyping = false;
     const userKey = getCurrentUserKey();
     if (userKey) {
-        typingRef.child(userKey).set(false); // Set status to false
+        typingRef.child(userKey).set(false);
     }
 }
 
@@ -58,22 +54,21 @@ sendButton.addEventListener('click', function() {
             text: message,
             timestamp: Date.now() 
         });
-        messageInput.value = ''; // Clear message input
-        stopTyping(); // Crucial: Clear typing status after sending
+        messageInput.value = '';
+        stopTyping();
     }
 });
 
 // 2. Typing status logic
 messageInput.addEventListener('keyup', function() {
     const userKey = getCurrentUserKey();
-    if (!userKey) return; // Don't track if no username is set
+    if (!userKey) return;
 
     if (!isTyping) {
         isTyping = true;
-        typingRef.child(userKey).set(true); // Set status to true
+        typingRef.child(userKey).set(true);
     }
     
-    // Reset the timer on every key press
     clearTimeout(typingTimer);
     typingTimer = setTimeout(stopTyping, typingTimeout);
 });
@@ -85,10 +80,8 @@ typingRef.on('value', function(snapshot) {
     
     let typers = [];
 
-    // Check who is typing and is NOT the current user
     for (let key in typingUsers) {
         if (typingUsers[key] === true && key !== currentKey) {
-            // Display the original username from the input box for simplicity
             typers.push(key.replace(/_/g, ' ')); 
         }
     }
@@ -99,7 +92,7 @@ typingRef.on('value', function(snapshot) {
         if (typers.length === 1) {
             text += ' is typing...';
         } else {
-            // Replaces the last comma with " and " for better grammar
+            // Format for "User 1, User 2, and User 3 are typing..."
             const lastCommaIndex = text.lastIndexOf(',');
             if (lastCommaIndex !== -1) {
                  text = text.substring(0, lastCommaIndex) + ' and' + text.substring(lastCommaIndex + 1);
@@ -117,13 +110,25 @@ typingRef.on('value', function(snapshot) {
 messagesRef.on('child_added', function(snapshot) {
     const msg = snapshot.val();
     
+    // 1. Create the message row container
+    const msgRow = document.createElement('div');
+    msgRow.classList.add('message-row');
+
+    // 2. Create the avatar placeholder
+    const avatar = document.createElement('div');
+    avatar.classList.add('avatar');
+    avatar.textContent = msg.name.trim().charAt(0).toUpperCase(); 
+
+    // 3. Create the message bubble
     const msgElement = document.createElement('div');
     msgElement.classList.add('message');
     
-    // Format name and text
     msgElement.innerHTML = `<strong>${msg.name}:</strong> ${msg.text}`;
     
-    messagesDiv.appendChild(msgElement);
+    msgRow.appendChild(avatar);
+    msgRow.appendChild(msgElement);
+    
+    messagesDiv.appendChild(msgRow);
     
     // Scroll to the bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
