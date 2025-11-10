@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ibrahim Family Tree — Maijamaa (Firebase)</title>
+<style>
+  :root{
+    --main:#006677; --accent:#0099aa; --bg:#f8f9fa; --card:#fff; --muted:#666;
+    --dark-bg:#0f1720; --dark-card:#0b1220; --dark-text:#e6eef2;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    -webkit-font-smoothing:antialiased; color:#222; padding-bottom:260px; background:var(--bg);
+  }
+
+  /* topbar */
+  .topbar{
+    display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px;
+    background:linear-gradient(90deg,var(--main),var(--accent)); color:#fff; flex-wrap:wrap;
+  }
+  .left-controls{display:flex;align-items:center;gap:12px}
+  .title{font-weight:700;letter-spacing:1px}
+  .search{padding:8px 10px;border-radius:8px;border:none;width:260px}
+  .admin-actions{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--card);color:var(--main);border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--main);color:#fff}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.18)}
+
+  /* controls */
+  .controls{width:min(1100px,96%);margin:12px auto;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .add-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .add-form input,.add-form select{padding:8px 10px;border-radius:8px;border:1px solid #d7e0e0;min-width:140px}
+  .hint{color:var(--muted);font-size:13px}
+
+  /* tree */
+  .tree-wrap{width:min(1200px,98%);margin:8px auto 24px;padding:10px;overflow:auto;position:relative;border-radius:10px; touch-action:none; overscroll-behavior:contain; -webkit-overflow-scrolling:auto;}
+  #connections{position:absolute;left:0;top:0;pointer-events:none;width:100%;height:100%;overflow:visible}
+  .tree{display:flex;justify-content:center;padding:20px 10px 80px;min-width:700px;}
+  .tree ul{padding-top:28px;position:relative;display:inline-block;text-align:center;white-space:nowrap;}
+  .tree li{display:inline-block;vertical-align:top;text-align:center;margin:0 16px;padding:0 6px;position:relative;}
+  .tree ul::before{content:'';position:absolute;top:0;left:50%;border-left:2px solid rgba(0,0,0,0.07);height:18px;transform:translateX(-50%)}
+  .tree li::before,.tree li::after{content:'';position:absolute;top:18px;width:12px;height:2px;border-top:2px solid rgba(0,0,0,0.07)}
+  .tree li::before{right:50%}.tree li::after{left:50%}
+  .tree li:only-child::before,.tree li:only-child::after{display:none}
+  .tree li:first-child::before{display:none}.tree li:last-child::after{display:none}
+
+  .card{background:var(--card);border-radius:12px;padding:12px 14px;width:200px;box-shadow:0 8px 18px rgba(0,0,0,0.08);border:2px solid rgba(0,0,0,0.04);cursor:pointer;transition:transform .16s,box-shadow .16s;border-color .16s;position:relative}
+  .card:hover{transform:translateY(-6px);box-shadow:0 14px 28px rgba(0,0,0,0.12)}
+  .name{color:var(--main);font-weight:700;margin-bottom:6px}
+  .role{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .nick{color:#000;font-weight:800;font-size:18px;margin-top:6px} /* bold black nickname */
+  .card.selected{border-color:var(--accent);box-shadow:0 0 18px rgba(0,153,170,0.12)}
+  .card.child-highlight{box-shadow:0 0 20px rgba(0,153,170,0.18)!important;border-color:var(--accent)!important}
+  .toggle-btn{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:6px;border:none;background:var(--main);color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .collapsed>ul{display:none}
+  .small-actions{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  .small-actions button{padding:6px 8px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+  .small-actions .edit{background:#ffd966;color:#222}.small-actions .del{background:#ff6b6b;color:#fff}
+
+  .highlight{outline:3px solid rgba(0,102,119,0.12);transform:translateY(-6px)}/* hover profile card */
+  .hover-card{position:fixed;z-index:2000;background:var(--card);padding:10px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.18);max-width:260px;display:none}
+  .hover-card .hname{font-weight:700;color:var(--main);margin-bottom:6px}
+  .hover-card .hnick{font-weight:800;color:#000;margin-bottom:6px}
+
+  /* chat */
+  .chat-panel{position:fixed;left:12px;right:12px;bottom:12px;max-width:1200px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,0.18);overflow:hidden;display:flex;flex-direction:column;height:260px;z-index:80}
+  .chat-header{background:var(--main);color:#fff;padding:8px 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .chat-body{flex:1;padding:10px;overflow:auto;background:#fbfdfd}
+  .chat-footer{display:flex;gap:8px;padding:10px;border-top:1px solid #eee;background:#fff;align-items:center}
+  .chat-footer input,.chat-footer select{padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+  .chat-footer button{background:var(--main);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .message{margin-bottom:8px;padding:8px;border-radius:8px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
+  .message .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .message .reply-to{font-size:12px;color:var(--muted);margin-bottom:6px;font-style:italic}
+  .message .text{font-size:14px;color:#222}
+  .reaction-row{margin-top:6px;display:flex;gap:6px;align-items:center}
+  .react-btn{background:#f1f3f3;border:none;padding:6px;border-radius:6px;cursor:pointer}
+
+  /* GIF picker */
+  .gif-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .gif-grid img{width:100%;border-radius:8px;cursor:pointer}
+
+  /* timeline */
+  .timeline-wrap{width:min(1100px,96%);margin:8px auto 140px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(0,0,0,0.02),transparent)}
+  .timeline-item{background:var(--card);padding:10px;border-radius:8px;margin-bottom:8px;box-shadow:0 3px 10px rgba(0,0,0,0.04)}
+
+  .footer-note{text-align:center;color:var(--muted);font-size:13px;margin:20px 0 40px}
+
+  /* modal */
+  .modal-back{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:3000}
+  .modal{background:#fff;padding:16px;border-radius:12px;width:min(560px,94%);box-shadow:0 8px 30px rgba(0,0,0,0.25)}
+  .modal h3{margin:0 0 8px}
+  .modal .row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+  .modal input,.modal textarea,.modal select{padding:8px 10px;border-radius:8px;border:1px solid #ddd;width:100%}
+  .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+  @media (max-width:900px){ .tree{min-width:900px} .search{width:170px} .add-form input{width:120px} }
+  @media (max-width:480px){ .card{width:150px} .nick{font-size:16px} .gif-grid{grid-template-columns:repeat(2,1fr)} }
+
+  /* dark mode (will toggle class on body) */
+  body.dark{background:var(--dark-bg);color:var(--dark-text)}
+  body.dark .card{background:var(--dark-card);border-color:rgba(255,255,255,0.03);box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+  body.dark .chat-panel{background:#0b1220}
+  body.dark .modal{background:#07101a;color:var(--dark-text)}
+  body.dark .topbar{background:linear-gradient(90deg,var(--main),#006a77)}
+  body.dark .hover-card{background:var(--dark-card);color:var(--dark-text)}
+</style>
+</head>
+<body>
+
+  <!-- topbar -->
+  <div class="topbar">
+    <div class="left-controls">
+      <div class="title">MAIJAMAA Family Tree</div>
+      <input id="searchInput" class="search" placeholder="Search by name or nickname..." />
+    </div>
+    <div class="admin-actions">
+      <button id="themeBtn" class="btn ghost">🌓</button>
+      <button id="loginBtn" class="btn ghost">🔐 Login as Admin</button>
+      <button id="logoutBtn" class="btn" style="display:none">🚪 Logout</button>
+      <button id="exportBtn" class="btn">Export JSON</button>
+      <button id="importBtn" class="btn">Import JSON</button>
+      <button id="clearAllBtn" class="btn" title="Clear all family & chat (admin only)">Clear All</button>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="add-form">
+      <input id="inName" placeholder="Full name (required)" />
+      <input id="inRole" placeholder="Role (e.g. Father)"/>
+      <input id="inNick" placeholder="Nickname (required)" />
+      <select id="inParent"><option value="">— Parent (root) —</option></select>
+      <button id="addBtn" class="btn primary">+ Add (Admin)</button>
+    </div>
+    <div class="hint">Tip: Select parent to attach. Search works while tree updated.</div>
+  </div>
+
+  <!-- tree area -->
+  <div class="tree-wrap" id="treeWrap" tabindex="0">
+    <svg id="connections" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="treeRoot" class="tree" role="tree" ></div>
+  </div>
+
+  <div class="footer-note">Tip: Click a card to select it and highlight direct children. Use +/- to hide/show subtrees.</div>
+
+  <!-- timeline -->
+  <div class="timeline-wrap" id="timelineWrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:700">Family Timeline</div>
+      <div>
+        <button id="addEventBtn" class="btn">+ Add Event (Admin)</button>
+        <button id="exportEventsBtn" class="btn">Export Events</button>
+      </div>
+    </div>
+    <div id="timelineList"></div>
+  </div>
+
+  <!-- hover profile card -->
+  <div class="hover-card" id="hoverCard" aria-hidden="true"></div>
+
+  <!-- chat panel -->
+  <div class="chat-panel" role="region" aria-label="Family chat">
+    <div class="chat-header">
+      <div>Family Chat 💬</div>
+      <div style="font-size:13px;opacity:0.95">Saved online (Realtime)</div>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+      <select id="chatMember"><option value="">— Send as (choose member) —</option></select>
+      <input id="chatInput" placeholder="Write a message... use @nickname: to reply manually" />
+      <button id="gifBtn" class="btn">GIF</button>
+      <button id="sendChat" class="btn primary">Send</button>
+      <button id="clearChat" class="btn" title="Clear chat (admin only)">Clear Chat</button>
+    </div>
+  </div>
+
+  <!-- modal -->
+  <div class="modal-back" id="modalBack">
+    <div class="modal" id="modal"></div>
+  </div><script type="module">
+// ==========================
+// 🔥 FIREBASE INITIALIZATION
+// ==========================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCCd-vOxk0X9oARYqmDA790CcLN5WVqcpI",
+  authDomain: "newone-19637.firebaseapp.com",
+  databaseURL: "https://newone-19637-default-rtdb.firebaseio.com/",
+  projectId: "newone-19637",
+  storageBucket: "newone-19637.firebasestorage.app",
+  messagingSenderId: "321669264069",
+  appId: "1:321669264069:web:1d9a0d6ee5b869e652f6ac",
+  measurementId: "G-7MJF3V9S38"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ==========================
+// 🌳 FAMILY TREE VARIABLES
+// ==========================
+let members = {};       // All family members
+let events = {};        // Timeline events
+let chats = {};         // Chat messages
+let currentAdmin = null;
+
+// Admin credentials (only these can edit)
+const ADMIN_NAME = "Benalee";
+const ADMIN_PASS = "Ab@58563";
+
+// DOM Elements
+const treeRoot = document.getElementById("treeRoot");
+const parentSelect = document.getElementById("inParent");
+const chatMember = document.getElementById("chatMember");
+const chatBody = document.getElementById("chatBody");
+const timelineList = document.getElementById("timelineList");
+const hoverCard = document.getElementById("hoverCard");
+
+// ==========================
+// 🌐 LOAD INITIAL DATA
+// ==========================
+function loadFromFirebase() {
+  const membersRef = ref(db, "members");
+  onValue(membersRef, (snapshot) => {
+    members = snapshot.val() || {};
+    renderTree();
+    updateParentSelect();
+  });
+
+  const chatsRef = ref(db, "chats");
+  onValue(chatsRef, (snapshot) => {
+    chats = snapshot.val() || {};
+    renderChat();
+  });
+
+  const eventsRef = ref(db, "events");
+  onValue(eventsRef, (snapshot) => {
+    events = snapshot.val() || {};
+    renderTimeline();
+  });
+}
+loadFromFirebase();
+
+// ==========================
+// 💾 SAVE HELPERS
+// ==========================
+function saveMembersToFirebase() {
+  set(ref(db, "members"), members);
+}
+function saveChatsToFirebase() {
+  set(ref(db, "chats"), chats);
+}
+function saveEventsToFirebase() {
+  set(ref(db, "events"), events);
+}
+
+// ==========================
+// 👮 ADMIN LOGIN / LOGOUT
+// ==========================
+document.getElementById("loginBtn").onclick = () => {
+  const name = prompt("Enter admin name:");
+  const pass = prompt("Enter admin password:");
+  if (name === ADMIN_NAME && pass === ADMIN_PASS) {
+    currentAdmin = name;
+    alert("✅ Logged in as admin.");
+    document.getElementById("logoutBtn").style.display = "inline-block";
+  } else {
+    alert("❌ Invalid credentials.");
+  }
+};
+
+document.getElementById("logoutBtn").onclick = () => {
+  currentAdmin = null;
+  alert("Logged out.");
+  document.getElementById("logoutBtn").style.display = "none";
+};
+
+// ==========================
+// 🌳 ADD MEMBER (ADMIN ONLY)
+// ==========================
+document.getElementById("addBtn").onclick = () => {
+  if (!currentAdmin) return alert("Only admin can add members.");
+
+  const name = document.getElementById("inName").value.trim();
+  const role = document.getElementById("inRole").value.trim();
+  const nick = document.getElementById("inNick").value.trim();
+  const parentId = document.getElementById("inParent").value;
+
+  if (!name || !nick) return alert("Please fill name and nickname.");
+
+  const id = Date.now().toString();
+  members[id] = { id, name, role, nick, parentId };
+  saveMembersToFirebase();
+  document.getElementById("inName").value = "";
+  document.getElementById("inRole").value = "";
+  document.getElementById("inNick").value = "";
+  document.getElementById("inParent").value = "";
+};// ==========================
+// 🌳 FAMILY TREE RENDERING
+// ==========================
+function renderTree() {
+  treeRoot.innerHTML = "";
+  const roots = Object.values(members).filter(m => !m.parentId);
+  roots.forEach(root => {
+    const node = createNode(root);
+    treeRoot.appendChild(node);
+  });
+}
+
+function createNode(member) {
+  const div = document.createElement("div");
+  div.className = "tree-node";
+  div.innerHTML = `
+    <div class="member-card" data-id="${member.id}">
+      <strong>${member.name}</strong><br>
+      <small>${member.role || ""}</small><br>
+      <em>${member.nick ? "@" + member.nick : ""}</em>
+      ${currentAdmin ? `<br><button class="editBtn">✏️</button> <button class="delBtn">🗑️</button>` : ""}
+    </div>
+  `;
+
+  const children = Object.values(members).filter(m => m.parentId === member.id);
+  if (children.length > 0) {
+    const childContainer = document.createElement("div");
+    childContainer.className = "children";
+    children.forEach(c => childContainer.appendChild(createNode(c)));
+    div.appendChild(childContainer);
+  }
+
+  div.querySelector(".member-card").onmouseenter = (e) => showHoverCard(member, e);
+  div.querySelector(".member-card").onmouseleave = () => hideHoverCard();
+
+  if (currentAdmin) {
+    const editBtn = div.querySelector(".editBtn");
+    const delBtn = div.querySelector(".delBtn");
+
+    editBtn.onclick = () => editMember(member.id);
+    delBtn.onclick = () => {
+      if (confirm("Delete this member?")) {
+        delete members[member.id];
+        saveMembersToFirebase();
+      }
+    };
+  }
+
+  return div;
+}
+
+function showHoverCard(member, e) {
+  hoverCard.style.display = "block";
+  hoverCard.innerHTML = `<strong>${member.name}</strong><br>${member.role || ""}<br>@${member.nick}`;
+  hoverCard.style.top = (e.pageY + 10) + "px";
+  hoverCard.style.left = (e.pageX + 10) + "px";
+}
+
+function hideHoverCard() {
+  hoverCard.style.display = "none";
+}
+
+function updateParentSelect() {
+  parentSelect.innerHTML = `<option value="">None (Root)</option>`;
+  for (const id in members) {
+    parentSelect.innerHTML += `<option value="${id}">${members[id].name}</option>`;
+  }
+}
+
+// ==========================
+// 💬 CHAT SECTION
+// ==========================
+function renderChat() {
+  chatBody.innerHTML = "";
+  Object.values(chats).forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "chat-msg";
+
+    const reaction = msg.reaction ? `<span class="reaction">${msg.reaction}</span>` : "";
+    const reply = msg.replyTo ? `<div class="reply-ref">↪️ ${chats[msg.replyTo]?.text || "Deleted message"}</div>` : "";
+
+    div.innerHTML = `
+      ${reply}
+      <strong>${msg.name}</strong>: ${msg.text} ${reaction}
+      <div class="chat-actions">
+        <button onclick="replyTo('${msg.id}')">↩️</button>
+        <button onclick="reactTo('${msg.id}')">😊</button>
+        ${currentAdmin ? `<button onclick="deleteMsg('${msg.id}')">🗑️</button>` : ""}
+      </div>
+    `;
+    chatBody.appendChild(div);
+  });
+}
+
+function sendMsg() {
+  const text = document.getElementById("chatText").value.trim();
+  if (!text) return;
+  const id = Date.now().toString();
+  const name = chatMember.value || "Guest";
+  chats[id] = { id, name, text, replyTo: currentReplyId || null };
+  currentReplyId = null;
+  saveChatsToFirebase();
+  document.getElementById("chatText").value = "";
+}
+
+function replyTo(id) {
+  currentReplyId = id;
+  const msg = chats[id];
+  alert("Replying to: " + msg.text);
+}
+
+function reactTo(id) {
+  const emoji = prompt("React with emoji 😊 ❤️ 😂 👍 😢 🤔");
+  if (emoji) {
+    chats[id].reaction = emoji;
+    saveChatsToFirebase();
+  }
+}
+
+function deleteMsg(id) {
+  if (confirm("Delete this message?")) {
+    delete chats[id];
+    saveChatsToFirebase();
+  }
+}
+
+document.getElementById("sendBtn").onclick = sendMsg;
+
+// ==========================
+// 🕓 TIMELINE SECTION
+// ==========================
+function renderTimeline() {
+  timelineList.innerHTML = "";
+  Object.values(events).forEach(e => {
+    const div = document.createElement("div");
+    div.className = "timeline-item";
+    div.innerHTML = `
+      <strong>${e.title}</strong> <em>(${e.date})</em><br>${e.desc}
+      ${currentAdmin ? `<button onclick="deleteEvent('${e.id}')">🗑️</button>` : ""}
+    `;
+    timelineList.appendChild(div);
+  });
+}
+
+function addEvent() {
+  if (!currentAdmin) return alert("Only admin can add events.");
+  const title = prompt("Event title:");
+  const date = prompt("Date:");
+  const desc = prompt("Description:");
+  const id = Date.now().toString();
+  events[id] = { id, title, date, desc };
+  saveEventsToFirebase();
+}
+
+function deleteEvent(id) {
+  if (confirm("Delete this event?")) {
+    delete events[id];
+    saveEventsToFirebase();
+  }
+}// ==========================
+// ⚙️ EXPORT / IMPORT & BACKUP
+// ==========================
+const BACKUP_PROMPT_KEY = 'maijamaa_last_backup_prompt_v2';
+const SETTINGS_KEY = 'maijamaa_settings_v2';
+let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme":"light","lastActivity":'+Date.now()+'}');
+
+document.getElementById("exportBtn").onclick = () => {
+  if (!currentAdmin) { alert('Only admin can export.'); openLoginPrompt(); return; }
+  const data = { members, chats, events, settings };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'maijamaa_backup.json'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  localStorage.setItem(BACKUP_PROMPT_KEY, Date.now().toString());
+};
+
+document.getElementById("importBtn").onclick = () => {
+  if (!currentAdmin) { alert('Only admin can import.'); openLoginPrompt(); return; }
+  const raw = prompt("Paste previously exported JSON here:");
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.members) { members = parsed.members; saveMembersToFirebase(); }
+    if (parsed.chats) { chats = parsed.chats; saveChatsToFirebase(); }
+    if (parsed.events) { events = parsed.events; saveEventsToFirebase(); }
+    if (parsed.settings) { settings = parsed.settings; localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); applyTheme(); }
+    alert('Import complete.');
+  } catch (e) { alert('Invalid JSON'); }
+};
+
+document.getElementById("clearAllBtn").onclick = () => {
+  if (!currentAdmin) { alert('Only admin can clear.'); openLoginPrompt(); return; }
+  if (!confirm('Clear all members, chats and events? This cannot be undone.')) return;
+  members = {}; chats = {}; events = {};
+  saveMembersToFirebase(); saveChatsToFirebase(); saveEventsToFirebase();
+};
+
+// ==========================
+// 🕒 BACKUP REMINDER
+// ==========================
+function checkBackupReminder() {
+  const last = Number(localStorage.getItem(BACKUP_PROMPT_KEY) || 0);
+  const now = Date.now();
+  const days = (now - last) / (1000 * 60 * 60 * 24);
+  if (!last || days >= 7) {
+    // show gentle reminder
+    if (confirm("It's been a while since you exported a backup. Export now?")) {
+      document.getElementById("exportBtn").onclick();
+    } else {
+      localStorage.setItem(BACKUP_PROMPT_KEY, Date.now().toString());
+    }
+  }
+}
+
+// ==========================
+// 🔒 ADMIN AUTO-LOGOUT
+// ==========================
+let lastActivity = Number(localStorage.getItem('maijamaa_last_activity') || Date.now());
+function recordActivity(){ lastActivity = Date.now(); localStorage.setItem('maijamaa_last_activity', String(lastActivity)); }
+['click','keydown','pointermove','touchstart'].forEach(ev => window.addEventListener(ev, recordActivity, {passive:true}));
+
+setInterval(()=> {
+  if (!currentAdmin) return;
+  const mins = (Date.now() - lastActivity) / 60000;
+  if (mins >= 14 && mins < 15) {
+    // 1 minute warning
+    if (!document.getElementById('autoLogoutWarnShown')) {
+      const keep = confirm('Admin will auto-logout in 1 minute due to inactivity. Click OK to stay logged in.');
+      if (keep) { recordActivity(); }
+      const flag = document.createElement('div'); flag.id='autoLogoutWarnShown'; flag.style.display='none'; document.body.appendChild(flag);
+    }
+  } else if (mins >= 15) {
+    currentAdmin = null; alert('Admin automatically logged out.'); document.getElementById("logoutBtn").style.display = 'none';
+  }
+}, 10000);
+
+// ==========================
+// 🎨 THEME (LIGHT / DARK)
+// ==========================
+function applyTheme(){
+  if (settings.theme === 'dark') document.body.classList.add('dark'); else document.body.classList.remove('dark');
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+document.getElementById("themeBtn").onclick = () => {
+  settings.theme = (settings.theme === 'dark') ? 'light' : 'dark';
+  applyTheme();
+};
+applyTheme();
+
+// ==========================
+// 🎁 GIF / EMOJI PICKER
+// ==========================
+const smallGifs = [
+  'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+  'https://media.giphy.com/media/26BRuo6sLetdllPAQ/giphy.gif',
+  'https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif'
+];
+
+document.getElementById('gifBtn').onclick = () => {
+  const pick = prompt('Type GIF number to send (1-'+smallGifs.length+') or cancel:\n' + smallGifs.map((g,i)=>`${i+1}: ${g}`).join('\n'));
+  const n = Number(pick);
+  if (!n || n < 1 || n > smallGifs.length) return;
+  // send GIF as message (optional text)
+  const text = (document.getElementById('chatInput').value || '').trim();
+  const id = Date.now().toString();
+  const authorId = chatMember.value || 'Guest';
+  chats[id] = { id, name: (familyNameFromId(authorId) || authorId), text, gif: smallGifs[n-1], time: Date.now() };
+  saveChatsToFirebase();
+  document.getElementById('chatInput').value = '';
+};
+
+// ==========================
+// 🧩 HELPERS & FINAL WIRING
+// ==========================
+function openLoginPrompt(){
+  const name = prompt('Admin name:'); const pass = prompt('Password:');
+  if (name===ADMIN_NAME && pass===ADMIN_PASS) { currentAdmin = name; alert('Logged in'); document.getElementById("logoutBtn").style.display = 'inline-block'; }
+  else alert('Invalid admin creds');
+}
+
+function familyNameFromId(id){
+  if (!id) return null;
+  if (members[id] && members[id].name) return members[id].name;
+  return id;
+}
+
+// wire chat send button
+document.getElementById('sendChat').onclick = () => {
+  const text = document.getElementById('chatInput').value.trim();
+  if (!text) return;
+  const id = Date.now().toString();
+  const authorId = chatMember.value || null;
+  const name = familyNameFromId(authorId) || 'Guest';
+  chats[id] = { id, name, text, time: Date.now(), replyTo: null, reactions: [] };
+  saveChatsToFirebase();
+  document.getElementById('chatInput').value = '';
+};
+
+// wire add event button
+document.getElementById('addEventBtn').onclick = () => {
+  if (!currentAdmin) { openLoginPrompt(); return; }
+  const title = prompt('Event title:'); if(!title) return;
+  const date = prompt('YYYY-MM-DD'); const desc = prompt('Description (optional)');
+  const id = Date.now().toString();
+  events[id] = { id, title, date, desc };
+  saveEventsToFirebase();
+};
+
+// export events
+document.getElementById('exportEventsBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(Object.values(events), null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='maijamaa_events.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+};
+
+// initial checks
+setTimeout(()=> { checkBackupReminder(); applyTheme(); }, 5000);// ==========================
+// 🚀 FINAL INITIALIZATION
+// ==========================
+
+// load members, chats & events from Firebase on startup
+async function loadAllData() {
+  try {
+    const [mSnap, cSnap, eSnap] = await Promise.all([
+      get(child(ref(database), 'members')),
+      get(child(ref(database), 'chats')),
+      get(child(ref(database), 'events'))
+    ]);
+    if (mSnap.exists()) members = mSnap.val();
+    if (cSnap.exists()) chats = cSnap.val();
+    if (eSnap.exists()) events = eSnap.val();
+    renderTree();
+    renderChat();
+    renderEvents();
+  } catch (err) {
+    console.error("Load error:", err);
+    renderTree();
+    renderChat();
+    renderEvents();
+  }
+}
+
+// call when data changes in Firebase (live updates)
+onValue(ref(database, 'members'), snap => { if (snap.exists()) { members = snap.val(); renderTree(); } });
+onValue(ref(database, 'chats'), snap => { if (snap.exists()) { chats = snap.val(); renderChat(); } });
+onValue(ref(database, 'events'), snap => { if (snap.exists()) { events = snap.val(); renderEvents(); } });
+
+// start everything
+loadAllData();
+
+// ==========================
+// 🧹 SMALL FIXES & HELPERS
+// ==========================
+window.addEventListener('beforeunload', () => {
+  localStorage.setItem('maijamaa_scroll_pos', JSON.stringify({x:window.scrollX, y:window.scrollY}));
+});
+
+window.addEventListener('load', () => {
+  const saved = JSON.parse(localStorage.getItem('maijamaa_scroll_pos') || '{}');
+  if (saved.x) window.scrollTo(saved.x, saved.y);
+});
+
+console.log("%cMaijamaa Family Tree initialized successfully!","color:green;font-weight:bold;");</script>
+</body>
+</html>
