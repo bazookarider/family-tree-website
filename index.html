@@ -3,97 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyou Professional Chat</title>
+    <title>Cyou Chat</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="spinner"></div>
-        <p>Loading...</p>
+    <div id="login-view" class="container">
+        <div class="login-box">
+            <h2>Cyou Chat</h2>
+            <p>Please enter your name to join the chat.</p>
+            <input type="text" id="name-input" placeholder="Enter your name...">
+            <button id="join-btn">Join Chat</button>
+        </div>
     </div>
 
-    <div class="auth-container" id="auth-container">
+    <div id="chat-view" class="container hidden">
         
-        <div class="auth-card" id="login-card">
-            <h2>Log In</h2>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                <p class="auth-error" id="login-error"></p>
-                <button type="submit" class="auth-btn">Log In</button>
-            </form>
-            <p class="auth-toggle">
-                Need an account? <span id="show-signup-btn">Sign Up</span>
-            </p>
-        </div>
-
-        <div class="auth-card hidden" id="signup-card">
-            <h2>Create Account</h2>
-            <form id="signup-form">
-                <div class="form-group">
-                    <label for="signup-name">Full Name</label>
-                    <input type="text" id="signup-name" placeholder="e.g., Abdulkarim Aliyu" required>
-                </div>
-                <div class="form-group">
-                    <label for="signup-username">Username</label>
-                    <div class="username-input">
-                        <span>@</span>
-                        <input type="text" id="signup-username" placeholder="e.g., legend" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" placeholder="Used for login" required>
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" placeholder="Min. 6 characters" required>
-                </div>
-                <p class="auth-error" id="signup-error"></p>
-                <button type="submit" class="auth-btn">Sign Up</button>
-            </form>
-            <p class="auth-toggle">
-                Already have an account? <span id="show-login-btn">Log In</span>
-            </p>
-        </div>
-
-    </div>
-
-
-    <div class="chat-container hidden" id="chat-container">
-        <header class="chat-header">
-            <div>
-                <h1>Cyou Chat</h1>
-                <div id="user-display-name"></div>
+        <header class="header">
+            <div class="header-title">
+                <h3>Cyou Chat</h3>
+                <span id="welcome-message">Welcome, ...</span>
             </div>
-            <button id="logout-btn" class="logout-btn">Logout</button>
+            <button id="logout-btn">Logout</button>
         </header>
-        
-        <main class="chat-messages" id="chat-messages">
+
+        <main id="chat-container">
             </main>
-        
-        <footer class="chat-form-container">
-            <form id="message-form">
-                <input
-                    id="message-input"
-                    type="text"
-                    placeholder="Type your message..."
-                    required
-                    autocomplete="off"
-                />
-                <button type="submit" class="send-btn">Send</button>
-            </form>
+
+        <footer class="chat-form">
+            <input type="text" id="message-input" placeholder="Enter message...">
+            <button id="send-btn">Send</button>
         </footer>
+
+        <div class="ceo-footer">
+            Me the CEO the creator: **Abdulkarim Aliyu (legend)**
+        </div>
     </div>
 
-    <script src="script.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <script src="script.js"></script>
 
 </body>
 </html>
