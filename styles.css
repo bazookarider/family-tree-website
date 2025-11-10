@@ -1,0 +1,36 @@
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 95vh;
+  padding: 10px;
+}
+#messages {
+  flex-grow: 1;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: scroll;
+  margin-bottom: 10px;
+}
+.message {
+  margin-bottom: 5px;
+}
+.message strong {
+  color: #007bff;
+}
+input {
+  width: 95%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
