@@ -1,11 +1,20 @@
+/* Custom Colors */
+:root {
+    --primary-color: #006677; /* Your custom color */
+    --secondary-color: slategray;
+    --background-color: #f6f6f6;
+    --message-bg-color: #ffffff;
+}
+
+/* Reset and Mobile-First Foundation */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     display: flex;
     flex-direction: column;
     height: 100vh;
     margin: 0;
     padding: 0;
-    background-color: #f6f6f6; /* Very light gray background */
+    background-color: var(--background-color);
 }
 
 /* Header */
@@ -13,62 +22,92 @@ h1 {
     text-align: center;
     padding: 12px;
     margin: 0;
-    background-color: #007bff; /* Deep Blue header */
+    background-color: var(--primary-color);
     color: white;
     font-size: 1.1em;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Footer (New Element) */
+footer {
+    padding: 8px;
+    text-align: center;
+    font-size: 0.75em;
+    color: var(--secondary-color);
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+    flex-shrink: 0; /* Prevents it from being squeezed */
+}
+footer p {
+    margin: 0;
+}
+
 
 /* Chat Message and Indicator Area */
 #chat-container {
     flex-grow: 1; 
     display: flex;
     flex-direction: column;
-    overflow-y: hidden; /* Handle scrolling inside #messages */
+    overflow-y: hidden; 
 }
 
 #messages {
     flex-grow: 1; 
     padding: 10px 10px 0 10px;
-    overflow-y: auto; /* Scrollable message area */
+    overflow-y: auto; 
     display: flex;
     flex-direction: column;
 }
 
+/* Message Bubble Container */
+.message-row {
+    display: flex;
+    align-items: flex-end; 
+    margin-bottom: 12px;
+    max-width: 90%;
+}
+
+/* Avatar Placeholder */
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
 /* Message Bubble Styling */
 .message {
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-radius: 18px; /* Smooth rounded corners */
-    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 18px 18px 18px 5px;
+    max-width: 100%;
     word-wrap: break-word;
     font-size: 0.95em;
     line-height: 1.3;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+    position: relative;
+    background-color: var(--message-bg-color); 
 }
 
 .message strong {
-    font-weight: 600; /* Slightly bolder name */
-    color: #007bff; /* Name in the app's primary color */
+    font-weight: 600;
+    color: var(--primary-color); /* Name in the app's primary color */
     display: block;
     font-size: 0.8em;
     margin-bottom: 2px;
 }
 
-/* Bubble style for general users */
-.message {
-    background-color: #ffffff; /* White background */
-    align-self: flex-start;
-    margin-right: auto;
-    border-bottom-left-radius: 3px; /* "Tail" effect */
-}
-
-
 /* Typing Indicator */
 #typing-indicator {
     padding: 5px 15px;
     font-size: 0.8em;
-    color: #888;
+    color: var(--secondary-color);
     height: 20px;
     font-style: italic;
     margin-bottom: 5px;
@@ -80,6 +119,7 @@ h1 {
     padding: 8px 10px;
     border-top: 1px solid #ddd;
     background-color: white;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Input Fields */
@@ -90,11 +130,10 @@ h1 {
     font-size: 1em;
     margin-right: 5px;
     background-color: #f0f0f0;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 #username {
-    width: 25%;
+    width: 20%;
     font-size: 0.8em;
 }
 
@@ -104,7 +143,7 @@ h1 {
 
 #send-button {
     padding: 10px 15px;
-    background-color: #007bff;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     border-radius: 20px;
@@ -115,5 +154,5 @@ h1 {
 }
 
 #send-button:active {
-    background-color: #0056b3;
+    background-color: #004d5a; /* Darker shade of primary color */
 }
