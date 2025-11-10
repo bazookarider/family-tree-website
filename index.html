@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Family Tree</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background-color: #006677;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    #loginBox, #treeBox {
+      width: 90%;
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #006677;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: slategray;
+    }
+    #memberList {
+      margin-top: 20px;
+    }
+    .memberBox {
+      background: #e0f2f1;
+      border: 1px solid #006677;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    .treeLine {
+      border-left: 2px solid #006677;
+      margin-left: 20px;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>My Family Tree</header>
+
+  <!-- LOGIN SECTION -->
+  <div id="loginBox">
+    <h3>Admin Login</h3>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+  </div>
+
+  <!-- FAMILY TREE SECTION -->
+  <div id="treeBox" style="display:none;">
+    <h3>Add Family Member</h3>
+    <input type="text" id="name" placeholder="Full Name" />
+    <input type="text" id="role" placeholder="Role (e.g. Father, Mother, Son)" />
+    <input type="text" id="nickname" placeholder="Nickname" />
+    <button id="addMember">Add Member</button>
+    <div id="memberList"></div>
+  </div>
+
+  <!-- FIREBASE + JS -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    // ✅ NEW FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCd-vOxk0X9oARYqmDA790CcLN5WVqcpI",
+      authDomain: "newone-19637.firebaseapp.com",
+      projectId: "newone-19637",
+      storageBucket: "newone-19637.firebasestorage.app",
+      messagingSenderId: "321669264069",
+      appId: "1:321669264069:web:e56e7911321c6cdb52f6ac",
+      measurementId: "G-T6ZBK6CK7J"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // ADMIN LOGIN DETAILS
+    const ADMIN = { username: "Benalee", password: "Ab@58563" };
+
+    const loginBox = document.getElementById("loginBox");
+    const treeBox = document.getElementById("treeBox");
+    const loginBtn = document.getElementById("loginBtn");
+    const memberList = document.getElementById("memberList");
+    const addMemberBtn = document.getElementById("addMember");
+
+    // ✅ LOGIN FUNCTION
+    loginBtn.addEventListener("click", () => {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+
+      if (user === ADMIN.username && pass === ADMIN.password) {
+        alert("Welcome, Admin!");
+        loginBox.style.display = "none";
+        treeBox.style.display = "block";
+      } else {
+        alert("Invalid username or password.");
+      }
+    });
+
+    // ✅ ADD MEMBER
+    addMemberBtn.addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const role = document.getElementById("role").value.trim();
+      const nickname = document.getElementById("nickname").value.trim();
+
+      if (!name || !role) {
+        alert("Please fill in name and role.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "members"), { name, role, nickname });
+        alert("Member added successfully!");
+        document.getElementById("name").value = "";
+        document.getElementById("role").value = "";
+        document.getElementById("nickname").value = "";
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+
+    // ✅ REALTIME DISPLAY MEMBERS
+    onSnapshot(collection(db, "members"), (snapshot) => {
+      memberList.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const member = docSnap.data();
+        const box = document.createElement("div");
+        box.className = "memberBox";
+        box.innerHTML = `
+          <strong>${member.name}</strong> (${member.role})<br>
+          Nickname: ${member.nickname || "None"}<br>
+          <button data-id="${docSnap.id}" class="deleteBtn">Delete</button>
+        `;
+        memberList.appendChild(box);
+      });
+
+      // Delete function
+      document.querySelectorAll(".deleteBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Delete this member?")) {
+            await deleteDoc(doc(db, "members", btn.dataset.id));
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
  
