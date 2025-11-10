@@ -1,20 +1,29 @@
-<!DOCTYPE html>
-<html>
+ <!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>My Chat App</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Mobile Chat</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>My Chat</h1>
-  <div id="messages"></div>
-  <input type="text" id="username" placeholder="Your Name">
-  <input type="text" id="message-input" placeholder="Enter message...">
-  <button id="send-button">Send</button>
+    <h1>Real-Time Chat</h1>
+    
+    <div id="chat-container">
+        <div id="messages">
+            </div>
+        <div id="typing-indicator"></div>
+    </div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  
-  <script src="script.js"></script>
+    <div class="input-area">
+        <input type="text" id="username" placeholder="Your Name" value="Guest">
+        <input type="text" id="message-input" placeholder="Enter message...">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script src="script.js"></script>
 </body>
 </html>
-
