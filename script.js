@@ -154,3 +154,4 @@ messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
     // Scroll to the bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
+
