@@ -4,29 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyou Chat App</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Cyou</h1>
-    
-    <div id="chat-container">
-        <div id="messages">
-            </div>
-        <div id="typing-indicator"></div>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h1>Welcome to Cyou</h1>
+            <p>Please enter your name to join the chat.</p>
+            <input type="text" id="login-name-input" placeholder="Enter your name...">
+            <button id="join-chat-button">Join Chat</button>
+        </div>
     </div>
 
-    <div class="input-area">
-        <input type="text" id="username" placeholder="Your Name" value="Guest">
-        <input type="text" id="message-input" placeholder="Enter message...">
-        <button id="send-button">Send</button>
-    </div>
+    <div id="app-container">
+        <h1>Cyou</h1>
+        
+        <div id="chat-container">
+            <div id="messages">
+                </div>
+            <div id="typing-indicator"></div>
+        </div>
 
-    <footer>
-        <p>Me the CEO the creator: **Abdulkarim Aliyu (legend)**</p>
-    </footer>
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Enter message...">
+            <button id="send-button">Send</button>
+        </div>
+
+        <footer>
+            <p>Me the CEO the creator: **Abdulkarim Aliyu (legend)**</p>
+        </footer>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     
     <script src="script.js"></script>
 </body>
