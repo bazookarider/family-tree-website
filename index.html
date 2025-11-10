@@ -1,138 +1,111 @@
- <!doctype html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Family Tree — MVP</title>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Family Tree</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"></script>
 
   <style>
-    :root{ --brand:#006677; --muted:slategray; --bg:#fafafa; --card:#fff }
-    *{box-sizing:border-box}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0; background:var(--bg); color:#222}
-    header{background:linear-gradient(90deg,var(--brand),var(--muted)); color:white; padding:12px 16px; display:flex; align-items:center; justify-content:space-between}
-    header h1{font-size:18px;margin:0}
-    .container{padding:12px; max-width:1200px; margin:0 auto}
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f6f6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
 
-    input[type=text],input[type=password],select{padding:8px;border-radius:6px;border:1px solid #ddd; min-width:160px}
-    button{background:var(--brand); color:white; border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.25)}
+    header {
+      background-color: #006677;
+      color: white;
+      padding: 15px;
+      font-size: 22px;
+      font-weight: bold;
+    }
 
-    .auth{display:flex; gap:8px; align-items:center}
-    .toolbar{display:flex; gap:8px; align-items:center; margin:12px 0}
+    #loginBox, #treeBox, #addBox {
+      background: white;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 12px;
+      max-width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
 
-    .tree-wrap{overflow:auto;background:linear-gradient(180deg, #fff, #f6f9fa); padding:18px;border-radius:8px; border:1px solid #e6e6e6}
-    .tree{display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap}
-    .branch{display:flex; flex-direction:column; align-items:center; position:relative}
-    .node{background:var(--card); border:2px solid var(--brand); padding:10px 14px; border-radius:8px; min-width:150px; text-align:center; box-shadow:0 6px 10px rgba(0,0,0,0.04)}
-    .node small{display:block;color:var(--muted); margin-top:6px}
-    .children{display:flex; gap:16px; margin-top:8px; position:relative}
-    .children::before{content:''; position:absolute; top:-12px; left:0; right:0; height:2px; background:var(--muted)}
-    .branch::before{content:''; width:2px; background:var(--muted); height:18px; display:block; margin-bottom:4px}
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      width: 90%;
+      border: 1px solid slategray;
+      border-radius: 8px;
+    }
 
-    .list{display:flex; gap:8px; flex-wrap:wrap;margin-top:10px}
-    .card{background:white;border:1px solid #eee;padding:8px;border-radius:8px; display:flex; flex-direction:column; gap:4px; min-width:150px}
+    button {
+      background-color: #006677;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-    .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.35)}
-    .modal.active{display:flex}
-    .modal .panel{background:white;padding:16px;border-radius:10px; width:320px; box-shadow:0 8px 30px rgba(0,0,0,0.2)}
-    label{display:block;font-size:13px;color:var(--muted); margin-top:8px}
+    button:hover {
+      background-color: slategray;
+    }
 
-    @media (max-width:700px){
-      .tree{flex-direction:column;gap:12px}
-      input[type=text],input[type=password]{min-width:120px}
+    .member-box {
+      border: 2px solid #006677;
+      border-radius: 10px;
+      padding: 10px;
+      display: inline-block;
+      background-color: #e9f1f1;
+      margin: 10px;
+      min-width: 120px;
+    }
+
+    .nickname {
+      font-size: 14px;
+      color: slategray;
+    }
+
+    .role {
+      font-size: 13px;
+      color: #006677;
     }
   </style>
 </head>
 <body>
-<!-- LOGIN FORM -->
-<div id="loginBox">
-  <h2>Admin Login</h2>
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button id="loginBtn">Login</button>
-</div>
+  <header>My Family Tree</header>
 
-<script>
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-    alert("Login successful!");
-    document.getElementById('loginBox').style.display = 'none';
-    document.getElementById('treeBox').style.display = 'block';
-  } catch (err) {
-    alert(err.message);
-  }
-});
-</script>
-
-  <header>
-    <h1>Family Tree — MVP</h1>
-    <div class="auth">
-      <input id="email" type="text" placeholder="email (admin)" />
-      <input id="password" type="password" placeholder="password" />
-      <button id="loginBtn">Login</button>
-      <button id="signupBtn" class="ghost">Sign up</button>
-      <button id="logoutBtn" style="display:none">Logout</button>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="toolbar">
-      <div id="adminControls" style="display:none">
-        <button id="openAdd">+ Add member</button>
-      </div>
-      <div style="margin-left:auto;color:var(--muted);font-size:13px">View only mode for visitors</div>
-    </div>
-
-    <div class="tree-wrap">
-      <div id="tree" class="tree"></div>
-    </div>
-
-    <h3 style="margin-top:18px">All Members</h3>
-    <div id="membersList" class="list"></div>
+  <!-- LOGIN BOX -->
+  <div id="loginBox">
+    <h2>Admin Login</h2>
+    <input type="email" id="email" placeholder="Email" /><br>
+    <input type="password" id="password" placeholder="Password" /><br>
+    <button id="loginBtn">Login</button>
   </div>
 
-  <div id="modal" class="modal">
-    <div class="panel">
-      <h3 id="modalTitle">Add member</h3>
-      <label>Name <input id="mName" type="text" /></label>
-      <label>Role <input id="mRole" type="text" /></label>
-      <label>Nickname <input id="mNick" type="text" /></label>
-      <label>Parent
-        <select id="mParent"><option value="">(root)</option></select>
-      </label>
-      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-        <button id="saveMember">Save</button>
-        <button id="cancelModal" style="background:#eee;color:#333">Cancel</button>
-      </div>
-    </div>
+  <!-- ADD MEMBER BOX -->
+  <div id="addBox" style="display:none;">
+    <h2>Add Family Member</h2>
+    <input type="text" id="name" placeholder="Name" /><br>
+    <input type="text" id="role" placeholder="Role (e.g. Ancestor, Son)" /><br>
+    <input type="text" id="nickname" placeholder="Nickname" /><br>
+    <button id="addBtn">Add Member</button>
+    <button id="logoutBtn">Logout</button>
   </div>
-<script>
-const firebaseConfig = {
-    apiKey: "AIzaSyDCjeloG-2RrirnwY9eiYaKez090exCdZc",
-    authDomain: "my-family-tree-16886.firebaseapp.com",
-    projectId: "my-family-tree-16886",
-    storageBucket: "my-family-tree-16886.firebasestorage.app",
-    messagingSenderId: "400708543065",
-    appId: "1:400708543065:web:b401629e83ca6f9e780748"
-};
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();</script>
+  <!-- TREE BOX -->
+  <div id="treeBox" style="display:none;">
+    <h2>Family Members</h2>
+    <div id="treeContainer"></div>
+  </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script>
-    // Your Firebase config
+    // 🔹 Firebase Setup
     const firebaseConfig = {
       apiKey: "AIzaSyDCjeloG-2RrirnwY9eiYaKez090exCdZc",
       authDomain: "my-family-tree-16886.firebaseapp.com",
@@ -141,110 +114,57 @@ const auth = firebase.auth();</script>
       messagingSenderId: "400708543065",
       appId: "1:400708543065:web:b401629e83ca6f9e780748"
     };
+
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    const loginBtn = document.getElementById('loginBtn');
-    const signupBtn = document.getElementById('signupBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const adminControls = document.getElementById('adminControls');
-    const openAdd = document.getElementById('openAdd');
-    const modal = document.getElementById('modal');
-    const cancelModal = document.getElementById('cancelModal');
-    const saveMember = document.getElementById('saveMember');
-    const mName = document.getElementById('mName');
-    const mRole = document.getElementById('mRole');
-    const mNick = document.getElementById('mNick');
-    const mParent = document.getElementById('mParent');
-    const tree = document.getElementById('tree');
-    const membersList = document.getElementById('membersList');
-
-    let currentUser = null;
-    let members = [];
-
-    auth.onAuthStateChanged(async user=>{
-      currentUser = user;
-      if(user){
-        adminControls.style.display='block';
-        logoutBtn.style.display='inline-block';
-        loginBtn.style.display=signupBtn.style.display='none';
-      }else{
-        adminControls.style.display='none';
-        logoutBtn.style.display='none';
-        loginBtn.style.display=signupBtn.style.display='inline-block';
+    // 🔹 LOGIN
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("addBox").style.display = "block";
+        document.getElementById("treeBox").style.display = "block";
+      } catch (err) {
+        alert(err.message);
       }
     });
 
-    loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-    signupBtn.onclick=()=>auth.createUserWithEmailAndPassword(email.value,password.value).catch(e=>alert(e.message));
-    logoutBtn.onclick=()=>auth.signOut();
-
-    openAdd.onclick=()=>{
-      modal.classList.add('active');
-      mName.value=mRole.value=mNick.value='';
-      mParent.value='';
-    };
-    cancelModal.onclick=()=>modal.classList.remove('active');
-
-    saveMember.onclick=async()=>{
-      const data={
-        name:mName.value.trim(),
-        role:mRole.value.trim(),
-        nickname:mNick.value.trim(),
-        parent:mParent.value||null,
-        created:Date.now()
-      };
-      await db.collection('members').add(data);
-      modal.classList.remove('active');
-    };
-
-    db.collection('members').orderBy('created').onSnapshot(snap=>{
-      members = snap.docs.map(d=>({id:d.id,...d.data()}));
-      renderTree();
-      renderList();
-      fillParentSelect();
+    // 🔹 LOGOUT
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await auth.signOut();
+      location.reload();
     });
 
-    function buildHierarchy(list, parent=null){
-      return list.filter(x=>x.parent===parent).map(x=>({
-        ...x,
-        children:buildHierarchy(list,x.id)
-      }));
-    }
+    // 🔹 ADD MEMBER
+    document.getElementById("addBtn").addEventListener("click", async () => {
+      const name = document.getElementById("name").value;
+      const role = document.getElementById("role").value;
+      const nickname = document.getElementById("nickname").value;
+      if (!name || !role) return alert("Please enter name and role");
+      await db.collection("members").add({ name, role, nickname });
+      document.getElementById("name").value = "";
+      document.getElementById("role").value = "";
+      document.getElementById("nickname").value = "";
+    });
 
-    function renderTree(){
-      const roots = buildHierarchy(members,null);
-      tree.innerHTML = roots.map(renderBranch).join('');
-    }
-
-    function renderBranch(node){
-      const kids=node.children.map(renderBranch).join('');
-      return `<div class='branch'>
-        <div class='node'>
-          <strong>${node.name}</strong>
-          <small>${node.role||''}</small>
-          <small>${node.nickname||''}</small>
-        </div>
-        ${kids?`<div class='children'>${kids}</div>`:''}
-      </div>`;
-    }
-
-    function renderList(){
-      membersList.innerHTML = members.map(m=>`
-        <div class='card'>
-          <strong>${m.name}</strong>
-          <small>${m.role||''}</small>
-          <small>${m.nickname||''}</small>
-        </div>`).join('');
-    }
-
-    function fillParentSelect(){
-      mParent.innerHTML = '<option value=\"\">(root)</option>' +
-        members.map(m=>`<option value='${m.id}'>${m.name}</option>`).join('');
-    }
+    // 🔹 DISPLAY MEMBERS LIVE
+    db.collection("members").onSnapshot(snapshot => {
+      const container = document.getElementById("treeContainer");
+      container.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const box = document.createElement("div");
+        box.className = "member-box";
+        box.innerHTML = `<strong>${data.name}</strong><br>
+                         <div class="role">${data.role}</div>
+                         <div class="nickname">${data.nickname || ""}</div>`;
+        container.appendChild(box);
+      });
+    });
   </script>
 </body>
 </html>
