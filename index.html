@@ -5,10 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Family Tree</title>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"></script>
+ <!-- Firebase SDKs -->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  // ✅ Your Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCCd-vOxk0X9oARYqmDA790CcLN5WVqcpI",
+    authDomain: "newone-19637.firebaseapp.com",
+    projectId: "newone-19637",
+    storageBucket: "newone-19637.firebasestorage.app",
+    messagingSenderId: "321669264069",
+    appId: "1:321669264069:web:e56e7911321c6cdb52f6ac",
+    measurementId: "G-T6ZBK6CK7J"
+  };
+
+  // ✅ Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // ========== 🔐 LOGIN FUNCTION ==========
+  document.getElementById("loginBtn")?.addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful!");
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("treeBox").style.display = "block";
+    } catch (err) {
+      alert("Login failed: " + err.message);
+    }
+  });
+
+  // ========== 🧾 SIGNUP FUNCTION (Optional for first admin) ==========
+  document.getElementById("signupBtn")?.addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert("Account created successfully! You can now login.");
+    } catch (err) {
+      alert("Signup failed: " + err.message);
+    }
+  });
+
+  // ========== 👀 AUTH STATE LISTENER ==========
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("Logged in as:", user.email);
+    } else {
+      console.log("Not logged in");
+    }
+  });
+</script>
 
   <style>
     body {
