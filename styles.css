@@ -1,8 +1,8 @@
 /* Custom Colors */
 :root {
-    --primary-color: #006677; /* Your custom color (Teal) */
+    --primary-color: #006677;
     --secondary-color: slategray;
-    --my-message-color: #c0ffee; /* Light Cyan for YOUR messages */
+    --my-message-color: #c0ffee;
     --background-color: #f6f6f6;
     --other-message-color: #ffffff;
 }
@@ -18,6 +18,69 @@ body {
     background-color: var(--background-color);
 }
 
+/* ======== PHASE 1: LOGIN OVERLAY STYLES ======== */
+#login-overlay {
+    position: fixed; /* Cover the whole screen */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 100; /* On top of everything */
+}
+
+.login-box {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.login-box h1 {
+    color: var(--primary-color);
+    margin-top: 0;
+}
+.login-box p {
+    color: var(--secondary-color);
+    margin-bottom: 20px;
+}
+#login-name-input {
+    width: 90%;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+#join-chat-button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* This class will be added by JavaScript to hide the overlay */
+.hidden {
+    display: none !important;
+}
+
+/* ======== CHAT APP STYLES ======== */
+/* The main app is hidden until login */
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* By default, the app is hidden! */
+    visibility: hidden; 
+}
+
 /* Header */
 h1 {
     text-align: center;
@@ -26,10 +89,9 @@ h1 {
     background-color: var(--primary-color);
     color: white;
     font-size: 1.1em;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Footer (Creator Credit) */
+/* Footer */
 footer {
     padding: 8px;
     text-align: center;
@@ -39,11 +101,9 @@ footer {
     background-color: #fff;
     flex-shrink: 0;
 }
-footer p {
-    margin: 0;
-}
+footer p { margin: 0; }
 
-/* Chat Message and Indicator Area */
+/* Chat Area */
 #chat-container {
     flex-grow: 1; 
     display: flex;
@@ -59,31 +119,19 @@ footer p {
     flex-direction: column;
 }
 
-/* Message Bubble Container */
+/* Message Bubbles */
 .message-row {
     display: flex;
     align-items: flex-end;
     margin-bottom: 12px;
     max-width: 90%;
-    margin-right: auto; /* Default align left for others */
+    margin-right: auto;
 }
-
-/* --- STYLING FOR YOUR MESSAGES --- */
 .my-message-row {
-    margin-left: auto; /* Align the whole row to the right */
+    margin-left: auto;
     margin-right: 0;
     justify-content: flex-end;
 }
-
-/* Change the bubble style for YOUR messages */
-.my-message-row .message {
-    background-color: var(--my-message-color);
-    border-radius: 18px 18px 5px 18px; /* Tail on the bottom right */
-}
-/* --- END OF MY MESSAGE STYLING --- */
-
-
-/* Avatar Placeholder (The "Picture") */
 .avatar {
     width: 32px;
     height: 32px;
@@ -98,19 +146,18 @@ footer p {
     margin-right: 8px;
     flex-shrink: 0;
 }
-
-/* Message Bubble Styling */
 .message {
     padding: 10px 14px;
     border-radius: 18px 18px 18px 5px;
-    max-width: 100%;
     word-wrap: break-word;
     font-size: 0.95em;
-    line-height: 1.3;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
-    background-color: var(--other-message-color); /* White for others */
+    background-color: var(--other-message-color);
 }
-
+.my-message-row .message {
+    background-color: var(--my-message-color);
+    border-radius: 18px 18px 5px 18px;
+}
 .message-time {
     display: block;
     font-size: 0.65em;
@@ -118,7 +165,6 @@ footer p {
     text-align: right;
     margin-bottom: 2px;
 }
-
 .message-name {
     font-weight: 600;
     color: var(--primary-color);
@@ -137,17 +183,15 @@ footer p {
     margin-bottom: 5px;
 }
 
-/* Input Bar (Anchored to the bottom) */
+/* NEW Input Bar */
 .input-area {
     display: flex;
     padding: 8px 10px;
     border-top: 1px solid #ddd;
     background-color: white;
-    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
-
-/* Input Fields - Name Size Fix Applied Here! */
-#username, #message-input {
+#message-input {
+    flex-grow: 1; /* Message input now takes all the space */
     padding: 10px 15px;
     border: 1px solid #eee;
     border-radius: 20px;
@@ -155,17 +199,6 @@ footer p {
     margin-right: 5px;
     background-color: #f0f0f0;
 }
-
-#username {
-    width: 35%; /* INCREASED WIDTH: Fixes your issue */
-    min-width: 90px; 
-    font-size: 0.8em;
-}
-
-#message-input {
-    flex-grow: 1;
-}
-
 #send-button {
     padding: 10px 15px;
     background-color: var(--primary-color);
@@ -173,12 +206,4 @@ footer p {
     border: none;
     border-radius: 20px;
     font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background-color 0.2s;
 }
-
-#send-button:active {
-    background-color: #004d5a;
-}
-
