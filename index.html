@@ -368,99 +368,7 @@ header h1 {
 }</styles>
     <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyDCjeloG-2RrirnwY9eiYaKez090exCdZc",
-            authDomain: "my-family-tree-16886.firebaseapp.com",
-            projectId: "my-family-tree-16886",
-            storageBucket: "my-family-tree-16886.firebasestorage.app",
-            messagingSenderId: "400708543065",
-            appId: "1:400708543065:web:b401629e83ca6f9e780748"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        window.firebaseApp = app;
-        window.db = db;
-        window.getDocs = getDocs;
-        window.addDoc = addDoc;
-        window.collection = collection;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.onSnapshot = onSnapshot;
-    </script>
-</head>
-<body>
-    <!-- Login Page -->
-    <div id="loginPage" class="page">
-        <div class="login-container">
-            <h2>Admin Login</h2>
-            <input type="text" id="username" placeholder="Username" value="Benalee">
-            <input type="password" id="password" placeholder="Password" value="Ab@58563">
-            <button onclick="login()">Login</button>
-            <p class="public-view">Just here to view? <a href="#" onclick="showPublicView()">View Family Tree</a></p>
-        </div>
-    </div>
-
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="page hidden">
-        <header>
-            <h1>Ibrahim Family Tree - Admin</h1>
-            <button class="logout-btn" onclick="logout()">Logout</button>
-        </header>
-        
-        <div class="admin-controls">
-            <h3>Add Family Member</h3>
-            <div class="input-group">
-                <input type="text" id="memberName" placeholder="Full Name">
-                <input type="text" id="memberNickname" placeholder="Nickname">
-                <select id="memberRole">
-                    <option value="father">Father</option>
-                    <option value="mother">Mother</option>
-                    <option value="son">Son</option>
-                    <option value="daughter">Daughter</option>
-                    <option value="brother">Brother</option>
-                    <option value="sister">Sister</option>
-                    <option value="grandfather">Grandfather</option>
-                    <option value="grandmother">Grandmother</option>
-                    <option value="uncle">Uncle</option>
-                    <option value="aunt">Aunt</option>
-                    <option value="cousin">Cousin</option>
-                </select>
-                <button onclick="addMember()">Add Member</button>
-            </div>
-        </div>
-
-        <div class="export-import">
-            <button onclick="exportData()">Export JSON</button>
-            <input type="file" id="importFile" accept=".json">
-            <button onclick="document.getElementById('importFile').click()">Import JSON</button>
-        </div>
-
-        <div class="members-list">
-            <h3>Family Members</h3>
-            <div id="membersContainer"></div>
-        </div>
-    </div>
-
-    <!-- Public View -->
-    <div id="publicView" class="page hidden">
-        <header>
-            <h1>Ibrahim Family Tree</h1>
-            <button class="admin-btn" onclick="showLogin()">Admin Login</button>
-        </header>
-        
-        <div class="family-tree">
-            <div class="tree-container">
-                <div id="treeVisualization"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>// Global variables
+// Global variables
 let currentUser = null;
 let familyMembers = [];
 
@@ -689,6 +597,99 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up import file change listener
     document.getElementById('importFile').addEventListener('change', importData);
-});</script>
+});
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCjeloG-2RrirnwY9eiYaKez090exCdZc",
+            authDomain: "my-family-tree-16886.firebaseapp.com",
+            projectId: "my-family-tree-16886",
+            storageBucket: "my-family-tree-16886.firebasestorage.app",
+            messagingSenderId: "400708543065",
+            appId: "1:400708543065:web:b401629e83ca6f9e780748"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.firebaseApp = app;
+        window.db = db;
+        window.getDocs = getDocs;
+        window.addDoc = addDoc;
+        window.collection = collection;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.onSnapshot = onSnapshot;
+    </script>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page">
+        <div class="login-container">
+            <h2>Admin Login</h2>
+            <input type="text" id="username" placeholder="Username" value="Benalee">
+            <input type="password" id="password" placeholder="Password" value="Ab@58563">
+            <button onclick="login()">Login</button>
+            <p class="public-view">Just here to view? <a href="#" onclick="showPublicView()">View Family Tree</a></p>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="page hidden">
+        <header>
+            <h1>Ibrahim Family Tree - Admin</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </header>
+        
+        <div class="admin-controls">
+            <h3>Add Family Member</h3>
+            <div class="input-group">
+                <input type="text" id="memberName" placeholder="Full Name">
+                <input type="text" id="memberNickname" placeholder="Nickname">
+                <select id="memberRole">
+                    <option value="father">Father</option>
+                    <option value="mother">Mother</option>
+                    <option value="son">Son</option>
+                    <option value="daughter">Daughter</option>
+                    <option value="brother">Brother</option>
+                    <option value="sister">Sister</option>
+                    <option value="grandfather">Grandfather</option>
+                    <option value="grandmother">Grandmother</option>
+                    <option value="uncle">Uncle</option>
+                    <option value="aunt">Aunt</option>
+                    <option value="cousin">Cousin</option>
+                </select>
+                <button onclick="addMember()">Add Member</button>
+            </div>
+        </div>
+
+        <div class="export-import">
+            <button onclick="exportData()">Export JSON</button>
+            <input type="file" id="importFile" accept=".json">
+            <button onclick="document.getElementById('importFile').click()">Import JSON</button>
+        </div>
+
+        <div class="members-list">
+            <h3>Family Members</h3>
+            <div id="membersContainer"></div>
+        </div>
+    </div>
+
+    <!-- Public View -->
+    <div id="publicView" class="page hidden">
+        <header>
+            <h1>Ibrahim Family Tree</h1>
+            <button class="admin-btn" onclick="showLogin()">Admin Login</button>
+        </header>
+        
+        <div class="family-tree">
+            <div class="tree-container">
+                <div id="treeVisualization"></div>
+            </div>
+        </div>
+    </div>
+
+    
 </body>
 </html>
