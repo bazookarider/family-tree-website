@@ -1,4 +1,4 @@
- // ====================================================================
+// ====================================================================
 // !!! 1. YOUR FIREBASE CONFIG ATTACHED HERE !!!
 // ====================================================================
 const firebaseConfig = {
@@ -43,6 +43,13 @@ function stopTyping() {
     }
 }
 
+// Helper function to format timestamp (e.g., 4:05 PM)
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return date.toLocaleTimeString('en-US', options);
+}
+
 // 1. Send message logic
 sendButton.addEventListener('click', function() {
     const username = usernameInput.value.trim();
@@ -59,7 +66,7 @@ sendButton.addEventListener('click', function() {
     }
 });
 
-// 2. Typing status logic
+// 2. Typing status logic (Unchanged)
 messageInput.addEventListener('keyup', function() {
     const userKey = getCurrentUserKey();
     if (!userKey) return;
@@ -73,7 +80,7 @@ messageInput.addEventListener('keyup', function() {
     typingTimer = setTimeout(stopTyping, typingTimeout);
 });
 
-// 3. Listener for other users typing
+// 3. Listener for other users typing (Unchanged)
 typingRef.on('value', function(snapshot) {
     const typingUsers = snapshot.val() || {};
     const currentKey = getCurrentUserKey();
@@ -86,7 +93,6 @@ typingRef.on('value', function(snapshot) {
         }
     }
     
-    // Update the indicator text
     if (typers.length > 0) {
         let text = typers.join(', ');
         if (typers.length === 1) {
@@ -105,29 +111,44 @@ typingRef.on('value', function(snapshot) {
     }
 });
 
-// 4. Listener for new messages and display
-messagesRef.on('child_added', function(snapshot) {
+// 4. Listener for new messages and display - NOW WITH SORTING
+// Order messages by timestamp when fetching
+messagesRef.orderByChild('timestamp').on('child_added', function(snapshot) {
     const msg = snapshot.val();
+    const currentUsername = usernameInput.value.trim();
     
     // 1. Create the message row container
     const msgRow = document.createElement('div');
     msgRow.classList.add('message-row');
 
+    // Check if the message is from the current user
+    const isMine = msg.name === currentUsername;
+
+    if (isMine) {
+        msgRow.classList.add('my-message-row');
+    }
+
     // 2. Create the avatar placeholder
     const avatar = document.createElement('div');
     avatar.classList.add('avatar');
-    // Gets the first letter of the name
     avatar.textContent = msg.name.trim().charAt(0).toUpperCase(); 
 
     // 3. Create the message bubble
     const msgElement = document.createElement('div');
     msgElement.classList.add('message');
     
-    msgElement.innerHTML = `<strong>${msg.name}:</strong> ${msg.text}`;
+    // Add time and name to the bubble
+    msgElement.innerHTML = 
+        `<span class="message-time">${formatTime(msg.timestamp)}</span>` +
+        `<strong class="message-name">${msg.name}:</strong> ${msg.text}`;
     
-    msgRow.appendChild(avatar);
+    // Append the avatar and message to the row
+    if (!isMine) {
+        // Only show avatar for OTHER users (standard mobile UX)
+        msgRow.appendChild(avatar);
+    }
+
     msgRow.appendChild(msgElement);
-    
     messagesDiv.appendChild(msgRow);
     
     // Scroll to the bottom
