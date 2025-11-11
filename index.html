@@ -3,88 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyou Chat</title>
-           <link rel="stylesheet" href="styles.css">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>My Firebase App</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
-    <div id="app-container">
-
-        <div id="login-page" class="page">
-            <div class="auth-container">
-                <h1>Cyou</h1>
-                <h2>Log In</h2>
-                <form id="login-form">
-                    <input type="email" id="login-email" placeholder="Email" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <button type="submit">Log In</button>
-                    <p class="error-message" id="login-error"></p>
-                </form>
-                <p>Don't have an account? <a href="#" id="goto-signup">Sign Up</a></p>
-            </div>
+    <div id="login-page">
+        <div class="form-container">
+            <h2>Login or Sign Up</h2>
+            <p id="auth-error" class="error-message"></p>
+            <form id="auth-form">
+                <input type="email" id="email-input" placeholder="Enter your email" required>
+                <input type="password" id="password-input" placeholder="Enter your password" required>
+                <div class="button-group">
+                    <button type="submit" id="login-button">Login</button>
+                    <button type="submit" id="signup-button">Sign Up</button>
+                </div>
+            </form>
         </div>
-
-        <div id="signup-page" class="page">
-            <div class="auth-container">
-                <h1>Cyou</h1>
-                <h2>Sign Up</h2>
-                <form id="signup-form">
-                    <input type="text" id="signup-fullname" placeholder="Fullname" required>
-                    <input type="text" id="signup-username" placeholder="Username" required>
-                    <input type="email" id="signup-email" placeholder="Email" required>
-                    <input type="password" id="signup-password" placeholder="Password" required>
-                    <button type="submit">Sign Up</button>
-                    <p class="error-message" id="signup-error"></p>
-                </form>
-                <p>Already have an account? <a href="#" id="goto-login">Log In</a></p>
-            </div>
-        </div>
-
-        <div id="app-page" class="page">
-            
-            <header class="app-header">
-                <span id="app-username">Welcome!</span>
-                <h1>Cyou</h1>
-                <button id="logout-button">Log Out</button>
-            </header>
-
-            <main id="app-main">
-
-                <section id="dashboard-screen" class="app-screen">
-                    <div class="search-bar">
-                        <input type="text" id="search-users" placeholder="Search for users...">
-                        <button>🔍</button>
-                    </div>
-                    <div id="users-list-container">
-                        </div>
-                    <nav class="sidebar">
-                        <a href="#" id="nav-profile">Profile</a>
-                        <a href="#" id="nav-chat-room">CHAT ROOM</a>
-                        <a href="#" id="nav-about">About Us</a>
-                    </nav>
-                </section>
-
-                <section id="chat-screen" class="app-screen">
-                    <div class="chat-header">
-                        <button id="back-to-dashboard-button">← Back</button>
-                        <h2>Global Chat Room</h2>
-                    </div>
-                    <div id="chat-messages-container">
-                        </div>
-                    <form id="chat-message-form">
-                        <input type="text" id="chat-message-input" placeholder="Send a message" autocomplete="off">
-                        <button type="submit">↑</button>
-                    </form>
-                </section>
-
-            </main>
-        </div>
-
     </div>
 
-    <script type="module" src="script.js"></script>
+    <div id="dashboard-page" class="hidden">
+        <header>
+            <p>Welcome, <span id="user-email"></span>!</p>
+            <button id="signout-button">Sign Out</button>
+        </header>
 
+        <main>
+            <h3>Group Chat</h3>
+            <div id="chat-container">
+                <div id="messages-box">
+                    </div>
+                <form id="send-message-form">
+                    <input type="text" id="message-input" placeholder="Type a message..." required>
+                    <button type="submit">Send</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js" type="module"></script>
 </body>
 </html>
