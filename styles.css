@@ -1,3 +1,4 @@
+ /* --- Global Styles --- */
 :root {
     --primary-color: #006677;
     --secondary-color: slategray;
@@ -177,7 +178,6 @@ body, html {
     overflow-y: auto;
     padding: 10px;
 }
-/* User item styles (will be added in next step) */
 
 .sidebar {
     padding: 15px;
@@ -305,4 +305,3 @@ body, html {
     margin-left: 10px;
     line-height: 44px; /* Center the arrow */
 }
-
