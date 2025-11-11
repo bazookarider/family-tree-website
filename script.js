@@ -1,309 +1,318 @@
-/* --- Global Styles --- */
-:root {
-    --primary-color: #006677;
-    --secondary-color: slategray;
-    --light-bg: #f4f4f4;
-    --white: #ffffff;
-    --dark-text: #333;
-    --light-text: #f1f1f1;
-    --error-red: #d9534f;
-}
+//
+// ----------------  FIREBASE SDK & CONFIG  ----------------
+//
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { 
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    collection,
+    query,
+    orderBy,
+    onSnapshot,
+    addDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+    authDomain: "cyou-db8f0.firebaseapp.com",
+    projectId: "cyou-db8f0",
+    storageBucket: "cyou-db8f0.firebasestorage.app",
+    messagingSenderId: "873569975141",
+    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+    measurementId: "G-T66B50HFJ8"
+};
 
-body, html {
-    width: 100%;
-    height: 100%;
-    background-color: var(--light-bg);
-}
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-#app-container {
-    width: 100%;
-    height: 100%;
-    max-width: 600px; /* Max-width for a chat app feel */
-    margin: 0 auto;
-    background: var(--white);
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
-}
+//
+// ----------------  GLOBAL VARIABLES & DOM ELEMENTS  ----------------
+//
+let currentUser = null; // To store the current user's data
+let chatUnsubscribe = null; // To stop listening to chat messages when we leave the screen
 
-/* --- Page Management --- */
-.page, .app-screen {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    transition: transform 0.3s ease-in-out;
-}
+// --- Pages ---
+const loginPage = document.getElementById('login-page');
+const signupPage = document.getElementById('signup-page');
+const appPage = document.getElementById('app-page');
 
-/* Hide pages/screens by default */
-.page:not(.active),
-.app-screen:not(.active) {
-    display: none;
-}
+// --- Screens ---
+const dashboardScreen = document.getElementById('dashboard-screen');
+const chatScreen = document.getElementById('chat-screen');
 
-/* --- Auth Page Styles (Login/Signup) --- */
-.auth-container {
-    padding: 40px 20px;
-    text-align: center;
-}
+// --- Auth Forms ---
+const loginForm = document.getElementById('login-form');
+const loginEmail = document.getElementById('login-email');
+const loginPassword = document.getElementById('login-password');
+const loginError = document.getElementById('login-error');
 
-.auth-container h1 {
-    color: var(--primary-color);
-    font-size: 48px;
-    margin-bottom: 20px;
-}
+const signupForm = document.getElementById('signup-form');
+const signupFullname = document.getElementById('signup-fullname');
+const signupUsername = document.getElementById('signup-username');
+const signupEmail = document.getElementById('signup-email');
+const signupPassword = document.getElementById('signup-password');
+const signupError = document.getElementById('signup-error');
 
-.auth-container h2 {
-    color: var(--dark-text);
-    margin-bottom: 30px;
-}
+// --- Auth Links ---
+const gotoSignupLink = document.getElementById('goto-signup');
+const gotoLoginLink = document.getElementById('goto-login');
 
-.auth-container form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
+// --- App Header ---
+const appUsername = document.getElementById('app-username');
+const logoutButton = document.getElementById('logout-button');
 
-.auth-container input {
-    padding: 12px 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
-}
+// --- Dashboard ---
+const navChatRoom = document.getElementById('nav-chat-room');
+const usersListContainer = document.getElementById('users-list-container');
 
-.auth-container button {
-    padding: 12px;
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.auth-container button:hover {
-    opacity: 0.9;
-}
-
-.auth-container p {
-    margin-top: 20px;
-    color: var(--secondary-color);
-}
-
-.auth-container a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.error-message {
-    color: var(--error-red);
-    font-size: 14px;
-    height: 16px; /* Reserve space */
-}
-
-/* --- Main App Page --- */
-#app-page {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: var(--primary-color);
-    color: var(--white);
-    flex-shrink: 0;
-}
-
-.app-header h1 {
-    font-size: 24px;
-}
-
-.app-header button {
-    background: none;
-    border: 1px solid var(--white);
-    color: var(--white);
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-#app-main {
-    flex-grow: 1;
-    position: relative;
-    overflow: hidden;
-}
-
-/* --- Dashboard Screen --- */
-#dashboard-screen {
-    display: flex; /* This is changed by JS */
-    flex-direction: column;
-}
-
-.search-bar {
-    display: flex;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.search-bar input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px 0 0 8px;
-    border-right: none;
-}
-
-.search-bar button {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 0 8px 8px 0;
-    cursor: pointer;
-}
-
-#users-list-container {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-/* User item styles (will be added in next step) */
-
-.sidebar {
-    padding: 15px;
-    border-top: 1px solid #eee;
-    display: flex;
-    justify-content: space-around;
-    background: var(--white);
-    flex-shrink: 0;
-}
-
-.sidebar a {
-    color: var(--secondary-color);
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.sidebar a:hover {
-    color: var(--primary-color);
-}
+// --- Chat Room ---
+const backToDashboardButton = document.getElementById('back-to-dashboard-button');
+const chatMessagesContainer = document.getElementById('chat-messages-container');
+const chatMessageForm = document.getElementById('chat-message-form');
+const chatMessageInput = document.getElementById('chat-message-input');
 
 
-/* --- Chat Screen --- */
-#chat-screen {
-    display: flex; /* This is changed by JS */
-    flex-direction: column;
-    height: 100%;
+//
+// ----------------  PAGE / SCREEN NAVIGATION  ----------------
+//
+
+/** Shows a page (login, signup, or app) and hides others */
+function showPage(pageId) {
+    // Hide all pages
+    loginPage.classList.remove('active');
+    signupPage.classList.remove('active');
+    appPage.classList.remove('active');
+
+    // Show the requested page
+    const pageToShow = document.getElementById(pageId);
+    if (pageToShow) {
+        pageToShow.classList.add('active');
+    }
 }
 
-.chat-header {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    background-color: var(--light-bg);
-    border-bottom: 1px solid #ddd;
-    flex-shrink: 0;
+/** Shows a screen within the main app (dashboard or chat) */
+function showScreen(screenId) {
+    // Hide all screens
+    dashboardScreen.classList.remove('active');
+    chatScreen.classList.remove('active');
+    
+    // Stop any active listeners
+    if (chatUnsubscribe) {
+        chatUnsubscribe(); // Stop listening to old chat
+        chatUnsubscribe = null;
+    }
+
+    // Show the requested screen
+    const screenToShow = document.getElementById(screenId);
+    if (screenToShow) {
+        screenToShow.classList.add('active');
+    }
 }
 
-.chat-header button {
-    font-size: 20px;
-    margin-right: 15px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--primary-color);
+// --- Navigation Event Listeners ---
+gotoSignupLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showPage('signup-page');
+});
+
+gotoLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    showPage('login-page');
+});
+
+navChatRoom.addEventListener('click', (e) => {
+    e.preventDefault();
+    showScreen('chat-screen');
+    loadChatMessages(); // Load messages when entering chat
+});
+
+backToDashboardButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    showScreen('dashboard-screen');
+    // loadDashboardUsers(); // Re-load users
+});
+
+
+//
+// ----------------  AUTHENTICATION  ----------------
+//
+
+// --- Listen for Auth State Changes ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // User is signed in
+        // Fetch user profile from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+            currentUser = userDoc.data();
+            appUsername.textContent = `Hi, ${currentUser.username}`;
+        } else {
+            // This shouldn't happen if signup is correct
+            currentUser = { email: user.email };
+            appUsername.textContent = `Hi, ${user.email}`;
+        }
+        
+        // Go to the app
+        showPage('app-page');
+        showScreen('dashboard-screen'); // Start on dashboard
+        // loadDashboardUsers(); // Load the user list
+    } else {
+        // User is signed out
+        currentUser = null;
+        appUsername.textContent = '';
+        showPage('login-page');
+    }
+});
+
+// --- Sign Up Form ---
+signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fullname = signupFullname.value;
+    const username = signupUsername.value;
+    const email = signupEmail.value;
+    const password = signupPassword.value;
+
+    try {
+        // 1. Create user in Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 2. Create user document in Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            fullname: fullname,
+            username: username,
+            email: email,
+            friends: [] // Start with an empty friends list
+        });
+
+        // This will trigger onAuthStateChanged, which will show the app page
+        signupForm.reset();
+        signupError.textContent = '';
+
+    } catch (error) {
+        console.error("Error signing up: ", error);
+        signupError.textContent = error.message;
+    }
+});
+
+// --- Log In Form ---
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = loginEmail.value;
+    const password = loginPassword.value;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // This will trigger onAuthStateChanged, which will show the app page
+        loginForm.reset();
+        loginError.textContent = '';
+
+    } catch (error) {
+        console.error("Error logging in: ", error);
+        loginError.textContent = error.message;
+    }
+});
+
+// --- Log Out Button ---
+logoutButton.addEventListener('click', async () => {
+    try {
+        await signOut(auth);
+        // This will trigger onAuthStateChanged, which will show the login page
+    } catch (error) {
+        console.error("Error logging out: ", error);
+    }
+});
+
+
+//
+// ----------------  CHAT ROOM FUNCTIONALITY  ----------------
+//
+
+// --- Load Chat Messages (Real-time) ---
+function loadChatMessages() {
+    chatMessagesContainer.innerHTML = 'Loading...';
+
+    const messagesCol = collection(db, 'global-chat');
+    const q = query(messagesCol, orderBy('timestamp', 'asc')); // Order by time
+
+    // onSnapshot listens for real-time updates
+    chatUnsubscribe = onSnapshot(q, (snapshot) => {
+        chatMessagesContainer.innerHTML = ''; // Clear old messages
+        
+        snapshot.docs.forEach(doc => {
+            const message = doc.data();
+            renderMessage(message);
+        });
+        
+        // Scroll to the bottom
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    });
 }
 
-.chat-header h2 {
-    color: var(--dark-text);
-    font-size: 18px;
+// --- Render a single message bubble ---
+function renderMessage(message) {
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble');
+
+    // Check if message is from the current user
+    if (message.senderId === auth.currentUser.uid) {
+        bubble.classList.add('sent');
+    } else {
+        bubble.classList.add('received');
+    }
+    
+    const sender = document.createElement('span');
+    sender.textContent = message.username; // Show username
+    
+    const text = document.createElement('p');
+    text.textContent = message.text;
+
+    bubble.appendChild(sender);
+    bubble.appendChild(text);
+    chatMessagesContainer.appendChild(bubble);
 }
 
-#chat-messages-container {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+// --- Send Message Form ---
+chatMessageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageText = chatMessageInput.value;
 
-/* Message Bubbles */
-.message-bubble {
-    padding: 8px 12px;
-    border-radius: 18px;
-    max-width: 75%;
-    display: flex;
-    flex-direction: column;
-}
+    if (messageText.trim() === '' || !currentUser) {
+        return; // Don't send empty messages or if not logged in
+    }
 
-.message-bubble span {
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 3px;
-    color: #555;
-}
+    try {
+        // Add a new message to the 'global-chat' collection
+        await addDoc(collection(db, 'global-chat'), {
+            text: messageText,
+            senderId: auth.currentUser.uid,
+            username: currentUser.username, // Use the stored username
+            timestamp: serverTimestamp() // Let Firebase set the time
+        });
 
-.message-bubble p {
-    font-size: 16px;
-    word-wrap: break-word;
-}
+        chatMessageInput.value = ''; // Clear the input field
+        
+    } catch (error) {
+        console.error("Error sending message: ", error);
+    }
+});
 
-.message-bubble.sent {
-    background-color: var(--primary-color);
-    color: var(--white);
-    align-self: flex-end;
-    border-bottom-right-radius: 4px;
-}
-.message-bubble.sent span {
-    color: var(--light-text);
-}
-
-.message-bubble.received {
-    background-color: #e5e5ea;
-    color: var(--dark-text);
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-}
-
-/* Message Form */
-#chat-message-form {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background: var(--light-bg);
-    flex-shrink: 0;
-}
-
-#chat-message-input {
-    flex-grow: 1;
-    padding: 12px 15px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    font-size: 16px;
-}
-
-#chat-message-form button {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: none;
-    background: var(--primary-color);
-    color: var(--white);
-    font-size: 24px;
-    cursor: pointer;
-    margin-left: 10px;
-    line-height: 44px; /* Center the arrow */
-}
-
+//
+// ----------------  INITIAL LOAD  ----------------
+//
+// Start on the login page by default (auth listener will move user if logged in)
+showPage('login-page');
