@@ -4,44 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CYOU Chat</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="chat-container">
-    <header class="chat-header">
-      <h1>CYOU Chat</h1>
-      <div class="header-actions">
-        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
-        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
-      </div>
-      <div class="online-count">Online: <span id="onlineCount">0</span></div>
+  <div class="join-container" id="joinContainer">
+    <h2>Welcome to CYOU Chat 💬</h2>
+    <input type="text" id="nameInput" placeholder="Enter your name" />
+    <button id="joinBtn">Join Chat</button>
+    <p id="nameError"></p>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <header>
+      <div class="title">CYOU Chat</div>
+      <div class="theme-toggle" id="themeToggle">🌙</div>
+      <button id="clearChat">🧹</button>
     </header>
 
-    <!-- Join Section -->
-    <section class="join-section" id="joinSection">
-      <input type="text" id="nameInput" placeholder="Enter your name..." />
-      <div class="join-row">
-        <button id="enterBtn">Join Chat</button>
-      </div>
-      <small id="joinHint" class="hint"></small>
-    </section>
+    <div class="chat-box" id="chatBox"></div>
 
-    <!-- Chat Section (hidden until join) -->
-    <section class="chat-section" id="chatSection" style="display: none;">
-      <aside class="sidebar">
-        <h3>Online Users</h3>
-        <ul id="onlineUsers"></ul>
-      </aside>
-
-      <main class="main-chat">
-        <div id="messages" class="messages"></div>
-        <div id="typingIndicator" class="typing-indicator"></div>
-        <form id="sendForm" class="send-form">
-          <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
-          <button type="submit">Send</button>
-        </form>
-      </main>
-    </section>
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
+    </div>
   </div>
 
   <script type="module" src="script.js"></script>
