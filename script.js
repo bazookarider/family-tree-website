@@ -19,6 +19,14 @@ import {
 
 const firebaseConfig = {
   // Your config here
+apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+    authDomain: "cyou-db8f0.firebaseapp.com",
+    databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
+    projectId: "cyou-db8f0",
+    storageBucket: "cyou-db8f0.firebasestorage.app",
+    messagingSenderId: "873569975141",
+    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+    measurementId: "G-T66B50HFJ8"
 };
 
 const app = initializeApp(firebaseConfig);
