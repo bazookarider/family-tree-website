@@ -1,3 +1,4 @@
+/* ===== CYOU CHAT DESIGN ===== */
 body {
   margin: 0;
   font-family: "Poppins", sans-serif;
@@ -18,7 +19,6 @@ body {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 0 15px rgba(0,0,0,0.15);
-  position: relative;
 }
 
 /* HEADER */
@@ -29,17 +29,6 @@ body {
   text-align: center;
   font-size: 1.3rem;
   position: relative;
-}
-
-.theme-toggle {
-  position: absolute;
-  left: 1rem;
-  top: 1rem;
-  border: none;
-  background: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
 }
 
 .chat-header .online-count {
@@ -83,7 +72,7 @@ body {
 
 /* CHAT SECTION */
 .chat-section {
-  display: none;
+  display: flex;
   height: 100%;
 }
 
@@ -118,6 +107,9 @@ body {
   height: 8px;
   border-radius: 50%;
   margin-right: 6px;
+}
+
+.user-dot.online {
   background: #00b894;
 }
 
@@ -134,8 +126,6 @@ body {
   flex: 1;
   padding: 10px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
 }
 
 .message {
@@ -181,8 +171,6 @@ body {
   border-top: 1px solid #ccc;
   background: white;
   padding: 8px;
-  position: sticky;
-  bottom: 0;
 }
 
 #messageInput {
@@ -213,24 +201,9 @@ body {
   background: #005060;
 }
 
-/* MOBILE FIX */
+/* MOBILE */
 @media (max-width: 600px) {
   .sidebar { display: none; }
+  .chat-header { font-size: 1.2rem; }
   .chat-container { height: 100vh; border-radius: 0; }
-  .messages { padding-bottom: 80px; }
-}
-
-/* DARK MODE */
-body.dark {
-  background: #0a0a0a;
-}
-body.dark .chat-container {
-  background: #121212;
-}
-body.dark .message.other {
-  background: #1e1e1e;
-  color: #fff;
-}
-body.dark .message.me {
-  background: #0d6efd;
 }
