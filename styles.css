@@ -1,93 +1,125 @@
 :root{
   --main: #006677;
-  --bg: #f2f5f7;
-  --panel: #ffffff;
-  --bubble-me: #006677;
-  --bubble-other: #e9eef0;
-  --text-dark: #1f2933;
-  --muted: #6b7280;
+  --bg-light: #f2f5f7;
+  --panel-light: #ffffff;
+  --bubble-me-light: #006677;
+  --bubble-other-light: #e9eef0;
+  --text-dark-light: #1f2933;
+  --muted-light: #6b7280;
+
+  --bg-dark: #0f1720;
+  --panel-dark: #071019;
+  --bubble-me-dark: #0b93a3;
+  --bubble-other-dark: #102027;
+  --text-dark-dark: #e6eef7;
+  --muted-dark: #9aa6b2;
+
   --radius: 12px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --max-width: 1100px;
 }
 
-/* Reset */
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+/* THEME: defaults to light. .dark on body toggles theme */
 body{
-  background: var(--bg);
-  color:var(--text-dark);
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
+  margin:0;padding:18px;
+  background: var(--bg-light);
+  color: var(--text-dark-light);
+  display:flex;justify-content:center;align-items:center;min-height:100vh;
+}
+
+/* Dark theme */
+body.dark{
+  background: var(--bg-dark);
+  color: var(--text-dark-dark);
 }
 
 /* App layout */
 .app{
   width:100%;
-  max-width:1100px;
+  max-width:var(--max-width);
   height:88vh;
-  background: transparent;
-  border-radius:12px;
-  overflow:hidden;
   display:flex;
   flex-direction:column;
   gap:12px;
 }
 
+/* topbar */
 .topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 18px;
-  background:var(--panel);
-  border-radius:12px;
-  box-shadow:0 2px 6px rgba(15,23,42,0.04);
+  display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:12px;
+  background: var(--panel-light);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.04);
 }
+body.dark .topbar { background: var(--panel-dark); box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
 
 .brand{display:flex;gap:12px;align-items:center}
 .logo-circle{width:44px;height:44px;border-radius:50%;background:var(--main);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
-.brand-text .name{font-weight:700;font-size:18px;color:var(--text-dark);letter-spacing:1.5px}
-.brand-text .subtitle{font-size:12px;color:var(--muted)}
-.status{font-size:14px;color:var(--muted)}
+.brand-text .name{font-weight:700;font-size:18px}
+.brand-text .subtitle{font-size:12px;color:var(--muted-light)}
+body.dark .brand-text .subtitle { color:var(--muted-dark); }
 
-/* Main area */
+/* controls */
+.controls{display:flex;gap:8px}
+.icon-btn{background:transparent;border:none;cursor:pointer;font-size:18px;padding:6px;border-radius:8px}
+.icon-btn:focus{outline:2px solid rgba(0,120,150,0.14)}
+
+/* main layout */
 .main{flex:1;display:flex;gap:12px;padding:8px}
 
-/* Sidebar */
-.sidebar{
-  width:300px;padding:14px;background:var(--panel);border-radius:10px;display:flex;flex-direction:column;gap:16px;box-shadow:0 2px 8px rgba(15,23,42,0.03);
-}
-.user-block label{font-size:13px;color:var(--muted)}
-.user-block input{
-  width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6eef3;background:transparent;color:var(--text-dark);margin-top:8px;
-}
+/* sidebar */
+.sidebar{width:300px;padding:14px;background:var(--panel-light);border-radius:10px;box-shadow:0 2px 8px rgba(15,23,42,0.03)}
+body.dark .sidebar{background:var(--panel-dark)}
+.user-block label{font-size:13px;color:var(--muted-light)}
+body.dark .user-block label{color:var(--muted-dark)}
+.user-block input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e6eef3;background:transparent;color:inherit;margin-top:8px;}
 .user-block button{margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--main);color:white;font-weight:600;cursor:pointer}
-.online-list h4{margin-bottom:8px;color:var(--text-dark)}
+.online-list h4{margin-bottom:8px}
 .online-list ul{list-style:none;display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;padding:0 4px}
-.online-list li{padding:8px 10px;border-radius:8px;background:#f7fafb;font-size:14px;color:var(--text-dark)}
+.online-list li{padding:8px 10px;border-radius:8px;background:#f7fafb;font-size:14px;color:var(--text-dark-light)}
+body.dark .online-list li{background:#08121a;color:var(--text-dark-dark)}
 
-/* Chat area */
+/* chat area */
 .chat-area{flex:1;display:flex;flex-direction:column;height:100%;border-radius:10px;padding:12px;background:transparent}
 .messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;background:#f6f8f9;border-radius:10px}
-.message{max-width:75%;padding:10px 14px;border-radius:12px;position:relative;word-wrap:break-word;box-shadow:0 4px 10px rgba(15,23,42,0.04);font-size:14px}
-.message.me{align-self:flex-end;background:var(--bubble-me);color:white;border-bottom-right-radius:6px;text-align:right}
-.message.other{align-self:flex-start;background:var(--bubble-other);color:var(--text-dark);border-bottom-left-radius:6px}
-.meta{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+body.dark .messages{background:#03131a}
+
+/* message bubble */
+.message{max-width:75%;padding:10px 14px;border-radius:12px;position:relative;word-wrap:break-word;font-size:14px;box-shadow:0 4px 10px rgba(15,23,42,0.04)}
+.message.me{align-self:flex-end;background:var(--bubble-me-light);color:white;text-align:right}
+body.dark .message.me{background:var(--bubble-me-dark);color:var(--text-dark-dark)}
+.message.other{align-self:flex-start;background:var(--bubble-other-light);color:var(--text-dark-light)}
+body.dark .message.other{background:var(--bubble-other-dark);color:var(--text-dark-dark)}
+
+.meta{font-size:11px;color:var(--muted-light);margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+body.dark .meta{color:var(--muted-dark)}
 .time{opacity:0.9}
 .ticks{font-weight:700}
 
-/* Typing indicator */
-.typing-indicator{min-height:22px;padding:6px 8px;color:var(--muted);font-style:italic;margin-top:6px}
+/* typing */
+.typing-indicator{min-height:22px;padding:6px 8px;color:var(--muted-light);font-style:italic;margin-top:6px}
 
-/* Composer */
-.composer{display:flex;gap:8px;padding:10px;border-radius:10px;background:var(--panel);box-shadow:0 2px 8px rgba(15,23,42,0.03)}
-.composer input{flex:1;padding:12px;border-radius:10px;border:1px solid #e6eef3;background:transparent;color:var(--text-dark)}
+/* composer */
+.composer{display:flex;gap:8px;padding:10px;border-radius:10px;background:var(--panel-light);align-items:center}
+body.dark .composer{background:var(--panel-dark)}
+.left-controls{display:flex;align-items:center;gap:8px;position:relative}
+.emoji-panel{position:absolute;bottom:48px;left:0;background:var(--panel-light);border-radius:10px;padding:8px;box-shadow:0 8px 20px rgba(0,0,0,0.08);display:grid;grid-template-columns:repeat(6,32px);gap:6px}
+body.dark .emoji-panel{background:#071019}
+.emoji { cursor:pointer; font-size:20px; display:flex;align-items:center;justify-content:center; width:32px; height:32px; border-radius:6px; }
+.emoji:hover { background: rgba(0,0,0,0.05); }
+input.composer-input, input#messageInput{flex:1;padding:12px;border-radius:10px;border:1px solid #e6eef3;background:transparent;color:inherit}
 .composer button{padding:10px 14px;border-radius:10px;border:none;background:var(--main);color:white;font-weight:700;cursor:pointer}
 
-/* Footer */
-.footer{padding:8px 16px;text-align:center;color:var(--muted);font-size:12px}
+/* footer */
+.footer{padding:8px 16px;text-align:center;color:var(--muted-light);font-size:12px}
 
-/* small screens */
-@media (max-width:900px){.main{flex-direction:column}.sidebar{width:100%}.chat-area{height:60vh}}
+/* responsive (compact mobile view) */
+@media (max-width:800px){
+  .main{flex-direction:column;padding:6px}
+  .sidebar{order:2;width:100%;display:flex;flex-direction:row;gap:8px;align-items:center;padding:8px}
+  .online-list{display:none}
+  .chat-area{order:1;padding:8px}
+  .messages{height:58vh}
+  .logo-circle{width:36px;height:36px;font-size:18px}
+}
+
+/* helpers */
+.hidden{display:none}
