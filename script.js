@@ -2,7 +2,6 @@
   PART 1: FIREBASE IMPORTS & INITIALIZATION
 =====================================================
 */
-// Import the functions you need from the Firebase SDKs
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
     getAuth, 
@@ -17,10 +16,11 @@ import {
     set, 
     onValue, 
     push, 
-    serverTimestamp 
+    serverTimestamp,
+    get // Added get
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// Your web app's Firebase configuration (from your saved info)
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -33,17 +33,19 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize and export Firebase services
 export const auth = getAuth(app);
 export const db = getDatabase(app);
+
+// We'll store the user's current profile data here
+let currentUserProfile = null;
+
 
 /* =====================================================
   PART 2: DOM ELEMENT SELECTORS
 =====================================================
 */
 const loginPage = document.getElementById('login-page');
-const dashboardPage = document.getElementById('dashboard-page');
+const appPage = document.getElementById('app-page'); // Renamed
 
 // Auth elements
 const authForm = document.getElementById('auth-form');
@@ -55,49 +57,99 @@ const signoutButton = document.getElementById('signout-button');
 const authError = document.getElementById('auth-error');
 const userEmailSpan = document.getElementById('user-email');
 
+// Navigation elements
+const navChat = document.getElementById('nav-chat');
+const navDashboard = document.getElementById('nav-dashboard');
+const chatContent = document.getElementById('chat-content');
+const dashboardContent = document.getElementById('dashboard-content');
+
 // Chat elements
 const chatContainer = document.getElementById('chat-container');
 const messagesBox = document.getElementById('messages-box');
 const sendMessageForm = document.getElementById('send-message-form');
 const messageInput = document.getElementById('message-input');
 
+// Dashboard/Profile elements
+const profileForm = document.getElementById('profile-form');
+const displayNameInput = document.getElementById('display-name-input');
+const profileSuccess = document.getElementById('profile-success');
+
 
 /* =====================================================
-  PART 3: AUTHENTICATION
+  PART 3: NAVIGATION
+=====================================================
+*/
+function showView(viewId) {
+    // Hide all content sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    // Deactivate all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Show the selected view
+    if (viewId === 'chat') {
+        chatContent.classList.remove('hidden');
+        navChat.classList.add('active');
+    } else if (viewId === 'dashboard') {
+        dashboardContent.classList.remove('hidden');
+        navDashboard.classList.add('active');
+    }
+}
+
+navChat.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('chat');
+});
+
+navDashboard.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('dashboard');
+});
+
+
+/* =====================================================
+  PART 4: AUTHENTICATION
 =====================================================
 */
 
 // --- Auth State Listener ---
-// This is the main function that checks if a user is logged in
-// and switches the view between the login page and the dashboard.
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         // User is signed in
         console.log("User is logged in:", user);
-        userEmailSpan.textContent = user.email; // Display user's email
+        userEmailSpan.textContent = user.email;
         
-        // Show dashboard, hide login page
-        dashboardPage.classList.remove('hidden');
+        // Load user's profile
+        await loadProfile(user.uid); 
+        
+        // Show app, hide login page
+        appPage.classList.remove('hidden');
         loginPage.classList.add('hidden');
         
         // Load chat messages
         loadMessages();
+        // Show the chat view by default
+        showView('chat');
 
     } else {
         // User is signed out
         console.log("User is signed out");
         
-        // Show login page, hide dashboard
+        // Show login page, hide app
         loginPage.classList.remove('hidden');
-        dashboardPage.classList.add('hidden');
-        userEmailSpan.textContent = ""; // Clear user email
+        appPage.classList.add('hidden');
+        userEmailSpan.textContent = "";
+        currentUserProfile = null; // Clear profile
     }
 });
 
 // --- Sign Up Button ---
 signupButton.addEventListener('click', async (e) => {
-    e.preventDefault(); // Prevent form from submitting normally
-    authError.textContent = ""; // Clear previous errors
+    e.preventDefault();
+    authError.textContent = "";
     
     const email = emailInput.value;
     const password = passwordInput.value;
@@ -105,17 +157,21 @@ signupButton.addEventListener('click', async (e) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         console.log("Sign up successful:", userCredential.user);
-        // No need to hide/show pages here, onAuthStateChanged will handle it
+        
+        // **NEW: Create a default profile for the new user**
+        await createUserProfile(userCredential.user.uid, email);
+        
+        // onAuthStateChanged will handle the rest
     } catch (error) {
         console.error("Sign up error:", error.message);
-        authError.textContent = error.message; // Show error to the user
+        authError.textContent = error.message;
     }
 });
 
 // --- Login Button ---
 loginButton.addEventListener('click', async (e) => {
-    e.preventDefault(); // Prevent form from submitting normally
-    authError.textContent = ""; // Clear previous errors
+    e.preventDefault();
+    authError.textContent = "";
 
     const email = emailInput.value;
     const password = passwordInput.value;
@@ -123,10 +179,10 @@ loginButton.addEventListener('click', async (e) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log("Login successful:", userCredential.user);
-        // No need to hide/show pages here, onAuthStateChanged will handle it
+        // onAuthStateChanged will handle loading profile and showing app
     } catch (error) {
         console.error("Login error:", error.message);
-        authError.textContent = error.message; // Show error to the user
+        authError.textContent = error.message;
     }
 });
 
@@ -135,7 +191,6 @@ signoutButton.addEventListener('click', async () => {
     try {
         await signOut(auth);
         console.log("Sign out successful");
-        // onAuthStateChanged will handle hiding the dashboard
     } catch (error) {
         console.error("Sign out error:", error);
     }
@@ -143,7 +198,82 @@ signoutButton.addEventListener('click', async () => {
 
 
 /* =====================================================
-  PART 4: REALTIME DATABASE (CHAT)
+  PART 5: DASHBOARD (PROFILE)
+=====================================================
+*/
+
+// --- Create a new user's profile in the database ---
+// This runs only once when they sign up
+async function createUserProfile(uid, email) {
+    const userRef = ref(db, `users/${uid}`);
+    // Use email as the initial display name
+    const initialDisplayName = email.split('@')[0]; 
+    try {
+        await set(userRef, {
+            uid: uid,
+            email: email,
+            displayName: initialDisplayName
+        });
+        console.log("Default profile created");
+    } catch (error) {
+        console.error("Error creating user profile:", error);
+    }
+}
+
+// --- Load the user's profile data from the database ---
+async function loadProfile(uid) {
+    const userRef = ref(db, `users/${uid}`);
+    try {
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+            currentUserProfile = snapshot.val();
+            console.log("Profile loaded:", currentUserProfile);
+            // Set the value in the profile form
+            displayNameInput.value = currentUserProfile.displayName;
+        } else {
+            console.warn("No profile found for user, creating one.");
+            // This is a fallback in case sign-up failed to create one
+            await createUserProfile(uid, auth.currentUser.email);
+            await loadProfile(uid); // Reload after creating
+        }
+    } catch (error) {
+        console.error("Error loading profile:", error);
+    }
+}
+
+// --- Save profile changes from the form ---
+profileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newDisplayName = displayNameInput.value.trim();
+    
+    if (newDisplayName === "") return;
+    
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userRef = ref(db, `users/${user.uid}`);
+    
+    try {
+        // We update only the displayName, keeping email and uid
+        await set(userRef, {
+            ...currentUserProfile, // Spread existing data
+            displayName: newDisplayName // Overwrite display name
+        });
+        
+        // Update local cache
+        currentUserProfile.displayName = newDisplayName; 
+        
+        profileSuccess.textContent = "Profile saved successfully!";
+        setTimeout(() => { profileSuccess.textContent = ""; }, 3000);
+        
+    } catch (error) {
+        console.error("Error saving profile:", error);
+    }
+});
+
+
+/* =====================================================
+  PART 6: REALTIME DATABASE (CHAT)
 =====================================================
 */
 
@@ -152,30 +282,26 @@ sendMessageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const messageText = messageInput.value;
     
-    if (messageText.trim() === "") return; // Don't send empty messages
-
-    const user = auth.currentUser;
-    if (!user) {
-        console.error("No user logged in to send message");
+    if (messageText.trim() === "" || !currentUserProfile) {
+        if (!currentUserProfile) console.error("Profile not loaded yet!");
         return;
     }
 
+    const user = auth.currentUser;
+
     try {
-        // Get a reference to the 'messages' path in the database
         const messagesRef = ref(db, 'messages');
-        // Create a new unique key for the message
         const newMessageRef = push(messagesRef);
         
-        // Set the data for the new message
         await set(newMessageRef, {
-            email: user.email,
+            // **UPDATED: Use profile displayName**
+            displayName: currentUserProfile.displayName, 
             uid: user.uid,
             text: messageText,
-            timestamp: serverTimestamp() // Firebase provides the current server time
+            timestamp: serverTimestamp()
         });
 
-        console.log("Message sent!");
-        messageInput.value = ""; // Clear the input field
+        messageInput.value = ""; // Clear input
     } catch (error) {
         console.error("Error sending message:", error);
     }
@@ -185,36 +311,34 @@ sendMessageForm.addEventListener('submit', async (e) => {
 function loadMessages() {
     const messagesRef = ref(db, 'messages');
     
-    // Listen for new data at 'messages'
-    // This function will run every time data is added/changed
     onValue(messagesRef, (snapshot) => {
-        messagesBox.innerHTML = ""; // Clear the chat box
+        messagesBox.innerHTML = "";
         const data = snapshot.val();
         
         if (data) {
-            // Loop through all messages and display them
             Object.values(data).forEach((message) => {
-                displayMessage(message.email, message.text);
+                // **UPDATED: Use displayName**
+                displayMessage(message.displayName, message.text); 
             });
         }
         
-        // Scroll to the bottom
         messagesBox.scrollTop = messagesBox.scrollHeight;
     });
 }
 
 // --- Helper function to display a single message ---
-function displayMessage(email, text) {
+function displayMessage(displayName, text) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
     
-    const emailElement = document.createElement('strong');
-    emailElement.textContent = email;
+    const nameElement = document.createElement('strong');
+    // **UPDATED: Use displayName**
+    nameElement.textContent = displayName || "User"; // Fallback
     
     const textElement = document.createElement('span');
     textElement.textContent = text;
     
-    messageElement.appendChild(emailElement);
+    messageElement.appendChild(nameElement);
     messageElement.appendChild(textElement);
     
     messagesBox.appendChild(messageElement);
