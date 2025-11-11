@@ -1,4 +1,4 @@
- /* =====================================================
+/* =====================================================
   PART 1: FIREBASE IMPORTS & INITIALIZATION
 =====================================================
 */
@@ -17,7 +17,9 @@ import {
     onValue, 
     push, 
     serverTimestamp,
-    get // Added get
+    get,
+    remove, // NEW: Added remove
+    onDisconnect // NEW: Added onDisconnect for presence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // Your web app's Firebase configuration
@@ -36,8 +38,9 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getDatabase(app);
 
-// We'll store the user's current profile data here
+// Global state variables
 let currentUserProfile = null;
+let typingTimeout = null; // NEW: For typing indicator
 
 
 /* =====================================================
@@ -45,7 +48,7 @@ let currentUserProfile = null;
 =====================================================
 */
 const loginPage = document.getElementById('login-page');
-const appPage = document.getElementById('app-page'); // Renamed
+const appPage = document.getElementById('app-page');
 
 // Auth elements
 const authForm = document.getElementById('auth-form');
@@ -68,6 +71,7 @@ const chatContainer = document.getElementById('chat-container');
 const messagesBox = document.getElementById('messages-box');
 const sendMessageForm = document.getElementById('send-message-form');
 const messageInput = document.getElementById('message-input');
+const typingIndicator = document.getElementById('typing-indicator'); // NEW: Typing indicator element
 
 // Dashboard/Profile elements
 const profileForm = document.getElementById('profile-form');
@@ -80,16 +84,13 @@ const profileSuccess = document.getElementById('profile-success');
 =====================================================
 */
 function showView(viewId) {
-    // Hide all content sections
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.add('hidden');
     });
-    // Deactivate all nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
 
-    // Show the selected view
     if (viewId === 'chat') {
         chatContent.classList.remove('hidden');
         navChat.classList.add('active');
@@ -119,30 +120,26 @@ navDashboard.addEventListener('click', (e) => {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         // User is signed in
-        console.log("User is logged in:", user);
         userEmailSpan.textContent = user.email;
-        
-        // Load user's profile
         await loadProfile(user.uid); 
         
-        // Show app, hide login page
         appPage.classList.remove('hidden');
         loginPage.classList.add('hidden');
         
-        // Load chat messages
         loadMessages();
-        // Show the chat view by default
         showView('chat');
+        
+        // NEW: Set up presence and typing listeners
+        setupPresence(user.uid);
+        listenForTyping();
 
     } else {
         // User is signed out
-        console.log("User is signed out");
-        
-        // Show login page, hide app
         loginPage.classList.remove('hidden');
         appPage.classList.add('hidden');
         userEmailSpan.textContent = "";
         currentUserProfile = null; // Clear profile
+        typingIndicator.textContent = ""; // Clear typing indicator
     }
 });
 
@@ -156,14 +153,8 @@ signupButton.addEventListener('click', async (e) => {
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("Sign up successful:", userCredential.user);
-        
-        // **NEW: Create a default profile for the new user**
         await createUserProfile(userCredential.user.uid, email);
-        
-        // onAuthStateChanged will handle the rest
     } catch (error) {
-        console.error("Sign up error:", error.message);
         authError.textContent = error.message;
     }
 });
@@ -177,11 +168,8 @@ loginButton.addEventListener('click', async (e) => {
     const password = passwordInput.value;
 
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("Login successful:", userCredential.user);
-        // onAuthStateChanged will handle loading profile and showing app
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-        console.error("Login error:", error.message);
         authError.textContent = error.message;
     }
 });
@@ -189,8 +177,12 @@ loginButton.addEventListener('click', async (e) => {
 // --- Sign Out Button ---
 signoutButton.addEventListener('click', async () => {
     try {
+        // NEW: Remove typing status before signing out
+        if (auth.currentUser) {
+            const typingRef = ref(db, `typingStatus/${auth.currentUser.uid}`);
+            await remove(typingRef);
+        }
         await signOut(auth);
-        console.log("Sign out successful");
     } catch (error) {
         console.error("Sign out error:", error);
     }
@@ -202,11 +194,8 @@ signoutButton.addEventListener('click', async () => {
 =====================================================
 */
 
-// --- Create a new user's profile in the database ---
-// This runs only once when they sign up
 async function createUserProfile(uid, email) {
     const userRef = ref(db, `users/${uid}`);
-    // Use email as the initial display name
     const initialDisplayName = email.split('@')[0]; 
     try {
         await set(userRef, {
@@ -214,58 +203,43 @@ async function createUserProfile(uid, email) {
             email: email,
             displayName: initialDisplayName
         });
-        console.log("Default profile created");
     } catch (error) {
         console.error("Error creating user profile:", error);
     }
 }
 
-// --- Load the user's profile data from the database ---
 async function loadProfile(uid) {
     const userRef = ref(db, `users/${uid}`);
     try {
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
             currentUserProfile = snapshot.val();
-            console.log("Profile loaded:", currentUserProfile);
-            // Set the value in the profile form
             displayNameInput.value = currentUserProfile.displayName;
         } else {
-            console.warn("No profile found for user, creating one.");
-            // This is a fallback in case sign-up failed to create one
             await createUserProfile(uid, auth.currentUser.email);
             await loadProfile(uid); // Reload after creating
         }
-    } catch (error) {
+    } catch (error)
+ {
         console.error("Error loading profile:", error);
     }
 }
 
-// --- Save profile changes from the form ---
 profileForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newDisplayName = displayNameInput.value.trim();
-    
-    if (newDisplayName === "") return;
-    
-    const user = auth.currentUser;
-    if (!user) return;
+    if (newDisplayName === "" || !auth.currentUser) return;
 
-    const userRef = ref(db, `users/${user.uid}`);
-    
+    const userRef = ref(db, `users/${auth.currentUser.uid}`);
     try {
-        // We update only the displayName, keeping email and uid
         await set(userRef, {
-            ...currentUserProfile, // Spread existing data
-            displayName: newDisplayName // Overwrite display name
+            ...currentUserProfile,
+            displayName: newDisplayName
         });
-        
-        // Update local cache
         currentUserProfile.displayName = newDisplayName; 
         
         profileSuccess.textContent = "Profile saved successfully!";
         setTimeout(() => { profileSuccess.textContent = ""; }, 3000);
-        
     } catch (error) {
         console.error("Error saving profile:", error);
     }
@@ -273,7 +247,7 @@ profileForm.addEventListener('submit', async (e) => {
 
 
 /* =====================================================
-  PART 6: REALTIME DATABASE (CHAT)
+  PART 6: REALTIME DATABASE (CHAT & TYPING)
 =====================================================
 */
 
@@ -282,10 +256,7 @@ sendMessageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const messageText = messageInput.value;
     
-    if (messageText.trim() === "" || !currentUserProfile) {
-        if (!currentUserProfile) console.error("Profile not loaded yet!");
-        return;
-    }
+    if (messageText.trim() === "" || !currentUserProfile) return;
 
     const user = auth.currentUser;
 
@@ -294,14 +265,17 @@ sendMessageForm.addEventListener('submit', async (e) => {
         const newMessageRef = push(messagesRef);
         
         await set(newMessageRef, {
-            // **UPDATED: Use profile displayName**
             displayName: currentUserProfile.displayName, 
             uid: user.uid,
             text: messageText,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp() // UPDATED: This is how we save time
         });
 
         messageInput.value = ""; // Clear input
+        
+        // NEW: Stop typing indicator after sending
+        handleTyping(false);
+        
     } catch (error) {
         console.error("Error sending message:", error);
     }
@@ -317,23 +291,21 @@ function loadMessages() {
         
         if (data) {
             Object.values(data).forEach((message) => {
-                // **UPDATED: Use displayName**
-                displayMessage(message.displayName, message.text); 
+                // UPDATED: Pass timestamp to display function
+                displayMessage(message.displayName, message.text, message.timestamp); 
             });
         }
-        
         messagesBox.scrollTop = messagesBox.scrollHeight;
     });
 }
 
 // --- Helper function to display a single message ---
-function displayMessage(displayName, text) {
+function displayMessage(displayName, text, timestamp) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
     
     const nameElement = document.createElement('strong');
-    // **UPDATED: Use displayName**
-    nameElement.textContent = displayName || "User"; // Fallback
+    nameElement.textContent = displayName || "User";
     
     const textElement = document.createElement('span');
     textElement.textContent = text;
@@ -341,5 +313,75 @@ function displayMessage(displayName, text) {
     messageElement.appendChild(nameElement);
     messageElement.appendChild(textElement);
     
+    // NEW: Add timestamp
+    if (timestamp) {
+        const timeElement = document.createElement('span');
+        timeElement.classList.add('message-time');
+        const date = new Date(timestamp);
+        timeElement.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        messageElement.appendChild(timeElement);
+    }
+    
     messagesBox.appendChild(messageElement);
 }
+
+
+/* =====================================================
+  PART 7: NEW "IS TYPING" FEATURE
+=====================================================
+*/
+
+// NEW: Sets up a listener to remove typing status if user disconnects
+function setupPresence(uid) {
+    const typingRef = ref(db, `typingStatus/${uid}`);
+    onDisconnect(typingRef).remove();
+}
+
+// NEW: Listens for changes in the 'typingStatus' path
+function listenForTyping() {
+    const typingRef = ref(db, 'typingStatus');
+    onValue(typingRef, (snapshot) => {
+        const typingUsers = snapshot.val() || {};
+        
+        // Get all typing names *except* the current user
+        const typingNames = Object.values(typingUsers).filter(name => 
+            currentUserProfile && name !== currentUserProfile.displayName
+        );
+
+        if (typingNames.length === 0) {
+            typingIndicator.textContent = "";
+        } else if (typingNames.length === 1) {
+            typingIndicator.textContent = `${typingNames[0]} is typing...`;
+        } else {
+            typingIndicator.textContent = "Several people are typing...";
+        }
+    });
+}
+
+// NEW: Called when the user types in the input box
+function handleTyping(isTyping) {
+    if (!currentUserProfile) return;
+
+    const typingRef = ref(db, `typingStatus/${currentUserProfile.uid}`);
+    
+    if (isTyping) {
+        // Set their name in the database
+        set(typingRef, currentUserProfile.displayName);
+        
+        // Clear any existing timeout
+        clearTimeout(typingTimeout);
+        
+        // Set a new timeout to remove typing status after 3 seconds
+        typingTimeout = setTimeout(() => {
+            handleTyping(false);
+        }, 3000);
+    } else {
+        // Stop typing: clear timeout and remove from database
+        clearTimeout(typingTimeout);
+        remove(typingRef);
+    }
+}
+
+// NEW: Event listeners for the message input
+messageInput.addEventListener('input', () => handleTyping(true));
+messageInput.addEventListener('blur', () => handleTyping(false)); // When they click away
