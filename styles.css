@@ -54,22 +54,14 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
-}
-
-#login-button {
-    background-color: #007bff;
-    color: white;
-}
-
-#signup-button {
-    background-color: #28a745;
+    background-color: #006677; /* NEW COLOR */
     color: white;
 }
 
 .error-message {
     color: red;
     margin-bottom: 1rem;
-    min-height: 1.2em; /* Prevents layout jump */
+    min-height: 1.2em;
 }
 
 .success-message {
@@ -113,13 +105,13 @@ header nav {
 }
 
 .nav-link.active {
-    background-color: #007bff;
+    background-color: #006677; /* NEW COLOR */
     color: white;
 }
 
 #signout-button {
     padding: 8px 12px;
-    background-color: #dc3545;
+    background-color: slategray; /* NEW COLOR */
     color: white;
     border: none;
     border-radius: 4px;
@@ -132,7 +124,7 @@ main {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
-    overflow-y: auto; /* Allow main content to scroll if needed */
+    overflow-y: auto;
 }
 
 /* --- Content Sections (Chat / Dashboard) --- */
@@ -146,7 +138,7 @@ main {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    height: 60vh;
+    height: 70vh; /* Increased height a bit */
 }
 
 #messages-box {
@@ -157,7 +149,7 @@ main {
 }
 
 .message {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem; /* Spaced out */
     padding: 8px 12px;
     background: #e9e9eb;
     border-radius: 12px;
@@ -166,15 +158,34 @@ main {
 }
 
 .message strong {
-    color: #007bff;
+    color: #006677; /* NEW COLOR */
     display: block;
     font-size: 0.8rem;
     margin-bottom: 2px;
 }
 
+/* NEW: Timestamp styling */
+.message-time {
+    font-size: 0.75rem;
+    color: #555;
+    display: block;
+    text-align: right;
+    margin-top: 4px;
+}
+
+/* NEW: Typing indicator styling */
+#typing-indicator {
+    font-style: italic;
+    color: slategray; /* NEW COLOR */
+    height: 1.5em;
+    padding: 0 1rem;
+    line-height: 1.5em;
+}
+
 #send-message-form {
     display: flex;
     padding: 1rem;
+    border-top: 1px solid #eee;
 }
 
 #message-input {
@@ -187,7 +198,7 @@ main {
 
 #send-message-form button {
     padding: 10px 15px;
-    background-color: #007bff;
+    background-color: #006677; /* NEW COLOR */
     color: white;
     border: none;
     border-radius: 20px;
@@ -216,7 +227,7 @@ main {
 
 #profile-form button {
     padding: 10px 15px;
-    background-color: #28a745;
+    background-color: #006677; /* NEW COLOR */
     color: white;
     border: none;
     border-radius: 4px;
