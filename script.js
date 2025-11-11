@@ -1,47 +1,309 @@
-//
-// 1. YOUR FIREBASE CONFIGURATION
-//
-const firebaseConfig = {
-    apiKey: "AIzaSyDCjeloG-2RrirnwY9eiYaKez090exCdZc",
-    authDomain: "my-family-tree-16886.firebaseapp.com",
-    projectId: "my-family-tree-16886",
-    storageBucket: "my-family-tree-16886.firebasestorage.app",
-    messagingSenderId: "400708543065",
-    appId: "1:400708543065:web:b401629e83ca6f9e780748"
-};
+/* --- Global Styles --- */
+:root {
+    --primary-color: #006677;
+    --secondary-color: slategray;
+    --light-bg: #f4f4f4;
+    --white: #ffffff;
+    --dark-text: #333;
+    --light-text: #f1f1f1;
+    --error-red: #d9534f;
+}
 
-// 2. Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(); // Get the Auth service
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
 
-// 3. Get references to our HTML elements
-const loginButton = document.getElementById("login-button");
-const loadingMessage = document.getElementById("loading-message");
+body, html {
+    width: 100%;
+    height: 100%;
+    background-color: var(--light-bg);
+}
 
-// 4. Add the click event listener
-loginButton.addEventListener("click", () => {
-    
-    // Show loading message and hide button
-    loadingMessage.classList.remove("hidden");
-    loginButton.classList.add("hidden");
+#app-container {
+    width: 100%;
+    height: 100%;
+    max-width: 600px; /* Max-width for a chat app feel */
+    margin: 0 auto;
+    background: var(--white);
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
 
-    // 5. This is the "Phase 1" Authentication code
-    // We sign the user in anonymously
-    auth.signInAnonymously()
-      .then((userCredential) => {
-        // It worked! The user is signed in.
-        const user = userCredential.user;
-        console.log("Anonymous user signed in:", user.uid);
-        
-        // NOW WE GO TO THE NEXT PAGE
-        // This page matches your Firebase rules for creating a user
-        window.location.href = "profile.html"; 
-      })
-      .catch((error) => {
-        // It failed. Show an error.
-        console.error("Anonymous login failed:", error);
-        loadingMessage.innerText = "Login Failed. Please try again.";
-        // Show the button again so they can retry
-        loginButton.classList.remove("hidden");
-      });
-});
+/* --- Page Management --- */
+.page, .app-screen {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Hide pages/screens by default */
+.page:not(.active),
+.app-screen:not(.active) {
+    display: none;
+}
+
+/* --- Auth Page Styles (Login/Signup) --- */
+.auth-container {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.auth-container h1 {
+    color: var(--primary-color);
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.auth-container h2 {
+    color: var(--dark-text);
+    margin-bottom: 30px;
+}
+
+.auth-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-container input {
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.auth-container button {
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.auth-container button:hover {
+    opacity: 0.9;
+}
+
+.auth-container p {
+    margin-top: 20px;
+    color: var(--secondary-color);
+}
+
+.auth-container a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--error-red);
+    font-size: 14px;
+    height: 16px; /* Reserve space */
+}
+
+/* --- Main App Page --- */
+#app-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    flex-shrink: 0;
+}
+
+.app-header h1 {
+    font-size: 24px;
+}
+
+.app-header button {
+    background: none;
+    border: 1px solid var(--white);
+    color: var(--white);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#app-main {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* --- Dashboard Screen --- */
+#dashboard-screen {
+    display: flex; /* This is changed by JS */
+    flex-direction: column;
+}
+
+.search-bar {
+    display: flex;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.search-bar input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+}
+
+.search-bar button {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+}
+
+#users-list-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+/* User item styles (will be added in next step) */
+
+.sidebar {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-around;
+    background: var(--white);
+    flex-shrink: 0;
+}
+
+.sidebar a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.sidebar a:hover {
+    color: var(--primary-color);
+}
+
+
+/* --- Chat Screen --- */
+#chat-screen {
+    display: flex; /* This is changed by JS */
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: var(--light-bg);
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+.chat-header button {
+    font-size: 20px;
+    margin-right: 15px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--primary-color);
+}
+
+.chat-header h2 {
+    color: var(--dark-text);
+    font-size: 18px;
+}
+
+#chat-messages-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Message Bubbles */
+.message-bubble {
+    padding: 8px 12px;
+    border-radius: 18px;
+    max-width: 75%;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-bubble span {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 3px;
+    color: #555;
+}
+
+.message-bubble p {
+    font-size: 16px;
+    word-wrap: break-word;
+}
+
+.message-bubble.sent {
+    background-color: var(--primary-color);
+    color: var(--white);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.message-bubble.sent span {
+    color: var(--light-text);
+}
+
+.message-bubble.received {
+    background-color: #e5e5ea;
+    color: var(--dark-text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+/* Message Form */
+#chat-message-form {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background: var(--light-bg);
+    flex-shrink: 0;
+}
+
+#chat-message-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 16px;
+}
+
+#chat-message-form button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-color);
+    color: var(--white);
+    font-size: 24px;
+    cursor: pointer;
+    margin-left: 10px;
+    line-height: 44px; /* Center the arrow */
+}
+
