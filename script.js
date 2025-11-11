@@ -1,38 +1,34 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+// script.js (module)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  getAuth, signInAnonymously, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
-  getFirestore,
-  collection,
-  addDoc,
-  onSnapshot,
-  serverTimestamp,
-  query,
-  orderBy,
-  setDoc,
-  doc,
-  deleteDoc,
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  getFirestore, collection, addDoc, serverTimestamp,
+  onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+/* ---------------------------
+   🔥 CYOU Firebase Config
+---------------------------- */
 const firebaseConfig = {
-  // Your config here
-apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
-    authDomain: "cyou-db8f0.firebaseapp.com",
-    databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
-    projectId: "cyou-db8f0",
-    storageBucket: "cyou-db8f0.firebasestorage.app",
-    messagingSenderId: "873569975141",
-    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
-    measurementId: "G-T66B50HFJ8"
+  apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+  authDomain: "cyou-db8f0.firebaseapp.com",
+  databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
+  projectId: "cyou-db8f0",
+  storageBucket: "cyou-db8f0.firebasestorage.app",
+  messagingSenderId: "873569975141",
+  appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+  measurementId: "G-T66B50HFJ8"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/* --- rest of your logic stays unchanged --- */
+// Everything from your previous working version goes below this comment (join, send message, presence, typing, etc.)
 const joinBox = document.getElementById("join-box");
 const chatBox = document.getElementById("chat-box");
 const nameInput = document.getElementById("name-input");
