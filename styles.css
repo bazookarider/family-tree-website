@@ -1,7 +1,7 @@
 :root{
-  --main: #2ecc71;        /* chosen medium green */
-  --bg: #6b7a6a;          /* muted slate/greenish background */
-  --bubble: #2ecc71;
+  --main: #006677;        /* your requested teal */
+  --bg: lightsteelblue;   /* light slate-ish background (adjusted for readability) */
+  --bubble: #006677;
   --white: #ffffff;
   --muted: rgba(255,255,255,0.85);
   --radius: 14px;
@@ -12,12 +12,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%}
 body{
-  background: var(--bg);
+  background: #b0b8b8; /* light slategray-like base */
   color:var(--white);
   min-height:100vh;
   display:flex;
   align-items:center;
   justify-content:center;
+  padding:18px;
 }
 
 /* App layout */
@@ -25,12 +26,12 @@ body{
   width:100%;
   max-width:1100px;
   height:88vh;
-  background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.20));
+  background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12));
   border-radius:12px;
   overflow:hidden;
   display:flex;
   flex-direction:column;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
 }
 
 .topbar{
@@ -38,7 +39,7 @@ body{
   align-items:center;
   justify-content:space-between;
   padding:14px 18px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
+  border-bottom:1px solid rgba(0,0,0,0.06);
 }
 
 .brand{
@@ -50,17 +51,17 @@ body{
   width:44px;height:44px;border-radius:50%;
   background:var(--white);
   color:var(--main);display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:20px;border:3px solid rgba(255,255,255,0.06);
+  font-weight:700;font-size:20px;border:3px solid rgba(0,0,0,0.06);
 }
 .brand-text .name{
   font-weight:700;font-size:18px;
-  letter-spacing:2px;
+  letter-spacing:2px;color:rgba(0,0,0,0.85);
 }
 .brand-text .subtitle{
-  font-size:12px;color:rgba(255,255,255,0.75)
+  font-size:12px;color:rgba(0,0,0,0.6)
 }
 
-.status{font-size:14px;color:rgba(255,255,255,0.85)}
+.status{font-size:14px;color:rgba(0,0,0,0.7)}
 
 /* Main area */
 .main{
@@ -72,9 +73,9 @@ body{
 
 /* Sidebar */
 .sidebar{
-  width:280px;
-  padding:12px;
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  width:320px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
   border-radius:10px;
   display:flex;
   flex-direction:column;
@@ -82,24 +83,24 @@ body{
 }
 .user-block input{
   width:100%;
-  padding:10px 12px;border-radius:8px;border:none;
-  background:rgba(255,255,255,0.06);color:var(--white);margin-top:8px;
+  padding:12px 14px;border-radius:8px;border:none;
+  background:rgba(0,0,0,0.06);color:rgba(0,0,0,0.8);margin-top:8px;
 }
 .user-block button{
-  margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--main);color:white;font-weight:600;
+  margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--main);color:white;font-weight:700;
   cursor:pointer;
 }
-.online-list h4{margin-bottom:8px;color:rgba(255,255,255,0.9)}
+.online-list h4{margin-bottom:8px;color:rgba(0,0,0,0.75)}
 .online-list ul{list-style:none;display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;padding-right:6px}
 .online-list li{
-  padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.12);font-size:14px;display:flex;gap:8px;align-items:center;
+  padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.06);font-size:14px;display:flex;gap:8px;align-items:center;color:rgba(0,0,0,0.8);
 }
 /* small status dot */
 .user-dot{
-  width:10px;height:10px;border-radius:50%;flex:0 0 10px;border:2px solid rgba(0,0,0,0.12);
+  width:10px;height:10px;border-radius:50%;flex:0 0 10px;border:2px solid rgba(255,255,255,0.06);
 }
 .user-dot.online{background:var(--main)}
-.user-dot.offline{background:rgba(255,255,255,0.12)}
+.user-dot.offline{background:rgba(0,0,0,0.12)}
 
 /* Chat area */
 .chat-area{
@@ -107,28 +108,30 @@ body{
   border-radius:10px;padding:12px;background:transparent;
 }
 .messages{
-  flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;
+  flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px;
   scroll-behavior:smooth;
 }
 .message{
-  max-width:70%;
-  padding:10px 12px;border-radius:12px;
+  max-width:75%;
+  padding:12px 14px;border-radius:12px;
   color:var(--white);
   position:relative;
   word-wrap:break-word;
-  box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  box-shadow:0 4px 12px rgba(0,0,0,0.12);
 }
 .message.me{align-self:flex-end;background:var(--bubble);border-bottom-right-radius:4px}
-.message.other{align-self:flex-start;background:rgba(255,255,255,0.06);color:var(--muted);border-bottom-left-radius:4px}
+.message.other{align-self:flex-start;background:rgba(0,0,0,0.06);color:rgba(0,0,0,0.85);border-bottom-left-radius:4px}
+.message .text{font-size:15px}
 .message .meta{
-  font-size:11px;opacity:0.95;margin-top:6px;display:flex;gap:8px;align-items:center;
+  font-size:11px;margin-top:6px;display:flex;gap:8px;align-items:center;color:rgba(255,255,255,0.85);
 }
+.message.other .meta{color:rgba(0,0,0,0.6)}
 .message .meta .author{font-weight:700}
-.message .meta .time{opacity:0.9;font-size:11px}
-.message .meta .seen{font-weight:700;font-size:11px;color:rgba(255,255,255,0.9)}
+.message .meta .time{opacity:0.95;font-size:11px}
+.message .meta .seen{font-weight:700;font-size:11px;color:rgba(255,255,255,0.95)}
 
 /* Typing indicator */
-.typing-indicator{min-height:22px;padding:6px 8px;color:rgba(255,255,255,0.95);font-style:italic}
+.typing-indicator{min-height:22px;padding:6px 8px;color:rgba(0,0,0,0.7);font-style:italic}
 /* animated dots */
 .typing-dots::after{
   content: ' ';
@@ -140,16 +143,21 @@ body{
 @keyframes typing{0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
 
 /* Composer */
-.composer{display:flex;gap:8px;padding:8px;border-top:1px solid rgba(255,255,255,0.03)}
+.composer{display:flex;gap:8px;padding:8px;border-top:1px solid rgba(0,0,0,0.04)}
 .composer input{
-  flex:1;padding:12px;border-radius:12px;border:none;background:rgba(255,255,255,0.06);color:var(--white)
+  flex:1;padding:12px;border-radius:12px;border:none;background:rgba(0,0,0,0.06);color:rgba(0,0,0,0.85)
 }
 .composer button{
   padding:10px 14px;border-radius:12px;border:none;background:var(--main);color:white;font-weight:700;cursor:pointer;
 }
 
 /* Footer */
-.footer{padding:8px 16px;text-align:center;color:rgba(255,255,255,0.65);font-size:12px}
+.footer{padding:8px 16px;text-align:center;color:rgba(0,0,0,0.55);font-size:12px}
+
+/* debug status overlay (small) */
+.debug-status{
+  position:fixed;right:18px;bottom:18px;background:rgba(0,0,0,0.6);color:white;padding:8px 10px;border-radius:8px;font-size:12px;z-index:999;
+}
 
 /* small screens */
 @media (max-width:900px){
