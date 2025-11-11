@@ -1,233 +1,366 @@
-/* Basic reset and styling */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
+/* =====================================================
+  PART 1: FIREBASE IMPORTS & INITIALIZATION
+=====================================================
+*/
+// These imports will fail without type="module" in the HTML
+import { initializeApp } from "https.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    signInAnonymously,
+    signOut 
+} from "https.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+    getDatabase, 
+    ref, 
+    set, 
+    onValue, 
+    push, 
+    serverTimestamp,
+    get,
+    remove,
+    onDisconnect
+} from "https.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+  authDomain: "cyou-db8f0.firebaseapp.com",
+  projectId: "cyou-db8f0",
+  storageBucket: "cyou-db8f0.firebasestorage.app",
+  messagingSenderId: "873569975141",
+  appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+  measurementId: "G-T66B50HFJ8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getDatabase(app);
+
+// Global state variables
+let currentUserProfile = null;
+let typingTimeout = null;
+
+
+/* =====================================================
+  PART 2: DOM ELEMENT SELECTORS
+=====================================================
+*/
+const nameEntryPage = document.getElementById('name-entry-page');
+const nameEntryForm = document.getElementById('name-entry-form');
+const nameInput = document.getElementById('name-input');
+const appPage = document.getElementById('app-page');
+
+// Auth elements
+const signoutButton = document.getElementById('signout-button');
+const userNameSpan = document.getElementById('user-name');
+
+// Navigation elements
+const navChat = document.getElementById('nav-chat');
+const navDashboard = document.getElementById('nav-dashboard');
+const chatContent = document.getElementById('chat-content');
+const dashboardContent = document.getElementById('dashboard-content');
+
+// Chat elements
+const chatContainer = document.getElementById('chat-container');
+const messagesBox = document.getElementById('messages-box');
+const sendMessageForm = document.getElementById('send-message-form');
+const messageInput = document.getElementById('message-input');
+const typingIndicator = document.getElementById('typing-indicator');
+
+// Dashboard/Profile elements
+const profileForm = document.getElementById('profile-form');
+const displayNameInput = document.getElementById('display-name-input');
+const profileSuccess = document.getElementById('profile-success');
+
+
+/* =====================================================
+  PART 3: NAVIGATION
+=====================================================
+*/
+function showView(viewId) {
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden');
+    });
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    if (viewId === 'chat') {
+        chatContent.classList.remove('hidden');
+        navChat.classList.add('active');
+    } else if (viewId === 'dashboard') {
+        dashboardContent.classList.remove('hidden');
+        navDashboard.classList.add('active');
+    }
 }
 
-body {
-    background-color: #f0f2f5;
-    color: #333;
+navChat.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('chat');
+});
+
+navDashboard.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('dashboard');
+});
+
+
+/* =====================================================
+  PART 4: AUTHENTICATION (ANONYMOUS FLOW)
+=====================================================
+*/
+
+// --- Auth State Listener ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // User is logged in anonymously
+        console.log("User is logged in anonymously:", user.uid);
+        
+        await loadProfile(user.uid);
+        
+        if (currentUserProfile) {
+            // If they HAVE a profile, show the app
+            userNameSpan.textContent = currentUserProfile.displayName;
+            appPage.classList.remove('hidden');
+            nameEntryPage.classList.add('hidden');
+            
+            loadMessages();
+            setupPresence(user.uid);
+            listenForTyping();
+            showView('chat');
+        } else {
+            // If they DON'T have a profile, show the name entry page
+            appPage.classList.add('hidden');
+            nameEntryPage.classList.remove('hidden');
+        }
+
+    } else {
+        // User is signed out, show name entry page
+        appPage.classList.add('hidden');
+        nameEntryPage.classList.remove('hidden');
+        currentUserProfile = null;
+        typingIndicator.textContent = "";
+        
+        // Automatically sign them in anonymously
+        signInAnonymously(auth).catch(error => {
+            console.error("Anonymous sign-in failed:", error);
+        });
+    }
+});
+
+// --- Name Entry Form ---
+nameEntryForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); // This stops the page from reloading
+    const displayName = nameInput.value.trim();
+    
+    if (displayName === "") return;
+    
+    const user = auth.currentUser;
+    if (!user) {
+        console.error("No user signed in.");
+        return;
+    }
+
+    try {
+        await createUserProfile(user.uid, displayName);
+        currentUserProfile = { uid: user.uid, displayName: displayName };
+        userNameSpan.textContent = displayName;
+        appPage.classList.remove('hidden');
+        nameEntryPage.classList.add('hidden');
+        
+        loadMessages();
+        setupPresence(user.uid);
+        listenForTyping();
+        showView('chat');
+    } catch (error) {
+        console.error("Error creating profile:", error);
+    }
+});
+
+
+// --- Sign Out Button ---
+signoutButton.addEventListener('click', async () => {
+    try {
+        if (auth.currentUser) {
+            const typingRef = ref(db, `typingStatus/${auth.currentUser.uid}`);
+            await remove(typingRef);
+        }
+        await signOut(auth);
+    } catch (error) {
+        console.error("Sign out error:", error);
+    }
+});
+
+
+/* =====================================================
+  PART 5: DASHBOARD (PROFILE)
+=====================================================
+*/
+async function createUserProfile(uid, displayName) {
+    const userRef = ref(db, `users/${uid}`);
+    try {
+        await set(userRef, {
+            uid: uid,
+            displayName: displayName
+        });
+        console.log("Profile created");
+    } catch (error) {
+        console.error("Error creating user profile:", error);
+    }
 }
 
-/* Utility class to hide elements */
-.hidden {
-    display: none !important;
+async function loadProfile(uid) {
+    const userRef = ref(db, `users/${uid}`);
+    try {
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+            currentUserProfile = snapshot.val();
+            displayNameInput.value = currentUserProfile.displayName;
+        } else {
+            currentUserProfile = null;
+        }
+    } catch (error) {
+        console.error("Error loading profile:", error);
+    }
 }
 
-/* --- NEW: Name Entry Page --- */
-#name-entry-page {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+profileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newDisplayName = displayNameInput.value.trim();
+    if (newDisplayName === "" || !auth.currentUser) return;
+
+    const userRef = ref(db, `users/${auth.currentUser.uid}`);
+    try {
+        await set(userRef, {
+            ...currentUserProfile,
+            displayName: newDisplayName
+        });
+        
+        currentUserProfile.displayName = newDisplayName; 
+        userNameSpan.textContent = newDisplayName;
+        
+        profileSuccess.textContent = "Profile saved successfully!";
+        setTimeout(() => { profileSuccess.textContent = ""; }, 3000);
+    } catch (error) {
+        console.error("Error saving profile:", error);
+    }
+});
+
+
+/* =====================================================
+  PART 6: REALTIME DATABASE (CHAT)
+=====================================================
+*/
+sendMessageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageText = messageInput.value;
+    if (messageText.trim() === "" || !currentUserProfile) return;
+    const user = auth.currentUser;
+
+    try {
+        const messagesRef = ref(db, 'messages');
+        const newMessageRef = push(messagesRef);
+        
+        await set(newMessageRef, {
+            displayName: currentUserProfile.displayName, 
+            uid: user.uid,
+            text: messageText,
+            timestamp: serverTimestamp()
+        });
+
+        messageInput.value = "";
+        handleTyping(false);
+    } catch (error) {
+        console.error("Error sending message:", error);
+    }
+});
+
+function loadMessages() {
+    const messagesRef = ref(db, 'messages');
+    onValue(messagesRef, (snapshot) => {
+        messagesBox.innerHTML = "";
+        const data = snapshot.val();
+        
+        if (data) {
+            Object.values(data).forEach((message) => {
+                displayMessage(message.displayName, message.text, message.timestamp); 
+            });
+        }
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    });
 }
 
-.name-form-container {
-    background: #fff;
-    padding: 2.5rem; /* More padding */
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
+function displayMessage(displayName, text, timestamp) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    
+    const nameElement = document.createElement('strong');
+    nameElement.textContent = displayName || "User";
+    
+    const textElement = document.createElement('span');
+    textElement.textContent = text;
+    
+    messageElement.appendChild(nameElement);
+    messageElement.appendChild(textElement);
+    
+    if (timestamp) {
+        const timeElement = document.createElement('span');
+        timeElement.classList.add('message-time');
+        const date = new Date(timestamp);
+        timeElement.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        messageElement.appendChild(timeElement);
+    }
+    
+    messagesBox.appendChild(messageElement);
 }
 
-.name-form-container h2 {
-    margin-bottom: 0.5rem;
-}
-.name-form-container p {
-    margin-bottom: 1.5rem;
-    color: #555;
+
+/* =====================================================
+  PART 7: "IS TYPING" FEATURE
+=====================================================
+*/
+function setupPresence(uid) {
+    const typingRef = ref(db, `typingStatus/${uid}`);
+    onDisconnect(typingRef).remove();
 }
 
-#name-entry-form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
+function listenForTyping() {
+    const typingRef = ref(db, 'typingStatus');
+    onValue(typingRef, (snapshot) => {
+        const typingUsers = snapshot.val() || {};
+        
+        const typingNames = Object.values(typingUsers).filter(name => 
+            currentUserProfile && name !== currentUserProfile.displayName
+        );
+
+        if (typingNames.length === 0) {
+            typingIndicator.textContent = "";
+        } else if (typingNames.length === 1) {
+            typingIndicator.textContent = `${typingNames[0]} is typing...`;
+        } else {
+            typingIndicator.textContent = "Several people are typing...";
+        }
+    });
 }
 
-#name-entry-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-    background-color: #006677; /* Your Color */
-    color: white;
+function handleTyping(isTyping) {
+    if (!currentUserProfile) return;
+
+    const typingRef = ref(db, `typingStatus/${currentUserProfile.uid}`);
+    
+    if (isTypisTyping) {
+        set(typingRef, currentUserProfile.displayName);
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            handleTyping(false);
+        }, 3000);
+    } else {
+        clearTimeout(typingTimeout);
+        remove(typingRef);
+    }
 }
 
-.success-message {
-    color: green;
-    margin-top: 1rem;
-    min-height: 1.2em;
-}
-
-/* --- Main App Page (Unchanged) --- */
-#app-page {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
-
-header {
-    background: #fff;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-header p {
-    font-weight: bold;
-}
-
-/* --- Navigation (Unchanged) --- */
-header nav {
-    display: flex;
-    gap: 1rem;
-}
-
-.nav-link {
-    text-decoration: none;
-    color: #555;
-    padding: 8px 12px;
-    border-radius: 4px;
-}
-
-.nav-link.active {
-    background-color: #006677; /* Your Color */
-    color: white;
-}
-
-#signout-button {
-    padding: 8px 12px;
-    background-color: slategray; /* Your Color */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-main {
-    flex: 1;
-    padding: 2rem;
-    max-width: 800px;
-    width: 100%;
-    margin: 0 auto;
-    overflow-y: auto;
-}
-
-/* --- Content Sections (Unchanged) --- */
-.content-section {
-    width: 100%;
-}
-
-#chat-container {
-    display: flex;
-    flex-direction: column;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    height: 70vh;
-}
-
-#messages-box {
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    border-bottom: 1px solid #eee;
-}
-
-/* --- Chat Message Styling (Unchanged) --- */
-.message {
-    margin-bottom: 0.75rem;
-    padding: 8px 12px;
-    background: #e9e9eb;
-    border-radius: 12px;
-    max-width: 70%;
-    word-wrap: break-word;
-}
-
-.message strong {
-    color: #006677; /* Your Color */
-    display: block;
-    font-size: 0.8rem;
-    margin-bottom: 2px;
-}
-
-/* Kept timestamp feature */
-.message-time {
-    font-size: 0.75rem;
-    color: #555;
-    display: block;
-    text-align: right;
-    margin-top: 4px;
-}
-
-/* Kept typing indicator feature */
-#typing-indicator {
-    font-style: italic;
-    color: slategray;
-    height: 1.5em;
-    padding: 0 1rem;
-    line-height: 1.5em;
-}
-
-#send-message-form {
-    display: flex;
-    padding: 1rem;
-    border-top: 1px solid #eee;
-}
-
-#message-input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    margin-right: 10px;
-}
-
-#send-message-form button {
-    padding: 10px 15px;
-    background-color: #006677; /* Your Color */
-    color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-}
-
-/* --- Profile/Dashboard Form (Unchanged) --- */
-#profile-form {
-    background: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-#profile-form p {
-    margin-bottom: 1rem;
-}
-
-#profile-form input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-}
-
-#profile-form button {
-    padding: 10px 15px;
-    background-color: #006677; /* Your Color */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+messageInput.addEventListener('input', () => handleTyping(true));
+messageInput.addEventListener('blur', () => handleTyping(false));
