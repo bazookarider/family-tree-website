@@ -16,8 +16,9 @@
           <div class="subtitle">chat • connect • c-you</div>
         </div>
       </div>
-      <div class="status">
-        <span id="onlineCount">0</span> online
+
+      <div class="controls">
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
       </div>
     </header>
 
@@ -30,17 +31,22 @@
         </div>
 
         <div class="online-list">
-          <h4>Online</h4>
+          <h4>Online <small id="onlineCount">(0)</small></h4>
           <ul id="onlineUsers"></ul>
         </div>
       </section>
 
       <section class="chat-area">
-        <div id="messages" class="messages"></div>
+        <div id="messages" class="messages" role="log" aria-live="polite"></div>
 
         <div id="typingIndicator" class="typing-indicator"></div>
 
         <form id="sendForm" class="composer" autocomplete="off">
+          <div class="left-controls">
+            <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
+            <div id="emojiPanel" class="emoji-panel hidden" aria-hidden="true"></div>
+          </div>
+
           <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
           <button id="sendBtn" type="submit">Send</button>
         </form>
@@ -52,7 +58,7 @@
     </footer>
   </div>
 
-  <!-- main script (module imports Firebase modules) -->
+  <!-- main script -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
