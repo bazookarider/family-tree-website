@@ -16,17 +16,17 @@ body {
     display: none !important;
 }
 
-/* --- Login Page --- */
-#login-page {
+/* --- NEW: Name Entry Page --- */
+#name-entry-page {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
-.form-container {
+.name-form-container {
     background: #fff;
-    padding: 2rem;
+    padding: 2.5rem; /* More padding */
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
@@ -34,45 +34,32 @@ body {
     text-align: center;
 }
 
-#auth-form input {
+.name-form-container h2 {
+    margin-bottom: 0.5rem;
+}
+.name-form-container p {
+    margin-bottom: 1.5rem;
+    color: #555;
+}
+
+#name-entry-form input {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 1rem;
     border: 1px solid #ccc;
     border-radius: 4px;
+    font-size: 1rem;
 }
 
-.button-group {
-    display: flex;
-    gap: 10px;
-}
-
-.button-group button {
-    flex: 1;
-    padding: 10px;
+#name-entry-form button {
+    width: 100%;
+    padding: 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
-    background-color: #006677; /* NEW COLOR */
+    background-color: #006677; /* Your Color */
     color: white;
-}
-
-.error-message {
-    color: red;
-    margin-bottom: 1rem;
-    min-height: 1.2em;
-}
-
-/* NEW: For friendly info messages */
-.info-message {
-    color: #006677; /* Your primary color */
-    background-color: #f0f2f5;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-    min-height: 1.2em;
-    text-align: left;
 }
 
 .success-message {
@@ -81,8 +68,7 @@ body {
     min-height: 1.2em;
 }
 
-
-/* --- Main App Page --- */
+/* --- Main App Page (Unchanged) --- */
 #app-page {
     display: flex;
     flex-direction: column;
@@ -102,7 +88,7 @@ header p {
     font-weight: bold;
 }
 
-/* --- Navigation --- */
+/* --- Navigation (Unchanged) --- */
 header nav {
     display: flex;
     gap: 1rem;
@@ -116,13 +102,13 @@ header nav {
 }
 
 .nav-link.active {
-    background-color: #006677; /* NEW COLOR */
+    background-color: #006677; /* Your Color */
     color: white;
 }
 
 #signout-button {
     padding: 8px 12px;
-    background-color: slategray; /* NEW COLOR */
+    background-color: slategray; /* Your Color */
     color: white;
     border: none;
     border-radius: 4px;
@@ -138,7 +124,7 @@ main {
     overflow-y: auto;
 }
 
-/* --- Content Sections (Chat / Dashboard) --- */
+/* --- Content Sections (Unchanged) --- */
 .content-section {
     width: 100%;
 }
@@ -159,6 +145,7 @@ main {
     border-bottom: 1px solid #eee;
 }
 
+/* --- Chat Message Styling (Unchanged) --- */
 .message {
     margin-bottom: 0.75rem;
     padding: 8px 12px;
@@ -169,12 +156,13 @@ main {
 }
 
 .message strong {
-    color: #006677; /* NEW COLOR */
+    color: #006677; /* Your Color */
     display: block;
     font-size: 0.8rem;
     margin-bottom: 2px;
 }
 
+/* Kept timestamp feature */
 .message-time {
     font-size: 0.75rem;
     color: #555;
@@ -183,6 +171,7 @@ main {
     margin-top: 4px;
 }
 
+/* Kept typing indicator feature */
 #typing-indicator {
     font-style: italic;
     color: slategray;
@@ -207,14 +196,14 @@ main {
 
 #send-message-form button {
     padding: 10px 15px;
-    background-color: #006677; /* NEW COLOR */
+    background-color: #006677; /* Your Color */
     color: white;
     border: none;
     border-radius: 20px;
     cursor: pointer;
 }
 
-/* --- Profile/Dashboard Form --- */
+/* --- Profile/Dashboard Form (Unchanged) --- */
 #profile-form {
     background: #fff;
     padding: 2rem;
@@ -236,7 +225,7 @@ main {
 
 #profile-form button {
     padding: 10px 15px;
-    background-color: #006677; /* NEW COLOR */
+    background-color: #006677; /* Your Color */
     color: white;
     border: none;
     border-radius: 4px;
