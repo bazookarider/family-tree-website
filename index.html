@@ -1,35 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CYOU Chat</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU — Chat</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="chat-app">
-    <h1 class="app-title">CYOU</h1>
-
-    <div id="join-section" class="join-section">
-      <input type="text" id="usernameInput" placeholder="Enter your name..." />
-      <button id="joinBtn">Join Chat</button>
-    </div>
-
-    <div id="chat-section" class="chat-section hidden">
-      <div class="chat-header">
-        <span id="onlineStatus">🟢 Online</span>
-        <span id="typingIndicator" class="typing hidden">Someone is typing...</span>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">C</div>
+        <div class="brand-text">
+          <div class="name">CYOU</div>
+          <div class="subtitle">chat • connect • c-you</div>
+        </div>
       </div>
-
-      <div id="messages" class="messages"></div>
-
-      <div class="input-container">
-        <input type="text" id="messageInput" placeholder="Type a message..." />
-        <button id="sendBtn">Send</button>
+      <div class="status">
+        <span id="onlineCount">0</span> online
       </div>
-    </div>
+    </header>
+
+    <main class="main">
+      <section class="sidebar">
+        <div class="user-block">
+          <label for="nameInput">Enter name</label>
+          <input id="nameInput" placeholder="Type your display name" maxlength="30" />
+          <button id="enterBtn">Join CYOU</button>
+        </div>
+
+        <div class="online-list">
+          <h4>Online</h4>
+          <ul id="onlineUsers"></ul>
+        </div>
+      </section>
+
+      <section class="chat-area">
+        <div id="messages" class="messages"></div>
+
+        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <form id="sendForm" class="composer" autocomplete="off">
+          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
+          <button id="sendBtn" type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <small>CYOU — C-Y-O-U</small>
+    </footer>
   </div>
 
+  <!-- main script (module imports Firebase modules) -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
