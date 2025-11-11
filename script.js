@@ -1,28 +1,16 @@
-/* =====================================================
-  PART 1: FIREBASE IMPORTS & INITIALIZATION
-=====================================================
-*/
-// These imports will fail without type="module" in the HTML
-import { initializeApp } from "https.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-    getAuth, 
-    onAuthStateChanged, 
-    signInAnonymously,
-    signOut 
-} from "https.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { 
-    getDatabase, 
-    ref, 
-    set, 
-    onValue, 
-    push, 
-    serverTimestamp,
-    get,
-    remove,
-    onDisconnect
-} from "https.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+ // script.js (module)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import {
+  getAuth, signInAnonymously, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp,
+  onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+/* ---------------------------
+   🔥 CYOU Firebase Config
+---------------------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -35,332 +23,272 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getDatabase(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Global state variables
-let currentUserProfile = null;
+// ---- UI elements
+const nameInput = document.getElementById("nameInput");
+const enterBtn = document.getElementById("enterBtn");
+const onlineCountEl = document.getElementById("onlineCount");
+const onlineUsersEl = document.getElementById("onlineUsers");
+const messagesEl = document.getElementById("messages");
+const sendForm = document.getElementById("sendForm");
+const messageInput = document.getElementById("messageInput");
+const typingIndicator = document.getElementById("typingIndicator");
+
+// Simple client-side state
+let currentUser = null;
+let displayName = null;
 let typingTimeout = null;
+let heartbeatInterval = null;
+const HEARTBEAT_MS = 5000; // update online presence every 5s
+const PRESENCE_FRESH_MS = 12000; // mark as online if updated within 12s
 
-
-/* =====================================================
-  PART 2: DOM ELEMENT SELECTORS
-=====================================================
-*/
-const nameEntryPage = document.getElementById('name-entry-page');
-const nameEntryForm = document.getElementById('name-entry-form');
-const nameInput = document.getElementById('name-input');
-const appPage = document.getElementById('app-page');
-
-// Auth elements
-const signoutButton = document.getElementById('signout-button');
-const userNameSpan = document.getElementById('user-name');
-
-// Navigation elements
-const navChat = document.getElementById('nav-chat');
-const navDashboard = document.getElementById('nav-dashboard');
-const chatContent = document.getElementById('chat-content');
-const dashboardContent = document.getElementById('dashboard-content');
-
-// Chat elements
-const chatContainer = document.getElementById('chat-container');
-const messagesBox = document.getElementById('messages-box');
-const sendMessageForm = document.getElementById('send-message-form');
-const messageInput = document.getElementById('message-input');
-const typingIndicator = document.getElementById('typing-indicator');
-
-// Dashboard/Profile elements
-const profileForm = document.getElementById('profile-form');
-const displayNameInput = document.getElementById('display-name-input');
-const profileSuccess = document.getElementById('profile-success');
-
-
-/* =====================================================
-  PART 3: NAVIGATION
-=====================================================
-*/
-function showView(viewId) {
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.add('hidden');
-    });
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-
-    if (viewId === 'chat') {
-        chatContent.classList.remove('hidden');
-        navChat.classList.add('active');
-    } else if (viewId === 'dashboard') {
-        dashboardContent.classList.remove('hidden');
-        navDashboard.classList.add('active');
-    }
-}
-
-navChat.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView('chat');
+// Allow pressing Enter to join
+nameInput.addEventListener("keyup", (e) => {
+  if (e.key === "Enter") enterBtn.click();
 });
 
-navDashboard.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView('dashboard');
+enterBtn.addEventListener("click", async () => {
+  const name = (nameInput.value || "").trim();
+  if (!name) {
+    alert("Please enter a display name before joining.");
+    return;
+  }
+  displayName = name;
+  localStorage.setItem("cyou_name", displayName);
+  await signInAnonymously(auth);
 });
 
+// Auto-fill name if saved
+const savedName = localStorage.getItem("cyou_name");
+if (savedName) nameInput.value = savedName;
 
-/* =====================================================
-  PART 4: AUTHENTICATION (ANONYMOUS FLOW)
-=====================================================
-*/
-
-// --- Auth State Listener ---
+// Auth state handling
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // User is logged in anonymously
-        console.log("User is logged in anonymously:", user.uid);
-        
-        await loadProfile(user.uid);
-        
-        if (currentUserProfile) {
-            // If they HAVE a profile, show the app
-            userNameSpan.textContent = currentUserProfile.displayName;
-            appPage.classList.remove('hidden');
-            nameEntryPage.classList.add('hidden');
-            
-            loadMessages();
-            setupPresence(user.uid);
-            listenForTyping();
-            showView('chat');
-        } else {
-            // If they DON'T have a profile, show the name entry page
-            appPage.classList.add('hidden');
-            nameEntryPage.classList.remove('hidden');
-        }
-
-    } else {
-        // User is signed out, show name entry page
-        appPage.classList.add('hidden');
-        nameEntryPage.classList.remove('hidden');
-        currentUserProfile = null;
-        typingIndicator.textContent = "";
-        
-        // Automatically sign them in anonymously
-        signInAnonymously(auth).catch(error => {
-            console.error("Anonymous sign-in failed:", error);
-        });
+  if (user) {
+    currentUser = user;
+    if (!displayName) {
+      displayName = localStorage.getItem("cyou_name") || ("User" + user.uid.slice(0,5));
     }
+    enterUI();
+    startPresence();
+    subscribeToMessages();
+    subscribeToPresence();
+    subscribeToTyping();
+  } else {
+    currentUser = null;
+  }
 });
 
-// --- Name Entry Form ---
-nameEntryForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); // This stops the page from reloading
-    const displayName = nameInput.value.trim();
-    
-    if (displayName === "") return;
-    
-    const user = auth.currentUser;
-    if (!user) {
-        console.error("No user signed in.");
-        return;
-    }
-
-    try {
-        await createUserProfile(user.uid, displayName);
-        currentUserProfile = { uid: user.uid, displayName: displayName };
-        userNameSpan.textContent = displayName;
-        appPage.classList.remove('hidden');
-        nameEntryPage.classList.add('hidden');
-        
-        loadMessages();
-        setupPresence(user.uid);
-        listenForTyping();
-        showView('chat');
-    } catch (error) {
-        console.error("Error creating profile:", error);
-    }
-});
-
-
-// --- Sign Out Button ---
-signoutButton.addEventListener('click', async () => {
-    try {
-        if (auth.currentUser) {
-            const typingRef = ref(db, `typingStatus/${auth.currentUser.uid}`);
-            await remove(typingRef);
-        }
-        await signOut(auth);
-    } catch (error) {
-        console.error("Sign out error:", error);
-    }
-});
-
-
-/* =====================================================
-  PART 5: DASHBOARD (PROFILE)
-=====================================================
-*/
-async function createUserProfile(uid, displayName) {
-    const userRef = ref(db, `users/${uid}`);
-    try {
-        await set(userRef, {
-            uid: uid,
-            displayName: displayName
-        });
-        console.log("Profile created");
-    } catch (error) {
-        console.error("Error creating user profile:", error);
-    }
+// UI enabling
+function enterUI(){
+  nameInput.disabled = true;
+  enterBtn.disabled = true;
+  messageInput.disabled = false;
+  messageInput.focus();
 }
 
-async function loadProfile(uid) {
-    const userRef = ref(db, `users/${uid}`);
-    try {
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            currentUserProfile = snapshot.val();
-            displayNameInput.value = currentUserProfile.displayName;
-        } else {
-            currentUserProfile = null;
-        }
-    } catch (error) {
-        console.error("Error loading profile:", error);
-    }
+// ---- Sending messages
+sendForm.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const text = (messageInput.value || "").trim();
+  if (!text) return;
+  const messagesCol = collection(db, "cyou_messages");
+
+  await addDoc(messagesCol, {
+    text,
+    createdAt: serverTimestamp(),
+    uid: currentUser.uid,
+    name: displayName,
+    seenBy: [currentUser.uid]
+  });
+
+  messageInput.value = "";
+  setTyping(false);
+});
+
+// ---- Typing indicator mechanism
+let lastTypedAt = 0;
+messageInput.addEventListener("input", () => {
+  setTyping(true);
+  lastTypedAt = Date.now();
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    if (Date.now() - lastTypedAt >= 1600) setTyping(false);
+  }, 1600);
+});
+
+async function setTyping(isTyping){
+  if (!currentUser) return;
+  const docRef = doc(db, "cyou_typing", currentUser.uid);
+  await setDoc(docRef, {
+    uid: currentUser.uid,
+    name: displayName,
+    typing: isTyping,
+    lastUpdated: serverTimestamp()
+  });
 }
 
-profileForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const newDisplayName = displayNameInput.value.trim();
-    if (newDisplayName === "" || !auth.currentUser) return;
-
-    const userRef = ref(db, `users/${auth.currentUser.uid}`);
-    try {
-        await set(userRef, {
-            ...currentUserProfile,
-            displayName: newDisplayName
-        });
-        
-        currentUserProfile.displayName = newDisplayName; 
-        userNameSpan.textContent = newDisplayName;
-        
-        profileSuccess.textContent = "Profile saved successfully!";
-        setTimeout(() => { profileSuccess.textContent = ""; }, 3000);
-    } catch (error) {
-        console.error("Error saving profile:", error);
-    }
-});
-
-
-/* =====================================================
-  PART 6: REALTIME DATABASE (CHAT)
-=====================================================
-*/
-sendMessageForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const messageText = messageInput.value;
-    if (messageText.trim() === "" || !currentUserProfile) return;
-    const user = auth.currentUser;
-
-    try {
-        const messagesRef = ref(db, 'messages');
-        const newMessageRef = push(messagesRef);
-        
-        await set(newMessageRef, {
-            displayName: currentUserProfile.displayName, 
-            uid: user.uid,
-            text: messageText,
-            timestamp: serverTimestamp()
-        });
-
-        messageInput.value = "";
-        handleTyping(false);
-    } catch (error) {
-        console.error("Error sending message:", error);
-    }
-});
-
-function loadMessages() {
-    const messagesRef = ref(db, 'messages');
-    onValue(messagesRef, (snapshot) => {
-        messagesBox.innerHTML = "";
-        const data = snapshot.val();
-        
-        if (data) {
-            Object.values(data).forEach((message) => {
-                displayMessage(message.displayName, message.text, message.timestamp); 
-            });
-        }
-        messagesBox.scrollTop = messagesBox.scrollHeight;
+function subscribeToTyping(){
+  const q = collection(db, "cyou_typing");
+  onSnapshot(q, (snap) => {
+    const typers = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.typing) typers.push(data.name || "Someone");
     });
-}
-
-function displayMessage(displayName, text, timestamp) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
-    
-    const nameElement = document.createElement('strong');
-    nameElement.textContent = displayName || "User";
-    
-    const textElement = document.createElement('span');
-    textElement.textContent = text;
-    
-    messageElement.appendChild(nameElement);
-    messageElement.appendChild(textElement);
-    
-    if (timestamp) {
-        const timeElement = document.createElement('span');
-        timeElement.classList.add('message-time');
-        const date = new Date(timestamp);
-        timeElement.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        messageElement.appendChild(timeElement);
-    }
-    
-    messagesBox.appendChild(messageElement);
-}
-
-
-/* =====================================================
-  PART 7: "IS TYPING" FEATURE
-=====================================================
-*/
-function setupPresence(uid) {
-    const typingRef = ref(db, `typingStatus/${uid}`);
-    onDisconnect(typingRef).remove();
-}
-
-function listenForTyping() {
-    const typingRef = ref(db, 'typingStatus');
-    onValue(typingRef, (snapshot) => {
-        const typingUsers = snapshot.val() || {};
-        
-        const typingNames = Object.values(typingUsers).filter(name => 
-            currentUserProfile && name !== currentUserProfile.displayName
-        );
-
-        if (typingNames.length === 0) {
-            typingIndicator.textContent = "";
-        } else if (typingNames.length === 1) {
-            typingIndicator.textContent = `${typingNames[0]} is typing...`;
-        } else {
-            typingIndicator.textContent = "Several people are typing...";
-        }
-    });
-}
-
-function handleTyping(isTyping) {
-    if (!currentUserProfile) return;
-
-    const typingRef = ref(db, `typingStatus/${currentUserProfile.uid}`);
-    
-    if (isTypisTyping) {
-        set(typingRef, currentUserProfile.displayName);
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-            handleTyping(false);
-        }, 3000);
+    if (typers.length === 0) {
+      typingIndicator.textContent = "";
+    } else if (typers.length === 1) {
+      typingIndicator.textContent = `${typers[0]} is typing...`;
     } else {
-        clearTimeout(typingTimeout);
-        remove(typingRef);
+      typingIndicator.textContent = `${typers.slice(0,3).join(", ")} are typing...`;
     }
+  });
 }
 
-messageInput.addEventListener('input', () => handleTyping(true));
-messageInput.addEventListener('blur', () => handleTyping(false));
+// ---- Presence (online users)
+async function startPresence(){
+  if (!currentUser) return;
+  const ref = doc(db, "cyou_presence", currentUser.uid);
+
+  await setDoc(ref, {
+    uid: currentUser.uid,
+    name: displayName,
+    lastActive: serverTimestamp()
+  });
+
+  heartbeatInterval = setInterval(async () => {
+    try {
+      await setDoc(ref, {
+        uid: currentUser.uid,
+        name: displayName,
+        lastActive: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("heartbeat error", e);
+    }
+  }, HEARTBEAT_MS);
+
+  window.addEventListener("beforeunload", async () => {
+    try { await deleteDoc(ref); } catch(e){ /* ignore */ }
+  });
+}
+
+function subscribeToPresence(){
+  const q = collection(db, "cyou_presence");
+  onSnapshot(q, (snap) => {
+    const now = Date.now();
+    const online = [];
+    snap.forEach(d => {
+      const data = d.data();
+      const lastActive = data.lastActive;
+      let isOnline = true;
+      if (lastActive && lastActive.toMillis) {
+        isOnline = (now - lastActive.toMillis()) < PRESENCE_FRESH_MS;
+      }
+      if (isOnline) online.push({name: data.name || "User", uid: data.uid});
+    });
+
+    onlineUsersEl.innerHTML = "";
+    online.forEach(u => {
+      const li = document.createElement("li");
+      li.textContent = u.name;
+      onlineUsersEl.appendChild(li);
+    });
+    onlineCountEl.textContent = online.length;
+  });
+}
+
+// ---- Messages subscription & rendering
+function subscribeToMessages(){
+  const messagesCol = collection(db, "cyou_messages");
+  const q = query(messagesCol, orderBy("createdAt"));
+
+  onSnapshot(q, (snap) => {
+    messagesEl.innerHTML = "";
+    const docs = [];
+    snap.forEach(d => docs.push({id: d.id, data: d.data()}));
+
+    for (const d of docs) {
+      renderMessage(d.id, d.data);
+    }
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    markVisibleMessagesAsSeen(docs);
+  });
+}
+
+function renderMessage(id, data){
+  const div = document.createElement("div");
+  const isMe = data.uid === currentUser.uid;
+  div.className = "message " + (isMe ? "me" : "other");
+  const text = document.createElement("div");
+  text.className = "text";
+  text.textContent = data.text;
+  div.appendChild(text);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+
+  const author = document.createElement("span");
+  author.className = "author";
+  author.textContent = isMe ? "You" : (data.name || "User");
+
+  const time = document.createElement("span");
+  time.className = "time";
+  const ts = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate() : new Date();
+  time.textContent = formatTime(ts);
+
+  meta.appendChild(author);
+  meta.appendChild(document.createTextNode(" • "));
+  meta.appendChild(time);
+
+  const seen = document.createElement("span");
+  seen.className = "seen";
+  const seenBy = Array.isArray(data.seenBy) ? data.seenBy : [];
+  if (seenBy.length > 1) {
+    seen.textContent = ` • seen (${seenBy.length})`;
+  } else if (seenBy.length === 1 && isMe) {
+    seen.textContent = ` • sent`;
+  } else {
+    seen.textContent = "";
+  }
+  meta.appendChild(seen);
+
+  div.appendChild(meta);
+  messagesEl.appendChild(div);
+}
+
+async function markVisibleMessagesAsSeen(docs){
+  const batchLimit = 50;
+  const visible = docs.slice(-batchLimit);
+  for (const d of visible) {
+    const mDocRef = doc(db, "cyou_messages", d.id);
+    try {
+      const current = await getDoc(mDocRef);
+      if (!current.exists()) continue;
+      const data = current.data();
+      const seenBy = Array.isArray(data.seenBy) ? data.seenBy : [];
+      if (!seenBy.includes(currentUser.uid)) {
+        await updateDoc(mDocRef, { seenBy: [...seenBy, currentUser.uid] });
+      }
+    } catch (e) {}
+  }
+}
+
+function pad(n){ return n<10 ? "0"+n : n; }
+function formatTime(d){
+  try {
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const dd = pad(d.getDate());
+    const mmn = pad(d.getMonth()+1);
+    return `${hh}:${mm} ${dd}/${mmn}`;
+  } catch(e) {
+    return "";
+  }
+}
+
+// ---- initial UI state
+messageInput.disabled = true;
