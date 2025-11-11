@@ -18,8 +18,8 @@ import {
     push, 
     serverTimestamp,
     get,
-    remove, // NEW: Added remove
-    onDisconnect // NEW: Added onDisconnect for presence
+    remove,
+    onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // Your web app's Firebase configuration
@@ -40,7 +40,7 @@ export const db = getDatabase(app);
 
 // Global state variables
 let currentUserProfile = null;
-let typingTimeout = null; // NEW: For typing indicator
+let typingTimeout = null;
 
 
 /* =====================================================
@@ -71,7 +71,7 @@ const chatContainer = document.getElementById('chat-container');
 const messagesBox = document.getElementById('messages-box');
 const sendMessageForm = document.getElementById('send-message-form');
 const messageInput = document.getElementById('message-input');
-const typingIndicator = document.getElementById('typing-indicator'); // NEW: Typing indicator element
+const typingIndicator = document.getElementById('typing-indicator');
 
 // Dashboard/Profile elements
 const profileForm = document.getElementById('profile-form');
@@ -117,36 +117,66 @@ navDashboard.addEventListener('click', (e) => {
 */
 
 // --- Auth State Listener ---
+// UPDATED: Re-ordered to fix the login bug
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // User is signed in
-        userEmailSpan.textContent = user.email;
-        await loadProfile(user.uid); 
-        
+        // --- THIS IS THE FIX ---
+        // 1. SWITCH THE VIEW IMMEDIATELY.
+        // This makes sure you get into the app, even if profile loading fails.
         appPage.classList.remove('hidden');
         loginPage.classList.add('hidden');
+        showView('chat'); // Show chat by default
         
-        loadMessages();
-        showView('chat');
+        // 2. Now, try to load profile, messages, and presence.
+        userEmailSpan.textContent = user.email;
+
+        try {
+            await loadProfile(user.uid); 
+        } catch (error) {
+            console.error("Failed to load profile:", error);
+        }
         
-        // NEW: Set up presence and typing listeners
-        setupPresence(user.uid);
-        listenForTyping();
+        try {
+            loadMessages();
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+        }
+        
+        try {
+            setupPresence(user.uid);
+            listenForTyping();
+        } catch (error) {
+            console.error("Failed to set up presence/typing:", error);
+        }
 
     } else {
         // User is signed out
         loginPage.classList.remove('hidden');
         appPage.classList.add('hidden');
         userEmailSpan.textContent = "";
-        currentUserProfile = null; // Clear profile
-        typingIndicator.textContent = ""; // Clear typing indicator
+        currentUserProfile = null;
+        typingIndicator.textContent = "";
     }
 });
 
+// NEW: Helper function to show auth errors
+function showAuthError(message, isError = true) {
+    authError.textContent = message;
+    if (isError) {
+        authError.classList.remove('info-message');
+        authError.classList.add('error-message');
+    } else {
+        // This is for your friendly "already in use" message
+        authError.classList.remove('error-message');
+        authError.classList.add('info-message');
+    }
+}
+
 // --- Sign Up Button ---
+// UPDATED: Shows friendly error message
 signupButton.addEventListener('click', async (e) => {
     e.preventDefault();
-    authError.textContent = "";
+    showAuthError("", true); // Clear error
     
     const email = emailInput.value;
     const password = passwordInput.value;
@@ -155,14 +185,20 @@ signupButton.addEventListener('click', async (e) => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await createUserProfile(userCredential.user.uid, email);
     } catch (error) {
-        authError.textContent = error.message;
+        if (error.code === 'auth/email-already-in-use') {
+            // This is your requested feature!
+            showAuthError("This email is already in use. Please click 'Login'.", false); // false = not an error
+        } else {
+            showAuthError(error.message, true);
+        }
     }
 });
 
 // --- Login Button ---
+// UPDATED: Shows friendly error message
 loginButton.addEventListener('click', async (e) => {
     e.preventDefault();
-    authError.textContent = "";
+    showAuthError("", true); // Clear error
 
     const email = emailInput.value;
     const password = passwordInput.value;
@@ -170,14 +206,17 @@ loginButton.addEventListener('click', async (e) => {
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-        authError.textContent = error.message;
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            showAuthError("Wrong password or email. Please try again.", true);
+        } else {
+            showAuthError(error.message, true);
+        }
     }
 });
 
 // --- Sign Out Button ---
 signoutButton.addEventListener('click', async () => {
     try {
-        // NEW: Remove typing status before signing out
         if (auth.currentUser) {
             const typingRef = ref(db, `typingStatus/${auth.currentUser.uid}`);
             await remove(typingRef);
@@ -219,8 +258,7 @@ async function loadProfile(uid) {
             await createUserProfile(uid, auth.currentUser.email);
             await loadProfile(uid); // Reload after creating
         }
-    } catch (error)
- {
+    } catch (error) {
         console.error("Error loading profile:", error);
     }
 }
@@ -251,7 +289,6 @@ profileForm.addEventListener('submit', async (e) => {
 =====================================================
 */
 
-// --- Send Message ---
 sendMessageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const messageText = messageInput.value;
@@ -268,12 +305,10 @@ sendMessageForm.addEventListener('submit', async (e) => {
             displayName: currentUserProfile.displayName, 
             uid: user.uid,
             text: messageText,
-            timestamp: serverTimestamp() // UPDATED: This is how we save time
+            timestamp: serverTimestamp()
         });
 
-        messageInput.value = ""; // Clear input
-        
-        // NEW: Stop typing indicator after sending
+        messageInput.value = "";
         handleTyping(false);
         
     } catch (error) {
@@ -281,7 +316,6 @@ sendMessageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- Load Messages ---
 function loadMessages() {
     const messagesRef = ref(db, 'messages');
     
@@ -291,7 +325,6 @@ function loadMessages() {
         
         if (data) {
             Object.values(data).forEach((message) => {
-                // UPDATED: Pass timestamp to display function
                 displayMessage(message.displayName, message.text, message.timestamp); 
             });
         }
@@ -299,7 +332,6 @@ function loadMessages() {
     });
 }
 
-// --- Helper function to display a single message ---
 function displayMessage(displayName, text, timestamp) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
@@ -313,7 +345,6 @@ function displayMessage(displayName, text, timestamp) {
     messageElement.appendChild(nameElement);
     messageElement.appendChild(textElement);
     
-    // NEW: Add timestamp
     if (timestamp) {
         const timeElement = document.createElement('span');
         timeElement.classList.add('message-time');
@@ -331,19 +362,16 @@ function displayMessage(displayName, text, timestamp) {
 =====================================================
 */
 
-// NEW: Sets up a listener to remove typing status if user disconnects
 function setupPresence(uid) {
     const typingRef = ref(db, `typingStatus/${uid}`);
     onDisconnect(typingRef).remove();
 }
 
-// NEW: Listens for changes in the 'typingStatus' path
 function listenForTyping() {
     const typingRef = ref(db, 'typingStatus');
     onValue(typingRef, (snapshot) => {
         const typingUsers = snapshot.val() || {};
         
-        // Get all typing names *except* the current user
         const typingNames = Object.values(typingUsers).filter(name => 
             currentUserProfile && name !== currentUserProfile.displayName
         );
@@ -358,30 +386,24 @@ function listenForTyping() {
     });
 }
 
-// NEW: Called when the user types in the input box
 function handleTyping(isTyping) {
     if (!currentUserProfile) return;
 
     const typingRef = ref(db, `typingStatus/${currentUserProfile.uid}`);
     
     if (isTyping) {
-        // Set their name in the database
         set(typingRef, currentUserProfile.displayName);
         
-        // Clear any existing timeout
         clearTimeout(typingTimeout);
         
-        // Set a new timeout to remove typing status after 3 seconds
         typingTimeout = setTimeout(() => {
             handleTyping(false);
         }, 3000);
     } else {
-        // Stop typing: clear timeout and remove from database
         clearTimeout(typingTimeout);
         remove(typingRef);
     }
 }
 
-// NEW: Event listeners for the message input
 messageInput.addEventListener('input', () => handleTyping(true));
-messageInput.addEventListener('blur', () => handleTyping(false)); // When they click away
+messageInput.addEventListener('blur', () => handleTyping(false));
