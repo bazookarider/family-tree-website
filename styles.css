@@ -1,3 +1,4 @@
+/* Basic reset and styling */
 * {
     margin: 0;
     padding: 0;
@@ -61,6 +62,17 @@ body {
     color: red;
     margin-bottom: 1rem;
     min-height: 1.2em;
+}
+
+/* NEW: For friendly info messages */
+.info-message {
+    color: #006677; /* Your primary color */
+    background-color: #f0f2f5;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    min-height: 1.2em;
+    text-align: left;
 }
 
 .success-message {
@@ -137,7 +149,7 @@ main {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    height: 70vh; /* Increased height a bit */
+    height: 70vh;
 }
 
 #messages-box {
@@ -148,7 +160,7 @@ main {
 }
 
 .message {
-    margin-bottom: 0.75rem; /* Spaced out */
+    margin-bottom: 0.75rem;
     padding: 8px 12px;
     background: #e9e9eb;
     border-radius: 12px;
@@ -163,7 +175,6 @@ main {
     margin-bottom: 2px;
 }
 
-/* NEW: Timestamp styling */
 .message-time {
     font-size: 0.75rem;
     color: #555;
@@ -172,10 +183,9 @@ main {
     margin-top: 4px;
 }
 
-/* NEW: Typing indicator styling */
 #typing-indicator {
     font-style: italic;
-    color: slategray; /* NEW COLOR */
+    color: slategray;
     height: 1.5em;
     padding: 0 1rem;
     line-height: 1.5em;
