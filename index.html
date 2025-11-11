@@ -1,59 +1,61 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Firebase App</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU — Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Firebase v12 modular (CDN) -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js"></script>
 </head>
 <body>
-
-    <div id="name-entry-page">
-        <div class="name-form-container">
-            <h2>Welcome to the Chat</h2>
-            <p>Please enter your name to join.</p>
-            <form id="name-entry-form">
-                <input type="text" id="name-input" placeholder="Enter your display name" required>
-                <button type="submit">Enter Chat</button>
-            </form>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">C</div>
+        <div class="brand-text">
+          <div class="name">CYOU</div>
+          <div class="subtitle">chat • connect • c-you</div>
         </div>
-    </div>
+      </div>
+      <div class="status">
+        <span id="onlineCount">0</span> online
+      </div>
+    </header>
 
-    <div id="app-page" class="hidden">
-        <header>
-            <p>Welcome, <span id="user-name"></span>!</p>
-            <nav>
-                <a href="#" id="nav-chat" class="nav-link active">Chat</a>
-                <a href="#" id="nav-dashboard" class="nav-link">Dashboard</a>
-            </nav>
-            <button id="signout-button">Sign Out</button>
-        </header>
+    <main class="main">
+      <section class="sidebar">
+        <div class="user-block">
+          <label for="nameInput">Enter name</label>
+          <input id="nameInput" placeholder="Type your display name" maxlength="30" />
+          <button id="enterBtn">Join CYOU</button>
+        </div>
 
-        <main>
-            <div id="chat-content" class="content-section">
-                <h3>Group Chat</h3>
-                <div id="chat-container">
-                    <div id="messages-box">
-                        </div>
-                    <p id="typing-indicator"></p> <form id="send-message-form">
-                        <input type="text" id="message-input" placeholder="Type a message..." required>
-                        <button type="submit">Send</button>
-                    </form>
-                </div>
-            </div>
+        <div class="online-list">
+          <h4>Online</h4>
+          <ul id="onlineUsers"></ul>
+        </div>
+      </section>
 
-            <div id="dashboard-content" class="content-section hidden">
-                <h3>Your Profile</h3>
-                <form id="profile-form">
-                    <p>Set your display name. This will show up in chat.</p>
-                    <input type="text" id="display-name-input" placeholder="Enter display name" required>
-                    <button type="submit">Save Profile</button>
-                    <p id="profile-success" class="success-message"></p>
-                </form>
-            </div>
-        </main>
-    </div>
+      <section class="chat-area">
+        <div id="messages" class="messages"></div>
 
-    <script src="script.js" type="module"></script>
+        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <form id="sendForm" class="composer" autocomplete="off">
+          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
+          <button id="sendBtn" type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <small>CYOU — C-Y-O-U</small>
+    </footer>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
