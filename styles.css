@@ -1,209 +1,112 @@
-/* ===== CYOU CHAT DESIGN ===== */
 body {
-  margin: 0;
+  background-color: #e5e5e5;
   font-family: "Poppins", sans-serif;
-  background: #e8ecef;
+  margin: 0;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
 }
 
-.chat-container {
-  width: 100%;
+.chat-app {
+  background-color: #f8f8f8;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  width: 90%;
   max-width: 420px;
-  height: 90vh;
-  display: flex;
-  flex-direction: column;
-  background: #f8f9fa;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 0 15px rgba(0,0,0,0.15);
+  padding: 20px;
 }
 
-/* HEADER */
-.chat-header {
-  background: #006677;
-  color: white;
-  padding: 1rem;
+.app-title {
+  color: #006677;
   text-align: center;
-  font-size: 1.3rem;
-  position: relative;
+  font-size: 28px;
+  margin-bottom: 20px;
 }
 
-.chat-header .online-count {
-  font-size: 0.9rem;
-  position: absolute;
-  right: 1rem;
-  top: 1rem;
-}
-
-/* JOIN SECTION */
 .join-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 1rem;
+  gap: 10px;
 }
 
-#nameInput {
-  padding: 10px;
-  width: 70%;
+.hidden {
+  display: none;
+}
+
+input[type="text"] {
+  padding: 12px;
   border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 10px;
+  font-size: 16px;
 }
 
-#enterBtn {
-  background: #006677;
+button {
+  background-color: #006677;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
+  border-radius: 10px;
+  padding: 10px;
   cursor: pointer;
-  font-size: 1rem;
 }
 
-#enterBtn:hover {
-  background: #005060;
+button:hover {
+  background-color: #004f5c;
 }
 
-/* CHAT SECTION */
 .chat-section {
   display: flex;
-  height: 100%;
-}
-
-.sidebar {
-  width: 35%;
-  background: #f0f3f5;
-  padding: 10px;
-  overflow-y: auto;
-  border-right: 2px solid #d3d9dd;
-}
-
-.sidebar h3 {
-  color: #006677;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-#onlineUsers {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#onlineUsers li {
-  padding: 5px 0;
-  display: flex;
-  align-items: center;
-}
-
-.user-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.user-dot.online {
-  background: #00b894;
-}
-
-/* MAIN CHAT */
-.main-chat {
-  flex: 1;
-  display: flex;
   flex-direction: column;
-  background: #f8f9fa;
+  height: 70vh;
+}
+
+.chat-header {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.status {
+  color: #006677;
+}
+
+.typing {
+  font-size: 13px;
+  color: #555;
 }
 
 .messages {
   flex: 1;
-  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
   overflow-y: auto;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .message {
-  max-width: 80%;
+  background-color: #dfeff0;
   padding: 8px 12px;
   margin: 6px 0;
   border-radius: 12px;
-  font-size: 0.9rem;
-  line-height: 1.3;
-  position: relative;
+  max-width: 75%;
+  word-wrap: break-word;
 }
 
-.message.me {
-  background: #006677;
-  color: white;
-  margin-left: auto;
-  border-bottom-right-radius: 0;
-}
-
-.message.other {
-  background: #dfe6e9;
-  color: #222;
-  margin-right: auto;
-  border-bottom-left-radius: 0;
-}
-
-.meta {
-  font-size: 0.7rem;
-  opacity: 0.7;
-  margin-top: 3px;
+.message.self {
+  background-color: #cde8ea;
+  align-self: flex-end;
   text-align: right;
 }
 
-.typing-indicator {
-  height: 20px;
-  padding-left: 10px;
-  color: #555;
-  font-style: italic;
+.timestamp {
+  font-size: 10px;
+  color: #666;
 }
 
-.send-form {
-  display: flex;
-  border-top: 1px solid #ccc;
-  background: white;
-  padding: 8px;
-}
-
-#messageInput {
-  flex: 1;
-  border: 1px solid #ccc;
-  border-radius: 20px;
-  padding: 8px 12px;
-  font-size: 1rem;
-}
-
-#messageInput:focus {
-  outline: none;
-  border-color: #006677;
-}
-
-.send-form button {
-  background: #006677;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  margin-left: 8px;
-  cursor: pointer;
-}
-
-.send-form button:hover {
-  background: #005060;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
-  .sidebar { display: none; }
-  .chat-header { font-size: 1.2rem; }
-  .chat-container { height: 100vh; border-radius: 0; }
+.ticks {
+  font-size: 12px;
+  margin-left: 4px;
 }
