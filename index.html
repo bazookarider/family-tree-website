@@ -10,16 +10,23 @@
   <div class="chat-container">
     <header class="chat-header">
       <h1>CYOU Chat</h1>
+      <div class="header-actions">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
+      </div>
       <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
     <!-- Join Section -->
     <section class="join-section" id="joinSection">
       <input type="text" id="nameInput" placeholder="Enter your name..." />
-      <button id="enterBtn">Join Chat</button>
+      <div class="join-row">
+        <button id="enterBtn">Join Chat</button>
+      </div>
+      <small id="joinHint" class="hint"></small>
     </section>
 
-    <!-- Chat Section -->
+    <!-- Chat Section (hidden until join) -->
     <section class="chat-section" id="chatSection" style="display: none;">
       <aside class="sidebar">
         <h3>Online Users</h3>
