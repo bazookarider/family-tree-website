@@ -2,14 +2,14 @@
   PART 1: FIREBASE IMPORTS & INITIALIZATION
 =====================================================
 */
-// UPDATED: Removed email auth, added anonymous auth
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+// These imports will fail without type="module" in the HTML
+import { initializeApp } from "https.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
     getAuth, 
     onAuthStateChanged, 
-    signInAnonymously, // NEW
+    signInAnonymously,
     signOut 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { 
     getDatabase, 
     ref, 
@@ -20,7 +20,7 @@ import {
     get,
     remove,
     onDisconnect
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+} from "https.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -43,11 +43,10 @@ let currentUserProfile = null;
 let typingTimeout = null;
 
 
-/* =================================D====================
+/* =====================================================
   PART 2: DOM ELEMENT SELECTORS
 =====================================================
 */
-// UPDATED: Replaced login page with name entry page
 const nameEntryPage = document.getElementById('name-entry-page');
 const nameEntryForm = document.getElementById('name-entry-form');
 const nameInput = document.getElementById('name-input');
@@ -55,7 +54,7 @@ const appPage = document.getElementById('app-page');
 
 // Auth elements
 const signoutButton = document.getElementById('signout-button');
-const userNameSpan = document.getElementById('user-name'); // Changed from user-email
+const userNameSpan = document.getElementById('user-name');
 
 // Navigation elements
 const navChat = document.getElementById('nav-chat');
@@ -63,7 +62,7 @@ const navDashboard = document.getElementById('nav-dashboard');
 const chatContent = document.getElementById('chat-content');
 const dashboardContent = document.getElementById('dashboard-content');
 
-// Chat elements (All kept for features)
+// Chat elements
 const chatContainer = document.getElementById('chat-container');
 const messagesBox = document.getElementById('messages-box');
 const sendMessageForm = document.getElementById('send-message-form');
@@ -80,7 +79,6 @@ const profileSuccess = document.getElementById('profile-success');
   PART 3: NAVIGATION
 =====================================================
 */
-// This is unchanged
 function showView(viewId) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.add('hidden');
@@ -110,33 +108,30 @@ navDashboard.addEventListener('click', (e) => {
 
 
 /* =====================================================
-  PART 4: AUTHENTICATION (NEW ANONYMOUS FLOW)
+  PART 4: AUTHENTICATION (ANONYMOUS FLOW)
 =====================================================
 */
 
 // --- Auth State Listener ---
-// This function runs when the page loads
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         // User is logged in anonymously
         console.log("User is logged in anonymously:", user.uid);
         
-        // 1. Check if they have a profile (i.e., a name)
         await loadProfile(user.uid);
         
         if (currentUserProfile) {
-            // 2. If they HAVE a profile, show the app
+            // If they HAVE a profile, show the app
             userNameSpan.textContent = currentUserProfile.displayName;
             appPage.classList.remove('hidden');
             nameEntryPage.classList.add('hidden');
             
-            // 3. Load chat, presence, and typing features
             loadMessages();
             setupPresence(user.uid);
             listenForTyping();
             showView('chat');
         } else {
-            // 4. If they DON'T have a profile, show the name entry page
+            // If they DON'T have a profile, show the name entry page
             appPage.classList.add('hidden');
             nameEntryPage.classList.remove('hidden');
         }
@@ -147,6 +142,7 @@ onAuthStateChanged(auth, async (user) => {
         nameEntryPage.classList.remove('hidden');
         currentUserProfile = null;
         typingIndicator.textContent = "";
+        
         // Automatically sign them in anonymously
         signInAnonymously(auth).catch(error => {
             console.error("Anonymous sign-in failed:", error);
@@ -154,9 +150,9 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- Name Entry Form (Replaces Login/Signup) ---
+// --- Name Entry Form ---
 nameEntryForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // This stops the page from reloading
     const displayName = nameInput.value.trim();
     
     if (displayName === "") return;
@@ -168,9 +164,7 @@ nameEntryForm.addEventListener('submit', async (e) => {
     }
 
     try {
-        // Create their profile, this will trigger onAuthStateChanged to show app
         await createUserProfile(user.uid, displayName);
-        // We manually trigger the "show app" logic here too
         currentUserProfile = { uid: user.uid, displayName: displayName };
         userNameSpan.textContent = displayName;
         appPage.classList.remove('hidden');
@@ -187,7 +181,6 @@ nameEntryForm.addEventListener('submit', async (e) => {
 
 
 // --- Sign Out Button ---
-// Kept this, it will sign out the anonymous user
 signoutButton.addEventListener('click', async () => {
     try {
         if (auth.currentUser) {
@@ -195,7 +188,6 @@ signoutButton.addEventListener('click', async () => {
             await remove(typingRef);
         }
         await signOut(auth);
-        // onAuthStateChanged will handle showing the name entry page
     } catch (error) {
         console.error("Sign out error:", error);
     }
@@ -206,8 +198,6 @@ signoutButton.addEventListener('click', async () => {
   PART 5: DASHBOARD (PROFILE)
 =====================================================
 */
-
-// UPDATED: This function is now simpler
 async function createUserProfile(uid, displayName) {
     const userRef = ref(db, `users/${uid}`);
     try {
@@ -221,17 +211,14 @@ async function createUserProfile(uid, displayName) {
     }
 }
 
-// This function is still needed
 async function loadProfile(uid) {
     const userRef = ref(db, `users/${uid}`);
     try {
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
             currentUserProfile = snapshot.val();
-            // Also update the dashboard form input
             displayNameInput.value = currentUserProfile.displayName;
         } else {
-            // No profile found
             currentUserProfile = null;
         }
     } catch (error) {
@@ -239,7 +226,6 @@ async function loadProfile(uid) {
     }
 }
 
-// Profile save form is unchanged
 profileForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newDisplayName = displayNameInput.value.trim();
@@ -247,15 +233,13 @@ profileForm.addEventListener('submit', async (e) => {
 
     const userRef = ref(db, `users/${auth.currentUser.uid}`);
     try {
-        // Update the display name
         await set(userRef, {
             ...currentUserProfile,
             displayName: newDisplayName
         });
         
-        // Update local state
         currentUserProfile.displayName = newDisplayName; 
-        userNameSpan.textContent = newDisplayName; // Update header
+        userNameSpan.textContent = newDisplayName;
         
         profileSuccess.textContent = "Profile saved successfully!";
         setTimeout(() => { profileSuccess.textContent = ""; }, 3000);
@@ -266,11 +250,9 @@ profileForm.addEventListener('submit', async (e) => {
 
 
 /* =====================================================
-  PART 6: REALTIME DATABASE (CHAT - UNCHANGED)
+  PART 6: REALTIME DATABASE (CHAT)
 =====================================================
 */
-// All this code is exactly the same as before
-
 sendMessageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const messageText = messageInput.value;
@@ -285,7 +267,7 @@ sendMessageForm.addEventListener('submit', async (e) => {
             displayName: currentUserProfile.displayName, 
             uid: user.uid,
             text: messageText,
-            timestamp: serverTimestamp() // Kept timestamp feature
+            timestamp: serverTimestamp()
         });
 
         messageInput.value = "";
@@ -303,7 +285,6 @@ function loadMessages() {
         
         if (data) {
             Object.values(data).forEach((message) => {
-                // Kept timestamp feature
                 displayMessage(message.displayName, message.text, message.timestamp); 
             });
         }
@@ -324,7 +305,6 @@ function displayMessage(displayName, text, timestamp) {
     messageElement.appendChild(nameElement);
     messageElement.appendChild(textElement);
     
-    // Kept timestamp feature
     if (timestamp) {
         const timeElement = document.createElement('span');
         timeElement.classList.add('message-time');
@@ -338,11 +318,9 @@ function displayMessage(displayName, text, timestamp) {
 
 
 /* =====================================================
-  PART 7: "IS TYPING" FEATURE (UNCHANGED)
+  PART 7: "IS TYPING" FEATURE
 =====================================================
 */
-// All this code is exactly the same as before
-
 function setupPresence(uid) {
     const typingRef = ref(db, `typingStatus/${uid}`);
     onDisconnect(typingRef).remove();
@@ -362,7 +340,7 @@ function listenForTyping() {
         } else if (typingNames.length === 1) {
             typingIndicator.textContent = `${typingNames[0]} is typing...`;
         } else {
-            typingIndicator.textContent = "Several people are typing... (beta)";
+            typingIndicator.textContent = "Several people are typing...";
         }
     });
 }
@@ -372,7 +350,7 @@ function handleTyping(isTyping) {
 
     const typingRef = ref(db, `typingStatus/${currentUserProfile.uid}`);
     
-    if (isTyping) {
+    if (isTypisTyping) {
         set(typingRef, currentUserProfile.displayName);
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
