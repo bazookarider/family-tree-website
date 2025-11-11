@@ -1,64 +1,44 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU — Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYOU Chat</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Firebase v12 modular (CDN) -->
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js"></script>
+  <script type="module" src="script.js" defer></script>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">C</div>
-        <div class="brand-text">
-          <div class="name">CYOU</div>
-          <div class="subtitle">chat • connect • c-you</div>
-        </div>
+  <div class="chat-container">
+    <header class="chat-header">
+      <div class="logo-circle">C</div>
+      <div>
+        <h1>CYOU</h1>
+        <p class="tagline">chat • connect • c-you</p>
       </div>
-      <div class="status">
-        <span id="onlineCount">0</span> online
+      <div class="online-status">
+        <span id="online-count">0 online</span>
       </div>
     </header>
 
-    <main class="main">
-      <section class="sidebar">
-        <div class="user-block">
-          <label for="nameInput">Enter name</label>
-          <input id="nameInput" placeholder="Type your display name" maxlength="30" />
-          <button id="enterBtn">Join CYOU</button>
+    <main class="main-section">
+      <div class="join-box" id="join-box">
+        <input type="text" id="name-input" placeholder="Enter your name" />
+        <button id="join-btn">Join CYOU</button>
+      </div>
+
+      <div class="chat-box hidden" id="chat-box">
+        <div class="chat-area" id="chat-area"></div>
+        <div id="typing-indicator" class="typing-indicator"></div>
+        <div class="chat-input">
+          <input type="text" id="message-input" placeholder="Type a message..." />
+          <button id="send-btn">Send</button>
         </div>
-
-        <div class="online-list">
-          <h4>Online</h4>
-          <ul id="onlineUsers"></ul>
-        </div>
-      </section>
-
-      <section class="chat-area">
-        <div id="messages" class="messages"></div>
-
-        <div id="typingIndicator" class="typing-indicator"></div>
-
-        <form id="sendForm" class="composer" autocomplete="off">
-          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
-          <button id="sendBtn" type="submit">Send</button>
-        </form>
-      </section>
+      </div>
     </main>
 
     <footer class="footer">
-      <small>CYOU — C-Y-O-U</small>
+      CYOU — C-Y-O-U
     </footer>
-
-    <!-- small debug area -->
-    <div id="debugStatus" class="debug-status" aria-hidden="true"></div>
   </div>
-
-  <script type="module" src="script.js"></script>
 </body>
 </html>
