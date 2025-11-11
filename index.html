@@ -23,20 +23,35 @@
         </div>
     </div>
 
-    <div id="dashboard-page" class="hidden">
-        <header>
+    <div id="app-page" class="hidden"> <header>
             <p>Welcome, <span id="user-email"></span>!</p>
+            <nav>
+                <a href="#" id="nav-chat" class="nav-link active">Chat</a>
+                <a href="#" id="nav-dashboard" class="nav-link">Dashboard</a>
+            </nav>
             <button id="signout-button">Sign Out</button>
         </header>
 
         <main>
-            <h3>Group Chat</h3>
-            <div id="chat-container">
-                <div id="messages-box">
-                    </div>
-                <form id="send-message-form">
-                    <input type="text" id="message-input" placeholder="Type a message..." required>
-                    <button type="submit">Send</button>
+            <div id="chat-content" class="content-section">
+                <h3>Group Chat</h3>
+                <div id="chat-container">
+                    <div id="messages-box">
+                        </div>
+                    <form id="send-message-form">
+                        <input type="text" id="message-input" placeholder="Type a message..." required>
+                        <button type="submit">Send</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="dashboard-content" class="content-section hidden">
+                <h3>Your Profile</h3>
+                <form id="profile-form">
+                    <p>Set your display name. This will show up in chat.</p>
+                    <input type="text" id="display-name-input" placeholder="Enter display name" required>
+                    <button type="submit">Save Profile</button>
+                    <p id="profile-success" class="success-message"></p>
                 </form>
             </div>
         </main>
