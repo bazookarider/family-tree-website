@@ -1,32 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CYOU Chat</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="join-container" id="joinContainer">
-    <h2>Welcome to CYOU Chat 💬</h2>
-    <input type="text" id="nameInput" placeholder="Enter your name" />
-    <button id="joinBtn">Join Chat</button>
-    <p id="nameError"></p>
-  </div>
+  <div class="chat-container">
 
-  <div class="chat-container" id="chatContainer">
-    <header>
-      <div class="title">CYOU Chat</div>
-      <div class="theme-toggle" id="themeToggle">🌙</div>
-      <button id="clearChat">🧹</button>
+    <!-- HEADER -->
+    <header class="chat-header">
+      <h1>CYOU Chat</h1>
+      <div class="header-right">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
+      </div>
+      <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <div class="chat-box" id="chatBox"></div>
+    <!-- JOIN SECTION -->
+    <section id="joinSection" class="join-section">
+      <input id="nameInput" type="text" placeholder="Enter your name..." />
+      <div class="join-actions">
+        <button id="enterBtn">Join Chat</button>
+      </div>
+      <div id="joinHint" class="hint"></div>
+    </section>
 
-    <div class="input-area">
-      <input type="text" id="messageInput" placeholder="Type a message..." />
-      <button id="sendBtn">Send</button>
-    </div>
+    <!-- CHAT SECTION (hidden until join) -->
+    <section id="chatSection" class="chat-section" style="display:none;">
+      <aside class="sidebar">
+        <h3>Online Users</h3>
+        <ul id="onlineUsers"></ul>
+      </aside>
+
+      <main class="main-chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">Send</button>
+        </form>
+      </main>
+    </section>
+
   </div>
 
   <script type="module" src="script.js"></script>
