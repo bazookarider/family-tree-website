@@ -1,38 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CYOU Chat</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="chat-container">
-    <header class="chat-header">
-      <h1>CYOU Chat</h1>
-      <div class="online-count">Online: <span id="onlineCount">0</span></div>
-    </header>
+  <div class="chat-app">
+    <h1 class="app-title">CYOU</h1>
 
-    <section class="join-section" id="joinSection">
-      <input type="text" id="nameInput" placeholder="Enter your name..." />
-      <button id="enterBtn">Join Chat</button>
-    </section>
+    <div id="join-section" class="join-section">
+      <input type="text" id="usernameInput" placeholder="Enter your name..." />
+      <button id="joinBtn">Join Chat</button>
+    </div>
 
-    <section class="chat-section" id="chatSection">
-      <aside class="sidebar">
-        <h3>Online Users</h3>
-        <ul id="onlineUsers"></ul>
-      </aside>
+    <div id="chat-section" class="chat-section hidden">
+      <div class="chat-header">
+        <span id="onlineStatus">🟢 Online</span>
+        <span id="typingIndicator" class="typing hidden">Someone is typing...</span>
+      </div>
 
-      <main class="main-chat">
-        <div id="messages" class="messages"></div>
-        <div id="typingIndicator" class="typing-indicator"></div>
-        <form id="sendForm" class="send-form">
-          <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
-          <button type="submit">Send</button>
-        </form>
-      </main>
-    </section>
+      <div id="messages" class="messages"></div>
+
+      <div class="input-container">
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="script.js"></script>
