@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Join screen: only enter name, auto-join public chat -->
+  <!-- Join screen appears first (only input + join) -->
   <div id="joinScreen" class="join-screen">
     <div class="join-card">
       <div class="logo">C</div>
@@ -15,10 +15,11 @@
       <input id="nameInput" placeholder="Enter your username" maxlength="20" />
       <div id="nameError" class="error"></div>
       <button id="joinBtn">Join Public Chat</button>
+      <p class="small-note">Your name is saved locally so you won't need to retype it after refresh.</p>
     </div>
   </div>
 
-  <!-- Chat app -->
+  <!-- Chat app (hidden until join) -->
   <div id="chatApp" class="app hidden" aria-live="polite">
     <header class="topbar">
       <div class="brand">
@@ -36,7 +37,8 @@
     <main class="main">
       <section class="chat-area">
         <div id="messages" class="messages" role="log" aria-live="polite"></div>
-        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
 
         <form id="sendForm" class="composer" autocomplete="off">
           <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
