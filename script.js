@@ -1,332 +1,341 @@
- // script.js (module) — fixed join flow, auto-login, Firestore public chat (last-6 messages), typing, presence, ticks
-
+// script.js (final anonymous + unique nickname, auto-login, typing in header)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth, signInAnonymously
+  getAuth, signInAnonymously, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, limitToLast,
-  doc, setDoc, updateDoc, arrayUnion, getDoc
+  onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* Firebase config (kept to your project) */
+/* ---------------------------
+   Firebase config (kept)
+---------------------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
+  databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
   projectId: "cyou-db8f0",
-  storageBucket: "cyou-db8f0.appspot.com",
+  storageBucket: "cyou-db8f0.firebasestorage.app",
   messagingSenderId: "873569975141",
   appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
   measurementId: "G-T66B50HFJ8"
 };
 
-/* init */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* UI refs */
-const loginScreen = document.getElementById("loginScreen");
+/* ---------------------------
+   DOM elements
+---------------------------- */
+const joinSection = document.getElementById("joinSection");
+const chatSection = document.getElementById("chatSection");
 const nameInput = document.getElementById("nameInput");
-const nameError = document.getElementById("nameError");
-const joinBtn = document.getElementById("joinBtn");
+const enterBtn = document.getElementById("enterBtn");
+const joinHint = document.getElementById("joinHint");
 
-const chatApp = document.getElementById("chatApp");
-const messagesEl = document.getElementById("messages");
-const typingIndicator = document.getElementById("typingIndicator");
+const messagesDiv = document.getElementById("messages");
+const typingStatus = document.getElementById("typingStatus");
+const onlineCount = document.getElementById("onlineCount");
+const onlineUsersUL = document.getElementById("onlineUsers");
+
 const sendForm = document.getElementById("sendForm");
 const messageInput = document.getElementById("messageInput");
-const onlineCountEl = document.getElementById("onlineCount");
+const sendBtn = document.getElementById("sendBtn");
+const themeToggle = document.getElementById("themeToggle");
+const clearChatBtn = document.getElementById("clearChatBtn");
 
-const emojiBtn = document.getElementById("emojiBtn");
-const emojiPanel = document.getElementById("emojiPanel");
-
-/* state */
-let currentUser = null;
-let displayName = localStorage.getItem("cyou_name") || "";
+/* ---------------------------
+   state
+---------------------------- */
+let username = localStorage.getItem("cyou_username") || "";
 let typingTimeout = null;
-let presenceInterval = null;
-const HEARTBEAT_MS = 5000;
-const PRESENCE_FRESH_MS = 14000;
+let messagesUnsub = null;
+let presenceUnsub = null;
+let typingUnsub = null;
 
-/* prefill */
-if (displayName) nameInput.value = displayName;
+/* ---------------------------
+   Auth (anonymous)
+---------------------------- */
+signInAnonymously(auth);
+onAuthStateChanged(auth, (user) => {
+  if (user) console.log("Signed in anonymously:", user.uid);
+});
 
-/* Utility */
-function pad(n){ return n<10 ? "0"+n : n; }
-
-/* Auto-join if we have a saved name */
-if (displayName) {
-  (async () => {
-    try {
-      // ensure user document exists or mark online
-      const userRef = doc(db, "cyou_users", displayName);
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) {
-        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() });
-      } else {
-        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
-      }
-
-      // sign in anonymously THEN run afterSignIn
-      const cred = await signInAnonymously(auth);
-      currentUser = cred.user;
-      afterSignIn();
-    } catch (e) {
-      console.warn("Auto-join failed:", e);
-    }
-  })();
+/* ---------------------------
+   Theme restore
+---------------------------- */
+const savedTheme = localStorage.getItem("cyou_theme") || "light";
+applyTheme(savedTheme);
+themeToggle?.addEventListener("click", () => {
+  const current = document.body.classList.contains("dark") ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+  localStorage.setItem("cyou_theme", next);
+});
+function applyTheme(t) {
+  if (t === "dark") document.body.classList.add("dark");
+  else document.body.classList.remove("dark");
 }
 
-/* JOIN button: validate username and sign in */
-joinBtn.addEventListener("click", async () => {
-  nameError.textContent = "";
-  const name = (nameInput.value || "").trim();
-  if (!name) {
-    nameError.textContent = "Please type a name.";
-    return;
-  }
-
-  try {
-    const userRef = doc(db, "cyou_users", name);
-    const snap = await getDoc(userRef);
-
-    const saved = localStorage.getItem("cyou_name");
-    // if already online and not our saved name -> block
-    if (snap.exists()) {
-      const data = snap.data();
-      if (data.online && saved !== name) {
-        nameError.textContent = "Username already taken — choose another.";
-        return;
+/* ---------------------------
+   Auto-join if saved nickname
+---------------------------- */
+if (username) {
+  // try to auto-join; but check presence doc to prevent duplicate online nickname
+  (async () => {
+    try {
+      const presRef = doc(db, "cyou_presence", username);
+      const presSnap = await getDoc(presRef);
+      if (presSnap.exists() && presSnap.data()?.online) {
+        // presence already online elsewhere -> require fresh join
+        username = "";
+        localStorage.removeItem("cyou_username");
+        joinSection.style.display = "flex";
+        chatSection.style.display = "none";
+        joinHint.textContent = "Saved nickname is currently online elsewhere. Enter a different one.";
+      } else {
+        // proceed auto-join
+        joinSection.style.display = "none";
+        chatSection.style.display = "flex";
+        await setDoc(presRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+        startPresenceListener();
+        startTypingListener();
+        startMessagesListener();
       }
+    } catch (e) {
+      console.error("Auto-join error", e);
+      // fallback to join screen
+      joinSection.style.display = "flex";
+      chatSection.style.display = "none";
     }
+  })();
+} else {
+  joinSection.style.display = "flex";
+  chatSection.style.display = "none";
+}
 
-    // accept name: save locally and write user doc
-    displayName = name;
-    localStorage.setItem("cyou_name", displayName);
-    await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+/* ---------------------------
+   Join flow (unique nickname check)
+---------------------------- */
+enterBtn.addEventListener("click", async () => {
+  const name = nameInput.value.trim();
+  if (!name) { joinHint.textContent = "Enter a nickname first."; return; }
+  try {
+    const presRef = doc(db, "cyou_presence", name);
+    const presSnap = await getDoc(presRef);
+    if (presSnap.exists() && presSnap.data()?.online) {
+      joinHint.textContent = "⚠️ That nickname is already online. Choose another.";
+      return;
+    }
+    // success: set username and persist locally
+    username = name;
+    localStorage.setItem("cyou_username", username);
+    joinHint.textContent = "";
+    joinSection.style.display = "none";
+    chatSection.style.display = "flex";
 
-    // sign in anonymously (wait for result), then show chat
-    const cred = await signInAnonymously(auth);
-    currentUser = cred.user;
-    afterSignIn();
-
+    await setDoc(presRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+    startPresenceListener();
+    startTypingListener();
+    startMessagesListener();
   } catch (err) {
-    console.error("Join error:", err);
-    nameError.textContent = "Could not join — check console.";
+    console.error("Join error", err);
+    joinHint.textContent = "Error joining. Check console.";
   }
 });
 
-/* After sign-in: show chat and start listeners */
-function afterSignIn(){
-  // show chat UI only
-  loginScreen.classList.add("hidden");
-  chatApp.classList.remove("hidden");
-  messageInput.disabled = false;
-  messageInput.focus();
+/* ---------------------------
+   Presence: update UI list and count
+---------------------------- */
+function startPresenceListener() {
+  if (presenceUnsub) presenceUnsub();
+  presenceUnsub = onSnapshot(collection(db, "cyou_presence"), (snap) => {
+    const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const online = users.filter(u => u.online).length;
+    onlineCount.textContent = online;
 
-  // presence, typing, messages
-  startPresence();
-  subscribePresence();
-  subscribeTyping();
-  subscribeMessages();
-}
+    onlineUsersUL.innerHTML = "";
+    users.forEach(u => {
+      const li = document.createElement("li");
+      const left = document.createElement("div"); left.style.display = "flex"; left.style.gap = "8px"; left.style.alignItems = "center";
+      const dot = document.createElement("span"); dot.style.width = "10px"; dot.style.height = "10px"; dot.style.borderRadius = "50%";
+      dot.style.background = u.online ? "#00b894" : "#bbb";
+      const nameSpan = document.createElement("span"); nameSpan.textContent = u.id;
+      left.appendChild(dot); left.appendChild(nameSpan);
+      const right = document.createElement("div"); right.style.fontSize = "0.8rem";
+      if (u.online) right.textContent = "🟢 Online";
+      else if (u.lastSeen && u.lastSeen.toDate) right.textContent = `Last ${u.lastSeen.toDate().toLocaleString()}`;
+      li.appendChild(left); li.appendChild(right);
+      onlineUsersUL.appendChild(li);
+    });
+  });
 
-/* PRESENCE */
-async function startPresence(){
-  if (!currentUser || !displayName) return;
-  const presenceRef = doc(db, "cyou_presence", currentUser.uid);
-  try {
-    await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
-  } catch (e) { console.warn("presence set error", e); }
-
-  presenceInterval = setInterval(async () => {
-    try { await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() }); }
-    catch (e) { console.warn("presence heartbeat error", e); }
-  }, HEARTBEAT_MS);
-
+  // mark offline when unloading
   window.addEventListener("beforeunload", async () => {
+    if (!username) return;
     try {
-      await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
+      await setDoc(doc(db, "cyou_presence", username), { online: false, lastSeen: serverTimestamp() }, { merge: true });
+      await setDoc(doc(db, "cyou_typing", username), { typing: false }, { merge: true });
     } catch (e) {}
   });
 }
 
-function subscribePresence(){
-  const col = collection(db, "cyou_presence");
-  onSnapshot(col, (snap) => {
-    const now = Date.now();
-    const online = [];
-    snap.forEach(d => {
-      const data = d.data();
-      const lastActive = data.lastActive;
-      let isOnline = true;
-      if (lastActive && lastActive.toMillis) {
-        isOnline = (now - lastActive.toMillis()) < PRESENCE_FRESH_MS;
-      }
-      if (isOnline) online.push(data.name || "User");
-    });
-    onlineCountEl.textContent = online.length;
-  }, (err) => console.warn("presence onSnapshot", err));
+/* ---------------------------
+   Typing indicator (header) - show "John's typing..."
+---------------------------- */
+messageInput.addEventListener("input", onTypingInput);
+async function onTypingInput() {
+  await setTyping(true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => setTyping(false), 1400);
 }
-
-/* TYPING */
-let lastTypedAt = 0;
-messageInput.addEventListener("input", () => {
-  setTyping(true);
-  lastTypedAt = Date.now();
-  if (typingTimeout) clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    if (Date.now() - lastTypedAt >= 1400) setTyping(false);
-  }, 1400);
-});
-
-async function setTyping(isTyping){
-  if (!currentUser) return;
+async function setTyping(state) {
+  if (!username) return;
   try {
-    await setDoc(doc(db, "cyou_typing", currentUser.uid), {
-      uid: currentUser.uid,
-      name: displayName,
-      typing: isTyping,
-      lastUpdated: serverTimestamp()
-    });
-  } catch (e) { console.warn("typing set error", e); }
+    await setDoc(doc(db, "cyou_typing", username), { typing: state }, { merge: true });
+  } catch (err) { console.error("setTyping err", err); }
 }
 
-function subscribeTyping(){
-  const col = collection(db, "cyou_typing");
-  onSnapshot(col, (snap) => {
-    const typers = [];
-    snap.forEach(d => {
-      const data = d.data();
-      if (data.typing && data.uid !== (currentUser && currentUser.uid)) typers.push(data.name || "Someone");
-    });
-    if (typers.length === 0) typingIndicator.textContent = "";
-    else if (typers.length === 1) typingIndicator.textContent = `${typers[0]} is typing...`;
-    else typingIndicator.textContent = `${typers.slice(0,3).join(", ")} are typing...`;
-  }, (err) => console.warn("typing subscribe error", err));
-}
-
-/* SEND MESSAGE */
-sendForm.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const text = (messageInput.value || "").trim();
-  if (!text || !currentUser) return;
-  try {
-    const ref = await addDoc(collection(db, "cyou_messages"), {
-      text,
-      name: displayName,
-      uid: currentUser.uid,
-      createdAt: serverTimestamp(),
-      deliveredBy: [],
-      seenBy: []
-    });
-    // optimistic update: try set status delivered
-    try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
-    messageInput.value = "";
-    setTyping(false);
-  } catch (e) {
-    console.error("send error", e);
-    alert("Could not send message (see console).");
-  }
-});
-
-/* SUBSCRIBE MESSAGES (limit 6) + auto-scroll + mark delivered/seen */
-function subscribeMessages(){
-  const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(6));
-  onSnapshot(q, async (snap) => {
-    const docs = [];
-    snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
-    messagesEl.innerHTML = "";
-    for (const m of docs) renderMessage(m.id, m.data);
-
-    // smooth scroll to bottom
-    const lastChild = messagesEl.lastElementChild;
-    if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-
-    // mark delivered & seen by this client (if not sender)
-    for (const m of docs) {
-      if (m.data.uid !== currentUser.uid) {
-        try {
-          const mRef = doc(db, "cyou_messages", m.id);
-          await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
-          await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid) });
-          await updateDoc(mRef, { status: "seen" });
-        } catch (e) { /* ignore */ }
-      }
+function startTypingListener() {
+  if (typingUnsub) typingUnsub();
+  typingUnsub = onSnapshot(collection(db, "cyou_typing"), (snap) => {
+    const typers = snap.docs.filter(d => d.id !== username && d.data().typing).map(d => d.id);
+    if (typers.length) {
+      const first = typers[0];
+      typingStatus.textContent = `${first}'s typing...`;
+    } else {
+      typingStatus.textContent = "";
     }
-  }, (err) => console.error("messages subscribe error", err));
-}
-
-/* RENDER message (clear colors for other person) */
-function renderMessage(id, data){
-  const div = document.createElement("div");
-  const isMe = data.uid === (currentUser && currentUser.uid);
-  div.className = "message " + (isMe ? "me" : "other");
-
-  const content = document.createElement("div");
-  content.textContent = data.text || "";
-  div.appendChild(content);
-
-  const meta = document.createElement("div");
-  meta.className = "meta";
-
-  const author = document.createElement("span");
-  author.textContent = isMe ? "You" : (data.name || "User");
-
-  const time = document.createElement("span");
-  time.className = "time";
-  const ts = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate() : new Date();
-  time.textContent = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
-
-  meta.appendChild(author);
-  meta.appendChild(document.createTextNode(" • "));
-  meta.appendChild(time);
-
-  if (isMe) {
-    const ticks = document.createElement("span");
-    ticks.className = "ticks";
-    const seenCount = Array.isArray(data.seenBy) ? data.seenBy.length : 0;
-    const deliveredCount = Array.isArray(data.deliveredBy) ? data.deliveredBy.length : 0;
-    if (seenCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-blue)"; }
-    else if (deliveredCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-gray)"; }
-    else { ticks.textContent = "✔"; ticks.style.color = "var(--tick-gray)"; }
-    meta.appendChild(document.createTextNode(" "));
-    meta.appendChild(ticks);
-  }
-
-  div.appendChild(meta);
-  messagesEl.appendChild(div);
-}
-
-/* Emoji picker (small) */
-const emojiList = ["😀","😁","😄","😂","😊","😍","😜","😎","🤗","🤩","😴","😢","😭","👍","👏","🙏","🔥"];
-function buildEmojiPanel(){
-  if (!emojiPanel) return;
-  emojiPanel.innerHTML = "";
-  emojiList.forEach(e => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "emoji";
-    b.textContent = e;
-    b.addEventListener("click", () => {
-      insertAtCursor(messageInput, e);
-      messageInput.focus();
-      emojiPanel.classList.add("hidden");
-    });
-    emojiPanel.appendChild(b);
   });
 }
-buildEmojiPanel();
-if (emojiBtn) emojiBtn.addEventListener("click", () => { if (emojiPanel) emojiPanel.classList.toggle("hidden"); });
 
-function insertAtCursor(el, text) {
-  const start = el.selectionStart || 0;
-  const end = el.selectionEnd || 0;
-  el.value = el.value.slice(0, start) + text + el.value.slice(end);
-  el.selectionStart = el.selectionEnd = start + text.length;
-  el.dispatchEvent(new Event('input'));
+/* ---------------------------
+   Messages: send, render, soft-delete, ticks
+---------------------------- */
+const messagesCol = collection(db, "cyou_messages");
+
+sendForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await doSend();
+});
+sendBtn?.addEventListener("click", async (e) => { e.preventDefault(); await doSend(); });
+
+async function doSend() {
+  if (!username) { alert("Please join first."); return; }
+  const text = (messageInput.value || "").trim();
+  if (!text) return;
+  try {
+    const docRef = await addDoc(messagesCol, {
+      sender: username,
+      text,
+      createdAt: serverTimestamp(),
+      delivered: false,
+      deleted: false,
+      seenBy: [username]
+    });
+    messageInput.value = "";
+    await setTyping(false);
+    // scroll shortly after send
+    setTimeout(scrollToBottom, 120);
+  } catch (err) {
+    console.error("Send error", err);
+  }
 }
 
-console.log("CYOU fixed join flow script loaded");
+function startMessagesListener() {
+  if (messagesUnsub) messagesUnsub();
+  const q = query(messagesCol, orderBy("createdAt"));
+  messagesUnsub = onSnapshot(q, async (snap) => {
+    messagesDiv.innerHTML = "";
+    const docs = snap.docs;
+
+    // render messages grouped by date (small helper)
+    let lastDate = null;
+    for (const docSnap of docs) {
+      const m = docSnap.data();
+      const id = docSnap.id;
+      const created = m.createdAt?.toDate ? m.createdAt.toDate() : new Date();
+      const dateKey = created.toDateString();
+      if (dateKey !== lastDate) {
+        const sep = document.createElement("div"); sep.className = "date-sep"; const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate()-1);
+        if (created.toDateString() === today.toDateString()) sep.textContent = "Today";
+        else if (created.toDateString() === yesterday.toDateString()) sep.textContent = "Yesterday";
+        else sep.textContent = created.toLocaleDateString();
+        messagesDiv.appendChild(sep);
+        lastDate = dateKey;
+      }
+
+      const isMine = m.sender === username;
+      const wrapper = document.createElement("div");
+      wrapper.className = "message " + (isMine ? "me" : "other");
+
+      if (m.deleted) {
+        wrapper.innerHTML = `<div class="deleted">⚫ This message was deleted</div><div class="meta">${formatTime(created)}</div>`;
+      } else {
+        const body = document.createElement("div"); body.className = "msg-body"; body.textContent = m.text;
+        const meta = document.createElement("div"); meta.className = "meta";
+        if (isMine) {
+          const ts = document.createElement("span"); ts.textContent = formatTime(created);
+          const tick = document.createElement("span"); tick.className = "tick" + (m.delivered ? " delivered" : "");
+          tick.textContent = m.delivered ? "✓✓" : "✓";
+          meta.appendChild(ts); meta.appendChild(tick);
+        } else {
+          meta.textContent = formatTime(created);
+        }
+        wrapper.appendChild(body);
+        wrapper.appendChild(meta);
+
+        // delete button for sender only
+        if (isMine && !m.deleted) {
+          const actions = document.createElement("div"); actions.className = "msg-actions";
+          const delBtn = document.createElement("button"); delBtn.className = "msg-btn"; delBtn.title = "Delete message"; delBtn.innerText = "🗑️";
+          delBtn.addEventListener("click", () => confirmDelete(id));
+          actions.appendChild(delBtn);
+          wrapper.appendChild(actions);
+        }
+      }
+
+      messagesDiv.appendChild(wrapper);
+    }
+
+    // mark seenBy and delivered by this client for others' messages
+    for (const docSnap of docs) {
+      const m = docSnap.data();
+      const id = docSnap.id;
+      if (m.sender !== username) {
+        if (!m.seenBy || !m.seenBy.includes(username)) {
+          try { await updateDoc(doc(db, "cyou_messages", id), { seenBy: arrayUnion(username) }); } catch (e) {}
+        }
+        if (!m.delivered) {
+          try { await updateDoc(doc(db, "cyou_messages", id), { delivered: true }); } catch (e) {}
+        }
+      }
+    }
+
+    scrollToBottom();
+  });
+}
+
+/* soft-delete */
+async function confirmDelete(msgId) {
+  if (!confirm("Delete this message?")) return;
+  try {
+    await updateDoc(doc(db, "cyou_messages", msgId), { deleted: true, text: "", deletedAt: serverTimestamp() });
+  } catch (err) { console.error("Delete error", err); }
+}
+
+/* helpers */
+function formatTime(d) { return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function scrollToBottom() { const last = messagesDiv.lastElementChild; if (last) last.scrollIntoView({ behavior: "smooth", block: "end" }); }
+
+/* clear local chat */
+clearChatBtn?.addEventListener("click", () => {
+  if (!confirm("Clear local chat view? This will not delete server messages.")) return;
+  messagesDiv.innerHTML = "";
+});
+
+/* ensure input visible on mobile keyboard */
+messageInput?.addEventListener("focus", () => setTimeout(scrollToBottom, 300));
+messageInput?.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendBtn?.click(); }});
