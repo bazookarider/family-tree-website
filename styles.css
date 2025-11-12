@@ -60,3 +60,4 @@ body.dark .send-form{background:#0b0d0f;border-top-color:rgba(255,255,255,0.03)}
   /* Uses the accent color for other users */
   color: var(--accent);
 }
+
