@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU Chat — Updated</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="chat-container">
+
+    <header class="chat-header">
+      <div class="title-left">
+        <h1 class="title">CYOU Chat</h1>
+      </div>
+
+      <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
+      </div>
+    </header>
+
+    <section id="joinSection" class="join-section">
+      <h2>Welcome to CYOU Chat</h2>
+      <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
+      <button id="enterBtn" class="primary">Join Chat</button>
+      <div id="joinHint" class="hint"></div>
+    </section>
+
+    <section id="chatSection" class="chat-section" style="display:none;">
+      <main class="main-chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">➤</button>
+        </form>
+
+      </main>
+    </section>
+
+    <div id="msgPopup" class="msg-popup" role="dialog" aria-hidden="true">
+      <button id="editBtn" class="popup-btn">Edit</button>
+      <button id="deleteBtn" class="popup-btn">Delete</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
