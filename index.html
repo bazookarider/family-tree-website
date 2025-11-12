@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Application</title>
+    <title>Anonymous Chat App</title>
     <link rel="stylesheet" href="styles.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -12,29 +12,15 @@
 </head>
 <body>
     <div id="login-container" class="container active">
-        <h2>Sign In / Sign Up</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button id="signup-btn">Sign Up</button>
-        <button id="login-btn">Log In</button>
-    </div>
-
-    <div id="dashboard-container" class="container">
-        <div id="user-info">
-            <h3 id="current-user-email"></h3>
-            <button id="logout-btn">Log Out</button>
-        </div>
-        
-        <h3>Start a Private Chat</h3>
-        <ul id="user-list">
-            <p>Loading users...</p>
-        </ul>
+        <h2>Welcome to the Chat</h2>
+        <p>You will be assigned an anonymous user ID.</p>
+        <button id="anonymous-login-btn">Start Chatting</button>
     </div>
 
     <div id="chat-container" class="container">
         <div id="chat-header">
-            <button id="back-to-dashboard-btn">← Back</button>
-            <h3 id="chat-partner-email">Chatting with...</h3>
+            <h3 id="current-user-status">Logged in Anonymously</h3>
+            <button id="logout-btn">Log Out</button>
         </div>
         
         <div id="messages">
