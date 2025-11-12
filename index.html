@@ -1,6 +1,50 @@
-<!-- AUTH SECTION -->
-<section id="authSection" class="join-section">
-  <h2>Sign in with Google</h2>
-  <button id="googleSignInBtn">Sign in with Google</button>
-  <div class="hint" id="authHint"></div>
-</section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- AUTH SECTION -->
+  <section id="authSection" class="join-section">
+    <h2>Sign in with Google</h2>
+    <button id="googleSignInBtn">Sign in with Google</button>
+    <div class="hint" id="authHint"></div>
+  </section>
+
+  <!-- CHAT SECTION -->
+  <div class="chat-container" id="chatSection" style="display:none;">
+    <header class="chat-header">
+      <div class="title-block">
+        <h1 class="title">CYOU Chat</h1>
+        <div id="typingIndicatorBottom" class="typing-status"></div>
+      </div>
+      <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear chat">🧹</button>
+      </div>
+      <div class="online-count">Online: <span id="onlineCount">0</span></div>
+    </header>
+
+    <section class="chat-section">
+      <aside class="sidebar">
+        <h3>Online Users</h3>
+        <ul id="onlineUsers"></ul>
+      </aside>
+
+      <main class="main-chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">➤</button>
+        </form>
+      </main>
+    </section>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
