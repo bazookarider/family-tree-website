@@ -3,28 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU Chat — Final</title>
+  <title>CYOU Chat — Updated</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="chat-container">
 
-    <!-- HEADER (title + last seen + controls) -->
+    <!-- HEADER (title + last seen removed) -->
     <header class="chat-header">
       <div class="title-left">
         <h1 class="title">CYOU Chat</h1>
-        <div id="lastSeen" class="last-seen"></div>
       </div>
 
       <div class="header-controls">
         <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
         <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
       </div>
-
-      <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <!-- JOIN (full screen style) -->
+    <!-- JOIN (full-screen) -->
     <section id="joinSection" class="join-section">
       <h2>Welcome to CYOU Chat</h2>
       <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
@@ -32,22 +29,18 @@
       <div id="joinHint" class="hint"></div>
     </section>
 
-    <!-- MAIN CHAT (hidden until joined) -->
+    <!-- CHAT (hidden until joined). Sidebar removed. -->
     <section id="chatSection" class="chat-section" style="display:none;">
-      <aside class="sidebar">
-        <h3>Online Users</h3>
-        <ul id="onlineUsers"></ul>
-      </aside>
-
       <main class="main-chat">
         <div id="messages" class="messages" aria-live="polite"></div>
 
-        <!-- typing indicator now below input (per your request) -->
+        <!-- send form -->
         <form id="sendForm" class="send-form" autocomplete="off">
           <input id="messageInput" type="text" placeholder="Type a message..." />
           <button type="submit" id="sendBtn">➤</button>
         </form>
 
+        <!-- typing indicator now below the input -->
         <div id="typingIndicator" class="typing-indicator"></div>
       </main>
     </section>
