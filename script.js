@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, fetchSignInMethodsForEmail
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, serverTimestamp,
@@ -104,9 +104,16 @@ registerBtn.addEventListener("click", async () => {
   const nickDoc = await getDoc(doc(db,"cyou_users",nickname));
   if(nickDoc.exists()) return authHint.textContent="Nickname already exists";
 
+  // Check if email already exists
   try {
+    const methods = await fetchSignInMethodsForEmail(auth,email);
+    if(methods.length > 0) {
+      authHint.textContent = "Email already registered. Please login.";
+      switchToLogin();
+      return;
+    }
+
     const userCred = await createUserWithEmailAndPassword(auth,email,password);
-    // Save nickname in Firestore
     await setDoc(doc(db,"cyou_users",nickname),{uid:userCred.user.uid,email});
     username = nickname;
     localStorage.setItem("cyou_username",username);
@@ -121,20 +128,27 @@ loginBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
   if(!email || !password) return authHint.textContent="Fill all fields";
+
   try {
     const userCred = await signInWithEmailAndPassword(auth,email,password);
     // Find nickname
+    const snap = await getDoc(doc(db,"cyou_users",userCred.user.uid));
+    let found = false;
     const q = query(collection(db,"cyou_users"));
-    const snap = await onSnapshot(q,(snapshot)=>{
+    onSnapshot(q, (snapshot) => {
       snapshot.docs.forEach(d=>{
         if(d.data().uid===userCred.user.uid){
           username=d.id;
           localStorage.setItem("cyou_username",username);
-          joinChat();
+          if(!found) { joinChat(); found=true; }
         }
       });
     });
-  } catch(err) { authHint.textContent = err.message; }
+  } catch(err) {
+    if(err.code==="auth/user-not-found") authHint.textContent="User not found. Register first.";
+    else if(err.code==="auth/wrong-password") authHint.textContent="Wrong password.";
+    else authHint.textContent = err.message;
+  }
 });
 
 /* Check if already logged in */
