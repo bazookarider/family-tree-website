@@ -3,7 +3,7 @@ import {
   getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc
+  getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 /* Firebase Config */
@@ -36,7 +36,7 @@ const onlineUsersList = document.getElementById("onlineUsers");
 const themeToggle = document.getElementById("themeToggle");
 const clearChatBtn = document.getElementById("clearChatBtn");
 
-let username = localStorage.getItem("cyou_username") || "";
+let username = "";
 let typingTimeout;
 
 /* THEME TOGGLE */
@@ -51,7 +51,7 @@ googleSignInBtn.addEventListener("click", async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    username = user.email;
+    username = user.email; // use email
     localStorage.setItem("cyou_username", username);
     joinChat();
   } catch (err) {
@@ -72,7 +72,10 @@ onAuthStateChanged(auth, user => {
 function joinChat() {
   authSection.style.display = "none";
   chatSection.style.display = "flex";
-  addPresence(); listenForMessages(); listenForTyping();
+
+  addPresence();
+  listenForMessages();
+  listenForTyping();
 }
 
 /* SEND MESSAGE */
@@ -83,7 +86,8 @@ sendForm.addEventListener("submit", async e=>{
   const msg={name:username,text,createdAt:serverTimestamp(),deleted:false};
   const docRef=await addDoc(collection(db,"cyou_messages"),msg);
   await updateDoc(doc(db,"cyou_messages",docRef.id),{id:docRef.id});
-  messageInput.value=""; setTyping(false);
+  messageInput.value="";
+  setTyping(false);
 });
 
 /* LISTEN MESSAGES */
@@ -117,10 +121,15 @@ async function addPresence(){
   await setDoc(userRef,{online:true});
   onSnapshot(collection(db,"cyou_presence"),snap=>{
     const users=snap.docs.filter(d=>d.data().online);
-    onlineCount.textContent=users.length; onlineUsersList.innerHTML="";
-    users.forEach(d=>{ const li=document.createElement("li"); li.textContent=d.id; onlineUsersList.appendChild(li); });
+    onlineCount.textContent=users.length;
+    onlineUsersList.innerHTML="";
+    users.forEach(d=>{
+      const li=document.createElement("li");
+      li.textContent=d.id;
+      onlineUsersList.appendChild(li);
+    });
   });
-  window.addEventListener("beforeunload",()=>deleteDoc(userRef));
+  window.addEventListener("beforeunload",()=>deleteDoc(doc(db,"cyou_presence",username)));
 }
 
 /* TYPING INDICATOR */
@@ -136,6 +145,6 @@ function listenForTyping(){
 
 /* CLEAR CHAT */
 clearChatBtn.addEventListener("click", async ()=>{
-  const snap = await (await import("https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js")).getDocs(collection(db,"cyou_messages"));
+  const snap = await getDocs(collection(db,"cyou_messages"));
   snap.forEach(d=>deleteDoc(doc(db,"cyou_messages",d.id)));
 });
