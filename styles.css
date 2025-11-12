@@ -44,3 +44,19 @@ border-top:1px solid rgba(0,0,0,0.06);z-index:40}
 @media (max-width:800px){.sidebar{display:none}.messages{padding-bottom:200px}.chat-container{height:100vh;border-radius:0}}
 body.dark .message.other{background:var(--other-bg);color:var(--text)}
 body.dark .send-form{background:#0b0d0f;border-top-color:rgba(255,255,255,0.03)}
+
+/* --- ADDITION FOR SENDER NAME --- */
+.sender-name{
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+.message.me .sender-name{
+  /* Ensures "You" aligns to the right */
+  text-align: right;
+}
+.message.other .sender-name{
+  /* Uses the accent color for other users */
+  color: var(--accent);
+}
