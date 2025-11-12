@@ -1,5 +1,4 @@
-// script.js (module)
-// Public-only optimized CYOU chat: auto-login, auto-scroll, typing, presence, ticks (Firestore)
+// script.js (module) — public-only optimized CYOU chat (auto-login, reliable join, auto-scroll, typing, presence, ticks)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
@@ -11,7 +10,7 @@ import {
   doc, setDoc, updateDoc, arrayUnion, getDoc
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* --- firebase config (same project) --- */
+/* firebase config (same project) */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -43,107 +42,108 @@ const onlineCountEl = document.getElementById("onlineCount");
 const emojiBtn = document.getElementById("emojiBtn");
 const emojiPanel = document.getElementById("emojiPanel");
 
+/* state */
 let currentUser = null;
 let displayName = localStorage.getItem("cyou_name") || "";
 let typingTimeout = null;
 let presenceInterval = null;
 const HEARTBEAT_MS = 5000;
-const PRESENCE_FRESH_MS = 14000; // consider online if lastActive < 14s
+const PRESENCE_FRESH_MS = 14000;
 
-// prefill name if saved
+/* prefill name if saved */
 if (displayName) nameInput.value = displayName;
 
-// fast-join when a name is saved
+/* if name saved in localStorage -> attempt auto-join immediately */
 if (displayName) {
-  // verify user doc exists; if not, create
   (async () => {
     try {
+      // ensure user doc exists (so the username isn't treated as 'taken' by another)
       const userDocRef = doc(db, "cyou_users", displayName);
       const snapshot = await getDoc(userDocRef);
       if (!snapshot.exists()) {
         await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() });
+      } else {
+        // if it exists, update online true
+        await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
       }
-      // sign in anonymously to get uid and start presence
-      await signInAnonymously(auth);
+      // sign in anonymously and start chat
+      const cred = await signInAnonymously(auth);
+      // when sign-in returns, set currentUser and enter UI
+      currentUser = cred.user;
+      afterSignIn();
     } catch (e) {
-      console.warn("Auto-join error:", e);
+      console.warn("Auto-join failed:", e);
     }
   })();
 }
 
-// --- JOIN flow (enter name -> join public)
+/* JOIN BUTTON: verify username and sign in */
 joinBtn.addEventListener("click", async () => {
+  nameError.textContent = "";
   const name = (nameInput.value || "").trim();
   if (!name) return;
   try {
-    // check if username exists and is online (collision)
     const userRef = doc(db, "cyou_users", name);
     const snapshot = await getDoc(userRef);
+
+    // If snapshot exists and online === true and it's NOT our saved name, block
     if (snapshot.exists()) {
       const data = snapshot.data();
-      // If doc exists but this browser already has that name saved, allow (auto rejoin)
       const saved = localStorage.getItem("cyou_name");
-      if (saved === name) {
-        // allow rejoin
-      } else if (data.online) {
+      if (data.online && saved !== name) {
         nameError.textContent = "Username already taken — choose another.";
         return;
       }
     }
-    // set local and write user doc (mark online)
+
+    // Accept the name: save locally and set user doc online
     displayName = name;
     localStorage.setItem("cyou_name", displayName);
     await setDoc(doc(db, "cyou_users", displayName), { online: true, lastSeen: serverTimestamp() });
-    // sign in anonymously
-    await signInAnonymously(auth);
+
+    // sign in anonymously and proceed
+    const cred = await signInAnonymously(auth);
+    currentUser = cred.user;
+    afterSignIn();
+
   } catch (err) {
     console.error("Join error:", err);
     nameError.textContent = "Could not join — check console.";
   }
 });
 
-// Auth state
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    enterUI();
-    startPresence();
-    subscribePresence();
-    subscribeTyping();
-    subscribeMessages();
-  } else {
-    // signed out (rare)
-    currentUser = null;
-  }
-});
-
-function enterUI(){
+/* After sign-in actions */
+function afterSignIn(){
+  // hide join screen, show chat
   joinScreen.classList.add("hidden");
   chatApp.classList.remove("hidden");
   messageInput.disabled = false;
   messageInput.focus();
+
+  // start presence, typing, and messages
+  startPresence();
+  subscribePresence();
+  subscribeTyping();
+  subscribeMessages();
 }
 
-// --- Presence (user list & online count)
+/* PRESENCE */
 async function startPresence(){
   if (!currentUser || !displayName) return;
-  const ref = doc(db, "cyou_presence", currentUser.uid);
+  const presenceRef = doc(db, "cyou_presence", currentUser.uid);
   try {
-    await setDoc(ref, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
+    await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
   } catch (e) { console.warn("presence set error", e); }
 
   presenceInterval = setInterval(async () => {
-    try {
-      await setDoc(ref, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
-    } catch (e) { console.warn("presence heartbeat", e); }
+    try { await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() }); }
+    catch (e) { console.warn("presence heartbeat error", e); }
   }, HEARTBEAT_MS);
 
+  // on unload, mark offline (best-effort)
   window.addEventListener("beforeunload", async () => {
     try {
-      const userDoc = doc(db, "cyou_users", displayName);
-      await updateDoc(userDoc, { online: false, lastSeen: serverTimestamp() });
-      const presenceRef = doc(db, "cyou_presence", currentUser.uid);
-      await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
+      await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
     } catch (e) {}
   });
 }
@@ -166,7 +166,7 @@ function subscribePresence(){
   }, (err) => console.warn("presence onSnapshot", err));
 }
 
-// --- Typing (per-user)
+/* TYPING */
 let lastTypedAt = 0;
 messageInput.addEventListener("input", () => {
   setTyping(true);
@@ -203,13 +203,13 @@ function subscribeTyping(){
   }, (err) => console.warn("typing subscribe error", err));
 }
 
-// --- Send message (public)
+/* SEND MESSAGE */
 sendForm.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const text = (messageInput.value || "").trim();
   if (!text || !currentUser) return;
   try {
-    // create message; deliveredBy and seenBy start empty
+    // create message doc
     const ref = await addDoc(collection(db, "cyou_messages"), {
       text,
       name: displayName,
@@ -218,69 +218,53 @@ sendForm.addEventListener("submit", async (ev) => {
       deliveredBy: [],
       seenBy: []
     });
-    // optimistic delivered update (this marks as delivered locally quickly)
-    try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
+    // optimistic status: mark delivered locally by updating the doc
+    try { await updateDoc(ref, { status: "delivered" }); } catch (e) {}
     messageInput.value = "";
     setTyping(false);
   } catch (e) {
     console.error("send error", e);
-    alert("Could not send message (see console).");
+    alert("Could not send message.");
   }
 });
 
-// --- Listen messages: limitToLast(6) for low bandwidth + auto-scroll
+/* SUBSCRIBE MESSAGES: limitToLast(6) and auto-scroll bottom */
 function subscribeMessages(){
   const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(6));
   onSnapshot(q, async (snap) => {
-    // build array of docs in order
     const docs = [];
     snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
     messagesEl.innerHTML = "";
+    for (const m of docs) renderMessage(m.id, m.data);
 
-    for (const m of docs) {
-      renderMessage(m.id, m.data);
-    }
+    // auto-scroll to bottom smooth
+    const lastChild = messagesEl.lastElementChild;
+    if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
-    // auto-scroll: smooth to bottom
-    const last = messagesEl.lastElementChild;
-    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'end' });
-
-    // mark this client as having delivered these messages (if not sender)
+    // mark delivered & seen by this client (if not sender)
     for (const m of docs) {
       if (m.data.uid !== currentUser.uid) {
         try {
           const mRef = doc(db, "cyou_messages", m.id);
           await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
-        } catch (e){ /* ignore race */ }
+          await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid) });
+          await updateDoc(mRef, { status: "seen" });
+        } catch (e) { /* ignore concurrency errors */ }
       }
     }
-
-    // mark seen (if message not by me) — add this client to seenBy and set status seen
-    for (const m of docs) {
-      if (m.data.uid !== currentUser.uid) {
-        try {
-          const mRef = doc(db, "cyou_messages", m.id);
-          await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid), status: "seen" });
-        } catch (e){ /* ignore */ }
-      }
-    }
-  }, (err) => {
-    console.error("messages subscribe error", err);
-  });
+  }, (err) => console.error("messages subscribe error", err));
 }
 
-// --- Render a message
+/* RENDER message with clearer colors for other-client view */
 function renderMessage(id, data){
   const div = document.createElement("div");
   const isMe = data.uid === (currentUser && currentUser.uid);
   div.className = "message " + (isMe ? "me" : "other");
 
-  // text
   const content = document.createElement("div");
   content.textContent = data.text || "";
   div.appendChild(content);
 
-  // meta: author/time/ticks
   const meta = document.createElement("div");
   meta.className = "meta";
 
@@ -296,24 +280,14 @@ function renderMessage(id, data){
   meta.appendChild(document.createTextNode(" • "));
   meta.appendChild(time);
 
-  // ticks (only show for messages I sent)
   if (isMe) {
     const ticks = document.createElement("span");
     ticks.className = "ticks";
-
     const seenCount = Array.isArray(data.seenBy) ? data.seenBy.length : 0;
     const deliveredCount = Array.isArray(data.deliveredBy) ? data.deliveredBy.length : 0;
-
-    if (seenCount > 0) {
-      ticks.textContent = "✔✔";
-      ticks.style.color = "var(--tick-blue)";
-    } else if (deliveredCount > 0) {
-      ticks.textContent = "✔✔";
-      ticks.style.color = "var(--tick-gray)";
-    } else {
-      ticks.textContent = "✔";
-      ticks.style.color = "var(--tick-gray)";
-    }
+    if (seenCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-blue)"; }
+    else if (deliveredCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-gray)"; }
+    else { ticks.textContent = "✔"; ticks.style.color = "var(--tick-gray)"; }
     meta.appendChild(document.createTextNode(" "));
     meta.appendChild(ticks);
   }
@@ -322,10 +296,10 @@ function renderMessage(id, data){
   messagesEl.appendChild(div);
 }
 
-// small pad helper
-function pad(n){ return (n<10 ? "0"+n : n); }
+/* helper */
+function pad(n){ return n<10 ? "0"+n : n; }
 
-// --- Emoji picker (simple)
+/* Emoji picker - small */
 const emojiList = ["😀","😁","😄","😂","😊","😍","😜","😎","🤗","🤩","😴","😢","😭","👍","👏","🙏","🔥"];
 function buildEmojiPanel(){
   emojiPanel.innerHTML = "";
@@ -347,7 +321,7 @@ emojiBtn.addEventListener("click", () => {
   emojiPanel.classList.toggle("hidden");
 });
 
-// insert at cursor
+/* insert text at cursor */
 function insertAtCursor(el, text) {
   const start = el.selectionStart || 0;
   const end = el.selectionEnd || 0;
@@ -356,5 +330,4 @@ function insertAtCursor(el, text) {
   el.dispatchEvent(new Event('input'));
 }
 
-// done
 console.log("CYOU public script loaded");
