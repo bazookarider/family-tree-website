@@ -1,16 +1,31 @@
-// script.js (final version)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, serverTimestamp,
-  onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDoc
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  where
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* ---------------------------
-   🔥 CYOU Firebase Config
----------------------------- */
+/* 🔥 Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -22,76 +37,138 @@ const firebaseConfig = {
   measurementId: "G-T66B50HFJ8"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+await setPersistence(auth, browserLocalPersistence);
 
-/* ---------------------------
-   🌐 DOM Elements
----------------------------- */
-const joinSection = document.getElementById("joinSection");
+/* DOM Elements */
+const authSection = document.getElementById("authSection");
 const chatSection = document.getElementById("chatSection");
-const nameInput = document.getElementById("nameInput");
-const enterBtn = document.getElementById("enterBtn");
+const tabRegister = document.getElementById("tabRegister");
+const tabLogin = document.getElementById("tabLogin");
+const registerForm = document.getElementById("registerForm");
+const loginForm = document.getElementById("loginForm");
+const regNickname = document.getElementById("regNickname");
+const regEmail = document.getElementById("regEmail");
+const regPassword = document.getElementById("regPassword");
+const regHint = document.getElementById("regHint");
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
+const loginHint = document.getElementById("loginHint");
+const meNicknameEl = document.getElementById("meNickname");
+const signOutBtn = document.getElementById("signOutBtn");
+const messagesDiv = document.getElementById("messages");
 const messageInput = document.getElementById("messageInput");
 const sendForm = document.getElementById("sendForm");
-const messagesDiv = document.getElementById("messages");
-const typingIndicator = document.getElementById("typingIndicator");
+const typingIndicator = document.getElementById("typingStatus");
+const typingBottom = document.getElementById("typingIndicatorBottom");
 const onlineCount = document.getElementById("onlineCount");
 const onlineUsersList = document.getElementById("onlineUsers");
+const themeToggle = document.getElementById("themeToggle");
+const clearChatBtn = document.getElementById("clearChatBtn");
 
-let username = localStorage.getItem("cyou_username") || "";
+let nickname = localStorage.getItem("cyou_nickname") || "";
 let typingTimeout;
 
-/* ---------------------------
-   👤 Auth & Join
----------------------------- */
-signInAnonymously(auth);
-onAuthStateChanged(auth, (user) => {
-  if (user) console.log("Signed in anonymously:", user.uid);
-});
+/* === THEME TOGGLE === */
+themeToggle.onclick = () => {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("cyou_theme", document.body.classList.contains("dark") ? "dark" : "light");
+};
+if (localStorage.getItem("cyou_theme") === "dark") document.body.classList.add("dark");
 
-enterBtn.addEventListener("click", async () => {
-  const name = nameInput.value.trim();
-  if (!name) return alert("Enter your name first!");
+/* === TABS === */
+tabRegister.onclick = () => {
+  registerForm.style.display = "";
+  loginForm.style.display = "none";
+  tabRegister.classList.add("active");
+  tabLogin.classList.remove("active");
+};
+tabLogin.onclick = () => {
+  loginForm.style.display = "";
+  registerForm.style.display = "none";
+  tabLogin.classList.add("active");
+  tabRegister.classList.remove("active");
+};
 
-  // Check if name already exists
-  const userDoc = await getDoc(doc(db, "cyou_presence", name));
-  if (userDoc.exists()) {
-    return alert("That name is already in use. Choose another one!");
+/* === REGISTER === */
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  regHint.textContent = "";
+
+  const nick = regNickname.value.trim();
+  const email = regEmail.value.trim();
+  const pass = regPassword.value.trim();
+
+  if (!nick || !email || pass.length < 6) {
+    regHint.textContent = "Please fill all fields correctly.";
+    return;
   }
 
-  username = name;
-  localStorage.setItem("cyou_username", username);
+  const taken = await getDocs(query(collection(db, "cyou_users"), where("nickname", "==", nick)));
+  if (!taken.empty) {
+    regHint.textContent = "Nickname already taken.";
+    return;
+  }
 
-  joinSection.style.display = "none";
-  chatSection.style.display = "flex";
-
-  await addPresence();
-  listenForMessages();
-  listenForTyping();
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, "cyou_users", userCred.user.uid), { nickname: nick, email });
+    localStorage.setItem("cyou_nickname", nick);
+  } catch (err) {
+    regHint.textContent = err.message;
+  }
 });
 
-/* Auto-join if stored */
-if (username) {
-  joinSection.style.display = "none";
-  chatSection.style.display = "flex";
+/* === LOGIN === */
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginHint.textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value.trim());
+  } catch (err) {
+    loginHint.textContent = err.message;
+  }
+});
+
+/* === AUTH STATE === */
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const userDoc = await getDoc(doc(db, "cyou_users", user.uid));
+    nickname = userDoc.data()?.nickname || "Guest";
+    localStorage.setItem("cyou_nickname", nickname);
+    meNicknameEl.textContent = nickname;
+    authSection.style.display = "none";
+    chatSection.style.display = "flex";
+    startChat();
+  } else {
+    authSection.style.display = "flex";
+    chatSection.style.display = "none";
+  }
+});
+
+/* === SIGN OUT === */
+signOutBtn.onclick = async () => {
+  await signOut(auth);
+  localStorage.removeItem("cyou_nickname");
+};
+
+/* === CHAT SYSTEM === */
+async function startChat() {
   addPresence();
-  listenForMessages();
-  listenForTyping();
+  listenMessages();
+  listenTyping();
 }
 
-/* ---------------------------
-   💬 Messaging
----------------------------- */
+/* SEND MESSAGE */
 sendForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
   if (!text) return;
 
   const newMsg = {
-    name: username,
+    name: nickname,
     text,
     createdAt: serverTimestamp(),
     seen: false,
@@ -99,21 +176,20 @@ sendForm.addEventListener("submit", async (e) => {
   };
 
   const docRef = await addDoc(collection(db, "cyou_messages"), newMsg);
-  updateDoc(docRef, { id: docRef.id });
-
+  await updateDoc(docRef, { id: docRef.id });
   messageInput.value = "";
   setTyping(false);
 });
 
-function listenForMessages() {
+/* LISTEN MESSAGES */
+function listenMessages() {
   const q = query(collection(db, "cyou_messages"), orderBy("createdAt"));
-  onSnapshot(q, (snapshot) => {
+  onSnapshot(q, (snap) => {
     messagesDiv.innerHTML = "";
-    snapshot.forEach((docSnap) => {
+    snap.forEach((docSnap) => {
       const msg = docSnap.data();
-      const isYou = msg.name === username;
       const div = document.createElement("div");
-      div.classList.add("message", isYou ? "me" : "other");
+      div.classList.add("message", msg.name === nickname ? "me" : "other");
 
       if (msg.deleted) {
         div.innerHTML = `<em>Message deleted</em>`;
@@ -121,22 +197,17 @@ function listenForMessages() {
         div.innerHTML = `
           <strong>${msg.name}</strong><br>
           ${msg.text}
-          <span class="meta">
-            ${new Date(msg.createdAt?.toDate?.() || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            ${isYou ? (msg.seen ? "✓✓" : "✓") : ""}
-          </span>
-        `;
+          <div class="meta">${new Date(msg.createdAt?.toDate?.() || Date.now())
+            .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </div>`;
       }
 
-      // Delete button for own messages
-      if (isYou && !msg.deleted) {
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "🗑";
-        delBtn.classList.add("delete-btn");
-        delBtn.onclick = async () => {
-          await updateDoc(doc(db, "cyou_messages", docSnap.id), { deleted: true });
-        };
-        div.appendChild(delBtn);
+      if (msg.name === nickname && !msg.deleted) {
+        const del = document.createElement("button");
+        del.textContent = "🗑";
+        del.classList.add("msg-btn");
+        del.onclick = async () => await updateDoc(doc(db, "cyou_messages", msg.id), { deleted: true });
+        div.appendChild(del);
       }
 
       messagesDiv.appendChild(div);
@@ -145,50 +216,58 @@ function listenForMessages() {
   });
 }
 
-/* ---------------------------
-   👥 Presence
----------------------------- */
+/* === PRESENCE === */
 async function addPresence() {
-  const userRef = doc(db, "cyou_presence", username);
-  await setDoc(userRef, { online: true });
+  const ref = doc(db, "cyou_presence", nickname);
+  await setDoc(ref, { online: true });
+
   onSnapshot(collection(db, "cyou_presence"), (snap) => {
     const users = snap.docs.filter((d) => d.data().online);
     onlineCount.textContent = users.length;
     onlineUsersList.innerHTML = "";
-    users.forEach((d) => {
+    users.forEach((u) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span class="user-dot online"></span>${d.id}`;
+      li.textContent = u.id;
       onlineUsersList.appendChild(li);
     });
   });
-  window.addEventListener("beforeunload", () => {
-    deleteDoc(userRef);
+
+  window.addEventListener("beforeunload", async () => {
+    await deleteDoc(ref);
   });
 }
 
-/* ---------------------------
-   ⌨ Typing Indicator
----------------------------- */
-messageInput.addEventListener("input", handleTyping);
-
-async function handleTyping() {
+/* === TYPING === */
+messageInput.addEventListener("input", () => {
   setTyping(true);
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => setTyping(false), 2000);
-}
+  typingTimeout = setTimeout(() => setTyping(false), 1500);
+});
 
 async function setTyping(state) {
-  await setDoc(doc(db, "cyou_typing", username), { typing: state });
+  await setDoc(doc(db, "cyou_typing", nickname), { typing: state });
 }
 
-function listenForTyping() {
+function listenTyping() {
   onSnapshot(collection(db, "cyou_typing"), (snap) => {
-    const typers = snap.docs
-      .map((d) => ({ name: d.id, ...d.data() }))
-      .filter((d) => d.typing && d.name !== username);
-
-    typingIndicator.textContent = typers.length
-      ? `${typers.map((t) => `${t.name} is typing...`).join(", ")}`
-      : "";
+    const typers = [];
+    snap.forEach((d) => {
+      if (d.data().typing && d.id !== nickname) typers.push(d.id);
+    });
+    if (typers.length > 0) {
+      typingIndicator.textContent = `${typers.join(", ")} typing...`;
+      typingBottom.textContent = typingIndicator.textContent;
+    } else {
+      typingIndicator.textContent = "";
+      typingBottom.textContent = "";
+    }
   });
 }
+
+/* === CLEAR CHAT === */
+clearChatBtn.onclick = async () => {
+  if (confirm("Clear all chat messages?")) {
+    const all = await getDocs(collection(db, "cyou_messages"));
+    all.forEach(async (d) => await deleteDoc(d.ref));
+  }
+};
