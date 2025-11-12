@@ -1,76 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU Chat — Secure</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYOU Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="chat-container">
+  <!-- AUTH SECTION -->
+  <section id="authSection" class="center">
+    <div class="auth-box">
+      <h2>CYOU Chat 🔐</h2>
+      <div class="tabs">
+        <button id="tabRegister" class="active">Register</button>
+        <button id="tabLogin">Login</button>
+      </div>
 
-    <!-- HEADER -->
-    <header class="chat-header">
-      <div class="title-block">
-        <h1 class="title">CYOU Chat</h1>
-        <div id="typingStatus" class="typing-status"></div>
+      <!-- Register Form -->
+      <form id="registerForm">
+        <input id="regNickname" type="text" placeholder="Nickname" required />
+        <input id="regEmail" type="email" placeholder="Email" required />
+        <input id="regPassword" type="password" placeholder="Password" required />
+        <button type="submit">Register</button>
+        <p id="regHint" class="hint"></p>
+      </form>
+
+      <!-- Login Form -->
+      <form id="loginForm" style="display: none;">
+        <input id="loginEmail" type="email" placeholder="Email" required />
+        <input id="loginPassword" type="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+        <p id="loginHint" class="hint"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- CHAT SECTION -->
+  <section id="chatSection" style="display:none;">
+    <header>
+      <div>
+        👤 <span id="meNickname"></span>
+        <small id="typingStatus"></small>
       </div>
-      <div class="header-controls">
-        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
-        <button id="clearChatBtn" class="icon-btn" title="Clear chat">🧹</button>
+      <div class="right">
+        <button id="themeToggle">🌓</button>
+        <button id="clearChatBtn">🧹</button>
+        <button id="signOutBtn">🚪 Sign Out</button>
       </div>
-      <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <!-- AUTH SECTION -->
-    <section id="authSection" class="join-section">
-      <div class="auth-box">
-        <div class="tabs">
-          <button id="tabRegister" class="tab active">Register</button>
-          <button id="tabLogin" class="tab">Login</button>
-        </div>
-
-        <!-- REGISTER FORM -->
-        <form id="registerForm" class="auth-form">
-          <input id="regNickname" type="text" placeholder="Nickname (unique)" required />
-          <input id="regEmail" type="email" placeholder="Email" required />
-          <input id="regPassword" type="password" placeholder="Password (min 6 chars)" required />
-          <button type="submit" id="registerBtn">Create Account</button>
-          <div id="regHint" class="hint"></div>
-        </form>
-
-        <!-- LOGIN FORM -->
-        <form id="loginForm" class="auth-form" style="display:none;">
-          <input id="loginEmail" type="email" placeholder="Email" required />
-          <input id="loginPassword" type="password" placeholder="Password" required />
-          <button type="submit" id="loginBtn">Login</button>
-          <div id="loginHint" class="hint"></div>
-        </form>
-      </div>
-    </section>
-
-    <!-- CHAT SECTION -->
-    <section id="chatSection" class="chat-section" style="display:none;">
-      <aside class="sidebar">
-        <div class="profile-block">
-          <strong id="meNickname">User</strong>
-          <button id="signOutBtn" class="small-btn">Sign out</button>
-        </div>
-        <h3>Online Users</h3>
+    <main>
+      <aside>
+        <h3>🟢 Online (<span id="onlineCount">0</span>)</h3>
         <ul id="onlineUsers"></ul>
       </aside>
 
-      <main class="main-chat">
-        <div id="messages" class="messages" aria-live="polite"></div>
-        <div id="typingIndicatorBottom" class="typing-indicator-bottom"></div>
-
-        <form id="sendForm" class="send-form" autocomplete="off">
-          <input id="messageInput" type="text" placeholder="Type a message..." />
-          <button type="submit" id="sendBtn">➤</button>
+      <div id="chatBox">
+        <div id="messages"></div>
+        <div id="typingIndicatorBottom" class="hint"></div>
+        <form id="sendForm">
+          <input id="messageInput" type="text" placeholder="Type a message..." autocomplete="off" />
+          <button type="submit">Send</button>
         </form>
-      </main>
-    </section>
-  </div>
+      </div>
+    </main>
+  </section>
 
   <script type="module" src="script.js"></script>
 </body>
