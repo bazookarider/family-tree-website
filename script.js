@@ -1,10 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged, signOut
+  getAuth, signInAnonymously, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot,
-  doc, setDoc, getDoc, updateDoc, where, deleteDoc
+  doc, setDoc, getDoc, where
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
 // Your Saved Firebase Config
@@ -24,9 +24,7 @@ const db = getFirestore(app);
 // --- DOM ELEMENTS ---
 const joinScreen = document.getElementById("joinScreen");
 const chatApp = document.getElementById("chatApp");
-// Renamed from nameInput
 const userNameInput = document.getElementById("userNameInput"); 
-// Renamed from checkBtn
 const joinBtn = document.getElementById("joinBtn"); 
 const nameError = document.getElementById("nameError");
 
@@ -39,75 +37,92 @@ const messageInput = document.getElementById("messageInput");
 // --- CHAT VARIABLES ---
 let currentUser = null;
 let displayName = null;
-// Removed chatMode and related variables. Always Public Chat.
 const CHAT_ROOM = "public"; 
 const USERS_COLLECTION = "cyou_users";
 const MESSAGES_COLLECTION = `cyou_${CHAT_ROOM}`;
-let isTyping = false; // Flag to manage typing status
+let isTyping = false; 
 
-// --- 1. INITIALIZATION & AUTO-LOGIN (Username saved locally) ---
+// --- 1. INITIALIZATION & AUTO-LOGIN ---
 function init() {
-    // Check for saved username
     const savedName = localStorage.getItem('cyou_username');
     if (savedName) {
         displayName = savedName;
-        // Auto-join if name is found
-        signIn(displayName);
+        signIn(displayName, false); // Auto-join doesn't log a welcome message
     }
 
-    // Listener for the Join button (manual join/first-time join)
     joinBtn.onclick = async () => {
         const name = userNameInput.value.trim();
-        if (!name) return;
-        
-        const exists = await getDoc(doc(db, USERS_COLLECTION, name));
-        if (exists.exists()) {
-            nameError.textContent = "Username already taken!";
+        nameError.textContent = ""; 
+        if (!name) {
+            nameError.textContent = "Please enter a username.";
             return;
         }
-        
-        nameError.textContent = "";
-        displayName = name;
-        // Save name locally for auto-login
-        localStorage.setItem('cyou_username', displayName); 
-        await signIn(displayName);
+
+        try {
+            const exists = await getDoc(doc(db, USERS_COLLECTION, name));
+            
+            if (exists.exists()) {
+                nameError.textContent = "Username already taken!";
+                return;
+            }
+            
+            displayName = name;
+            localStorage.setItem('cyou_username', displayName); 
+            
+            // Send 'true' to log a welcome message for a fresh join
+            await signIn(displayName, true); 
+
+        } catch (error) {
+            console.error("Joining failed:", error);
+            // General connection error message for the screen
+            nameError.textContent = "A connection error occurred. Please try again."; 
+        }
     };
 
-    // Global listener for auth state changes
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
             joinScreen.classList.add("hidden");
             chatApp.classList.remove("hidden");
-            // Start all real-time listeners
             subscribeMessages();
             subscribeOnlineStatus();
             subscribeTypingIndicator();
         } else {
-            // Log out/clean up if auth state changes (e.g., if user manually signed out)
             localStorage.removeItem('cyou_username');
             joinScreen.classList.remove("hidden");
             chatApp.classList.add("hidden");
         }
     });
 
-    // Handle user leaving/closing the window
     window.addEventListener('beforeunload', () => {
-        // Set user offline status on window close (best effort)
         if(displayName) {
-             setDoc(doc(db, USERS_COLLECTION, displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
+             setDoc(doc(db, USERS_COLLECTION, displayName), { online: false, lastSeen: serverTimestamp(), typing: false }, { merge: true });
         }
     });
 }
 
-// Signs in user anonymously and sets their online status
-async function signIn(name) {
+// FIX: Added robust error handling for mobile debugging
+async function signIn(name, logWelcome) {
     try {
-        await setDoc(doc(db, USERS_COLLECTION, name), { online: true, lastSeen: serverTimestamp() });
+        await setDoc(doc(db, USERS_COLLECTION, name), { online: true, lastSeen: serverTimestamp(), typing: false });
         await signInAnonymously(auth);
+        
+        // NEW FEATURE: Log a welcome message only on first join
+        if (logWelcome) {
+             await addDoc(collection(db, MESSAGES_COLLECTION), {
+                name: "System",
+                text: `${name} has joined the chat! 👋`,
+                createdAt: serverTimestamp(),
+                seen: []
+            });
+        }
+        
     } catch (error) {
-        console.error("Sign In failed:", error);
-        nameError.textContent = "Could not connect to server. Try again.";
+        // CRITICAL FIX: Display specific error if Auth fails
+        console.error("Firebase Sign In failed:", error);
+        nameError.textContent = "FATAL ERROR: Failed to connect to Firebase. Check your network or if Anonymous Auth is enabled.";
+        localStorage.removeItem('cyou_username');
+        displayName = null;
     }
 }
 
@@ -117,12 +132,11 @@ sendForm.onsubmit = async (e) => {
   const text = messageInput.value.trim();
   if (!text || !currentUser) return;
   
-  // Clear input and send message
   messageInput.value = ""; 
 
-  // Stop typing status immediately when message is sent
   if (isTyping) {
       isTyping = false;
+      // Mark typing as false immediately
       await setDoc(doc(db, USERS_COLLECTION, displayName), { typing: false }, { merge: true });
   }
 
@@ -131,58 +145,60 @@ sendForm.onsubmit = async (e) => {
     uid: currentUser.uid,
     text,
     createdAt: serverTimestamp(),
-    // 'seen' array tracks UIDs that have read the message
     seen: [] 
   });
 };
 
-// --- 3. RECEIVING MESSAGES & SEEN STATUS (Auto-scroll & Read Tick) ---
+// --- 3. RECEIVING MESSAGES & SEEN STATUS ---
 function subscribeMessages(){
   const q = query(collection(db, MESSAGES_COLLECTION), orderBy("createdAt"));
   onSnapshot(q, async (snap) => {
-    // Keep track of scroll position before update
     const shouldAutoScroll = (messagesEl.scrollTop + messagesEl.clientHeight) >= messagesEl.scrollHeight - 20;
 
     messagesEl.innerHTML = "";
-    
-    // Track messages sent by others to update 'seen' status
     const messagesToMarkSeen = [];
 
     snap.forEach(docu => {
       const m = docu.data();
       const div = document.createElement("div");
-      const isMe = m.name === displayName;
       
-      div.className = "message " + (isMe ? "me" : "other");
+      // Handle the new System Message feature
+      const isSystem = m.name === "System";
+      const isMe = m.name === displayName && !isSystem;
+
+      div.className = "message " + (isMe ? "me" : "other") + (isSystem ? " system-message" : "");
+      
       div.innerHTML = `
-        <div class="name-tag">${isMe ? "" : m.name}</div>
+        <div class="name-tag">${isMe || isSystem ? "" : m.name}</div>
         <div>${m.text}</div>
+        ${!isSystem ? `
         <div class="meta">
           ${formatTime(m.createdAt?.toDate?.() || new Date())}
           ${isMe ? `<span class="ticks">${renderTicks(m)}</span>` : ''}
-        </div>`;
+        </div>` : ''}`;
       messagesEl.appendChild(div);
       
-      // If it's not my message AND I haven't seen it yet, mark it for update
-      if (!isMe && currentUser && !m.seen.includes(currentUser.uid)) {
-          messagesToMarkSeen.push(docu.ref);
+      // Mark as seen only if it's not a system message and it's not my message
+      if (!isMe && !isSystem && currentUser && !m.seen.includes(currentUser.uid)) {
+          messagesToMarkSeen.push(docu); // Push the whole doc for easier reference
       }
     });
     
-    // After rendering, mark all new, unseen messages as read by me
-    // This is done in a batch for efficiency
+    // Batch update seen status
     if (messagesToMarkSeen.length > 0) {
-        // Run updates outside the main loop to prevent performance lag
         setTimeout(() => {
-            messagesToMarkSeen.forEach(ref => {
-                updateDoc(ref, {
-                    seen: [...ref.seen || [], currentUser.uid]
-                });
+            messagesToMarkSeen.forEach(docu => {
+                const seenArray = docu.data().seen || [];
+                // Only update if UID is not already present
+                if (!seenArray.includes(currentUser.uid)) {
+                    setDoc(docu.ref, { 
+                        seen: [...seenArray, currentUser.uid]
+                    }, { merge: true });
+                }
             });
-        }, 100); // Small delay to prioritize rendering
+        }, 100); 
     }
     
-    // Auto-scroll to bottom if user was near the bottom before the update
     if (shouldAutoScroll) {
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -191,45 +207,36 @@ function subscribeMessages(){
 
 function renderTicks(m){
   const seenCount = (m.seen || []).length;
-  // In a public chat, 'seen' only includes others, not the sender.
-  // One person (me) has sent it. The others are readers.
+  const tickGray = document.documentElement.style.getPropertyValue('--tick-gray');
+  const tickBlue = document.documentElement.style.getPropertyValue('--tick-blue');
   
-  // 0 users read (Only me has seen it): Sent (✓)
   if (seenCount === 0) return "✓"; 
-  // 1 user read (One other person): Delivered/Seen by one (Gray ✓✓)
-  if (seenCount === 1) return `<span style="color:${var(--tick-gray)}">✓✓</span>`; 
-  // 2+ users read: Read by many (Blue ✓✓)
-  return `<span style="color:${var(--tick-blue)}">✓✓</span>`; 
+  if (seenCount === 1) return `<span style="color:${tickGray || '#888'}">✓✓</span>`; 
+  return `<span style="color:${tickBlue || '#34B7F1'}">✓✓</span>`; 
 }
 
 function formatTime(d){
-  // PadStart ensures "09:05" instead of "9:5"
   return `${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
 }
 
-// --- 4. TYPING INDICATOR (Reliably works) ---
+// --- 4. TYPING INDICATOR ---
 let typingTimeout = null;
-const TYPING_TIMEOUT_MS = 3000; // 3 seconds
+const TYPING_TIMEOUT_MS = 3000; 
 
 messageInput.oninput = () => {
-    // 1. Set typing status in Firestore if not already typing
     if (!isTyping) {
         isTyping = true;
         setDoc(doc(db, USERS_COLLECTION, displayName), { typing: true }, { merge: true });
     }
 
-    // 2. Clear old timeout and set a new one
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
-        // 3. Stop typing status after timeout
         isTyping = false;
         setDoc(doc(db, USERS_COLLECTION, displayName), { typing: false }, { merge: true });
     }, TYPING_TIMEOUT_MS);
 };
 
-// Listen for other users' typing status
 function subscribeTypingIndicator() {
-    // Query for all users who are 'online: true' and 'typing: true'
     const q = query(collection(db, USERS_COLLECTION), 
                     where("online", "==", true), 
                     where("typing", "==", true));
@@ -237,15 +244,13 @@ function subscribeTypingIndicator() {
     onSnapshot(q, (snap) => {
         const typingUsers = [];
         snap.forEach(docu => {
-            const user = docu.data();
-            // Exclude myself from the typing list
-            if (user.name !== displayName && docu.id !== displayName) {
-                typingUsers.push(user.name);
+            // Exclude myself
+            if (docu.id !== displayName) { 
+                typingUsers.push(docu.id);
             }
         });
 
         if (typingUsers.length > 0) {
-            // Format the names nicely for display
             const names = typingUsers.slice(0, 2).join(' and ');
             typingIndicator.textContent = `${names} is typing...`;
         } else {
@@ -255,9 +260,8 @@ function subscribeTypingIndicator() {
 }
 
 
-// --- 5. ONLINE STATUS (Fast updates) ---
+// --- 5. ONLINE STATUS ---
 function subscribeOnlineStatus(){
-    // Listen for all users who are currently marked as online
     const q = query(collection(db, USERS_COLLECTION), where("online", "==", true));
     onSnapshot(q, (snap) => {
         onlineCountEl.textContent = snap.size;
