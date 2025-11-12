@@ -1,36 +1,57 @@
-<!DOCTYPE html>
+ <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CYOU Chat</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU — Chat</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="login-screen" class="screen active">
-    <div class="login-box">
-      <h1>CYOU</h1>
-      <input type="text" id="username" placeholder="Enter your name" />
-      <button id="join-btn">Join Chat</button>
+  <!-- LOGIN SCREEN: only this visible at first (unless auto-join runs) -->
+  <div id="loginScreen" class="screen">
+    <div class="card login-card">
+      <div class="logo">C</div>
+      <h1 class="app-title">CYOU</h1>
+      <input id="nameInput" placeholder="Enter your display name" maxlength="30" />
+      <div id="nameError" class="error"></div>
+      <button id="joinBtn" class="primary">Join Public Chat</button>
+      <p class="muted">Name is saved locally for auto-login next time.</p>
     </div>
   </div>
 
-  <!-- Chat Screen -->
-  <div id="chat-screen" class="screen">
-    <header>
-      <h2>CYOU Public Chat</h2>
-      <div id="typing-status"></div>
+  <!-- CHAT SCREEN: hidden until join -->
+  <div id="chatApp" class="screen hidden" aria-live="polite">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo-circle">C</div>
+        <div class="brand-text">
+          <div class="name">CYOU</div>
+          <div class="subtitle">Public chat</div>
+        </div>
+      </div>
+      <div class="status">
+        <span id="onlineCount">0</span> online
+      </div>
     </header>
 
-    <div id="messages"></div>
+    <main class="main">
+      <section class="chat-area">
+        <div id="messages" class="messages" role="log" aria-live="polite"></div>
+        <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
 
-    <footer>
-      <input type="text" id="message-input" placeholder="Type a message..." />
-      <button id="send-btn">Send</button>
+        <form id="sendForm" class="composer" autocomplete="off">
+          <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
+          <div id="emojiPanel" class="emoji-panel hidden" aria-hidden="true"></div>
+
+          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
+          <button id="sendBtn" type="submit" class="primary">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <small>CYOU — C-Y-O-U</small>
     </footer>
-
-    <p class="footer-note">CYOU Chat © 2025</p>
   </div>
 
   <script type="module" src="script.js"></script>
