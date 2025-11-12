@@ -1,8 +1,8 @@
-// script.js (module) — public-only optimized CYOU chat (auto-login, reliable join, auto-scroll, typing, presence, ticks)
+ // script.js (module) — fixed join flow, auto-login, Firestore public chat (last-6 messages), typing, presence, ticks
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth, signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, serverTimestamp,
@@ -10,7 +10,7 @@ import {
   doc, setDoc, updateDoc, arrayUnion, getDoc
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* firebase config (same project) */
+/* Firebase config (kept to your project) */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -27,10 +27,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 /* UI refs */
-const joinScreen = document.getElementById("joinScreen");
-const joinBtn = document.getElementById("joinBtn");
+const loginScreen = document.getElementById("loginScreen");
 const nameInput = document.getElementById("nameInput");
 const nameError = document.getElementById("nameError");
+const joinBtn = document.getElementById("joinBtn");
 
 const chatApp = document.getElementById("chatApp");
 const messagesEl = document.getElementById("messages");
@@ -50,25 +50,27 @@ let presenceInterval = null;
 const HEARTBEAT_MS = 5000;
 const PRESENCE_FRESH_MS = 14000;
 
-/* prefill name if saved */
+/* prefill */
 if (displayName) nameInput.value = displayName;
 
-/* if name saved in localStorage -> attempt auto-join immediately */
+/* Utility */
+function pad(n){ return n<10 ? "0"+n : n; }
+
+/* Auto-join if we have a saved name */
 if (displayName) {
   (async () => {
     try {
-      // ensure user doc exists (so the username isn't treated as 'taken' by another)
-      const userDocRef = doc(db, "cyou_users", displayName);
-      const snapshot = await getDoc(userDocRef);
-      if (!snapshot.exists()) {
-        await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() });
+      // ensure user document exists or mark online
+      const userRef = doc(db, "cyou_users", displayName);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() });
       } else {
-        // if it exists, update online true
-        await setDoc(userDocRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
       }
-      // sign in anonymously and start chat
+
+      // sign in anonymously THEN run afterSignIn
       const cred = await signInAnonymously(auth);
-      // when sign-in returns, set currentUser and enter UI
       currentUser = cred.user;
       afterSignIn();
     } catch (e) {
@@ -77,31 +79,35 @@ if (displayName) {
   })();
 }
 
-/* JOIN BUTTON: verify username and sign in */
+/* JOIN button: validate username and sign in */
 joinBtn.addEventListener("click", async () => {
   nameError.textContent = "";
   const name = (nameInput.value || "").trim();
-  if (!name) return;
+  if (!name) {
+    nameError.textContent = "Please type a name.";
+    return;
+  }
+
   try {
     const userRef = doc(db, "cyou_users", name);
-    const snapshot = await getDoc(userRef);
+    const snap = await getDoc(userRef);
 
-    // If snapshot exists and online === true and it's NOT our saved name, block
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      const saved = localStorage.getItem("cyou_name");
+    const saved = localStorage.getItem("cyou_name");
+    // if already online and not our saved name -> block
+    if (snap.exists()) {
+      const data = snap.data();
       if (data.online && saved !== name) {
         nameError.textContent = "Username already taken — choose another.";
         return;
       }
     }
 
-    // Accept the name: save locally and set user doc online
+    // accept name: save locally and write user doc
     displayName = name;
     localStorage.setItem("cyou_name", displayName);
-    await setDoc(doc(db, "cyou_users", displayName), { online: true, lastSeen: serverTimestamp() });
+    await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
 
-    // sign in anonymously and proceed
+    // sign in anonymously (wait for result), then show chat
     const cred = await signInAnonymously(auth);
     currentUser = cred.user;
     afterSignIn();
@@ -112,15 +118,15 @@ joinBtn.addEventListener("click", async () => {
   }
 });
 
-/* After sign-in actions */
+/* After sign-in: show chat and start listeners */
 function afterSignIn(){
-  // hide join screen, show chat
-  joinScreen.classList.add("hidden");
+  // show chat UI only
+  loginScreen.classList.add("hidden");
   chatApp.classList.remove("hidden");
   messageInput.disabled = false;
   messageInput.focus();
 
-  // start presence, typing, and messages
+  // presence, typing, messages
   startPresence();
   subscribePresence();
   subscribeTyping();
@@ -140,7 +146,6 @@ async function startPresence(){
     catch (e) { console.warn("presence heartbeat error", e); }
   }, HEARTBEAT_MS);
 
-  // on unload, mark offline (best-effort)
   window.addEventListener("beforeunload", async () => {
     try {
       await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
@@ -209,7 +214,6 @@ sendForm.addEventListener("submit", async (ev) => {
   const text = (messageInput.value || "").trim();
   if (!text || !currentUser) return;
   try {
-    // create message doc
     const ref = await addDoc(collection(db, "cyou_messages"), {
       text,
       name: displayName,
@@ -218,17 +222,17 @@ sendForm.addEventListener("submit", async (ev) => {
       deliveredBy: [],
       seenBy: []
     });
-    // optimistic status: mark delivered locally by updating the doc
-    try { await updateDoc(ref, { status: "delivered" }); } catch (e) {}
+    // optimistic update: try set status delivered
+    try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
     messageInput.value = "";
     setTyping(false);
   } catch (e) {
     console.error("send error", e);
-    alert("Could not send message.");
+    alert("Could not send message (see console).");
   }
 });
 
-/* SUBSCRIBE MESSAGES: limitToLast(6) and auto-scroll bottom */
+/* SUBSCRIBE MESSAGES (limit 6) + auto-scroll + mark delivered/seen */
 function subscribeMessages(){
   const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(6));
   onSnapshot(q, async (snap) => {
@@ -237,7 +241,7 @@ function subscribeMessages(){
     messagesEl.innerHTML = "";
     for (const m of docs) renderMessage(m.id, m.data);
 
-    // auto-scroll to bottom smooth
+    // smooth scroll to bottom
     const lastChild = messagesEl.lastElementChild;
     if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
@@ -249,13 +253,13 @@ function subscribeMessages(){
           await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
           await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid) });
           await updateDoc(mRef, { status: "seen" });
-        } catch (e) { /* ignore concurrency errors */ }
+        } catch (e) { /* ignore */ }
       }
     }
   }, (err) => console.error("messages subscribe error", err));
 }
 
-/* RENDER message with clearer colors for other-client view */
+/* RENDER message (clear colors for other person) */
 function renderMessage(id, data){
   const div = document.createElement("div");
   const isMe = data.uid === (currentUser && currentUser.uid);
@@ -296,12 +300,10 @@ function renderMessage(id, data){
   messagesEl.appendChild(div);
 }
 
-/* helper */
-function pad(n){ return n<10 ? "0"+n : n; }
-
-/* Emoji picker - small */
+/* Emoji picker (small) */
 const emojiList = ["😀","😁","😄","😂","😊","😍","😜","😎","🤗","🤩","😴","😢","😭","👍","👏","🙏","🔥"];
 function buildEmojiPanel(){
+  if (!emojiPanel) return;
   emojiPanel.innerHTML = "";
   emojiList.forEach(e => {
     const b = document.createElement("button");
@@ -317,11 +319,8 @@ function buildEmojiPanel(){
   });
 }
 buildEmojiPanel();
-emojiBtn.addEventListener("click", () => {
-  emojiPanel.classList.toggle("hidden");
-});
+if (emojiBtn) emojiBtn.addEventListener("click", () => { if (emojiPanel) emojiPanel.classList.toggle("hidden"); });
 
-/* insert text at cursor */
 function insertAtCursor(el, text) {
   const start = el.selectionStart || 0;
   const end = el.selectionEnd || 0;
@@ -330,4 +329,4 @@ function insertAtCursor(el, text) {
   el.dispatchEvent(new Event('input'));
 }
 
-console.log("CYOU public script loaded");
+console.log("CYOU fixed join flow script loaded");
