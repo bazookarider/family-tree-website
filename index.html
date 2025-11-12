@@ -1,49 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU — Chat</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYOU Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="join-screen" id="joinScreen">
-    <h1>CYOU</h1>
-    <input id="userNameInput" placeholder="Enter your username" maxlength="20" />
-    <button id="joinBtn">Join Chat</button> 
-    <div id="nameError" class="error"></div>
-  </div>
+  <header>
+    <h1>CYOU Chat</h1>
+    <span id="onlineCount">Online: 0</span>
+  </header>
 
-  <div class="app hidden" id="chatApp">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">C</div>
-        <div class="brand-text">
-          <div class="name">CYOU</div>
-          <div class="subtitle">chat • connect • c-you</div>
-        </div>
-      </div>
-      <div class="status">
-        <span id="onlineCount">0</span> online
-      </div>
-    </header>
+  <main id="chatArea">
+    <ul id="messages"></ul>
+  </main>
 
-    <main class="main">
-      <div id="messages" class="messages"></div>
-      <div id="typingIndicator" class="typing-indicator"></div>
-      <form id="sendForm" class="composer" autocomplete="off">
-        <input id="messageInput" placeholder="Type a message..." />
-        <button id="sendBtn">Send</button>
-      </form>
-    </main>
-    
-    <footer>
-      <a href="#" class="footer-link">CYOU Chat</a>
-    </footer>
-  </div>
+  <footer>
+    <input id="messageInput" placeholder="Type a message..." autocomplete="off" />
+    <button id="sendBtn">Send</button>
+  </footer>
 
   <script type="module" src="script.js"></script>
 </body>
