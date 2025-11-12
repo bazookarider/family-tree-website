@@ -1,238 +1,62 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f7f6;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+:root{
+  --bg:#e8ecef;--panel:#f8f9fa;--accent:#006677;--muted:#dfe6e9;--text:#222;
+  --me-bg:#006677;--me-text:#fff;--other-bg:#dfe6e9;
 }
-
-.container {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px;
-    display: none; /* Hide all by default */
+body.dark{
+  --bg:#08090b;--panel:#0f1113;--accent:#0aa5e0;--muted:#121417;
+  --text:#e6eef7;--me-bg:#0aa5e0;--me-text:#031016;--other-bg:#14161a;
 }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;padding:0;font-family:"Poppins",sans-serif;background:var(--bg);color:var(--text);}
+.chat-container{width:100%;max-width:720px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--panel);
+border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.12);}
+.chat-header{background:var(--accent);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:center;position:relative;}
+.title-block{text-align:center}.title{margin:0;font-size:1.1rem}
+.typing-status{font-size:0.85rem;margin-top:6px;opacity:.95;color:rgba(255,255,255,0.95);font-style:italic}
+.header-controls{position:absolute;left:12px;top:12px;display:flex;gap:8px}
+.icon-btn{background:rgba(255,255,255,0.12);border:none;color:white;padding:6px 8px;border-radius:8px;cursor:pointer}
+.chat-header .online-count{position:absolute;right:12px;top:12px;font-size:0.85rem}
+.join-section{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:calc(100vh - 64px);padding:16px}
+.join-section h2{margin:0 0 8px}#nameInput{padding:10px;width:70%;border-radius:8px;border:1px solid #ccc;font-size:1rem}
+.primary{padding:10px 18px;border-radius:8px;border:none;background:var(--accent);color:white;cursor:pointer}
+.hint{color:#cc0000;margin-top:6px}
+.chat-section{display:flex;flex:1;height:calc(100vh - 64px)}
+.sidebar{width:26%;min-width:180px;background:#f0f3f5;padding:10px;border-right:2px solid #d3d9dd;overflow:auto}
+body.dark .sidebar{background:var(--muted);border-right-color:rgba(255,255,255,0.03)}
+.sidebar h3{color:var(--accent);text-align:center;margin:0 0 8px}
+#onlineUsers{list-style:none;padding:0;margin:0}
+#onlineUsers li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(0,0,0,0.03)}
+.main-chat{flex:1;display:flex;flex-direction:column;position:relative;background:var(--panel)}
+.messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;padding-bottom:160px;scroll-behavior:smooth}
+.message{max-width:80%;padding:10px 12px;border-radius:12px;word-break:break-word;position:relative}
+.message.me{align-self:flex-end;background:var(--me-bg);color:var(--me-text);border-bottom-right-radius:0}
+.message.other{align-self:flex-start;background:var(--other-bg);color:var(--text);border-bottom-left-radius:0}
+.msg-body{font-size:0.95rem;margin-bottom:6px}
+.meta{display:flex;gap:8px;justify-content:flex-end;align-items:center;font-size:0.75rem;opacity:0.85}
+.tick{font-weight:700}.tick.delivered{color:#0aa5e0}
+.deleted{font-style:italic;opacity:0.85;color:#919191}
+.msg-actions{position:absolute;top:6px;right:6px;display:flex;gap:6px}
+.msg-btn{background:transparent;border:none;cursor:pointer;padding:4px;font-size:0.95rem;color:inherit}
+.send-form{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:720px;display:flex;gap:8px;padding:10px;background:var(--panel);
+border-top:1px solid rgba(0,0,0,0.06);z-index:40}
+.send-form input[type="text"]{flex:1;padding:10px 12px;border-radius:22px;border:1px solid #ccc;font-size:1rem;outline:none}
+.send-form button{width:48px;height:48px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer}
+@media (max-width:800px){.sidebar{display:none}.messages{padding-bottom:200px}.chat-container{height:100vh;border-radius:0}}
+body.dark .message.other{background:var(--other-bg);color:var(--text)}
+body.dark .send-form{background:#0b0d0f;border-top-color:rgba(255,255,255,0.03)}
 
-.container.active {
-    display: block; /* Show the active container */
+/* --- ADDITION FOR SENDER NAME --- */
+.sender-name{
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  opacity: 0.9;
 }
-
-/* --- LOGIN STYLES --- */
-#login-container h2 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
+.message.me .sender-name{
+  /* Ensures "You" aligns to the right */
+  text-align: right;
 }
-
-#login-container p {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-#anonymous-login-btn {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: none;
-    border-radius: 5px;
-    box-sizing: border-box;
-    background-color: #006677; /* Your requested color */
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-#anonymous-login-btn:hover {
-    background-color: #004d59;
-}
-
-/* --- CHAT STYLES --- */
-#chat-container {
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-#chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    margin-bottom: 10px;
-}
-
-#logout-btn {
-    padding: 8px 15px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-#messages {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-    border: 1px solid #eee;
-    margin-bottom: 10px;
-    background-color: #fff;
-    border-radius: 5px;
-}
-
-.message {
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    border-radius: 15px;
-    max-width: 80%;
-    word-wrap: break-word;
-    position: relative;
-    font-size: 0.9em;
-}
-
-.message.sent {
-    background-color: #006677; /* Your requested color */
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 0;
-}
-
-.message.received {
-    background-color: #e9ecef;
-    color: #333;
-    margin-right: auto;
-    border-bottom-left-radius: 0;
-}
-
-.message-content {
-    margin-bottom: 5px;
-}
-
-.message-timestamp {
-    display: block;
-    font-size: 0.7em;
-    opacity: 0.7;
-    margin-top: 5px;
-    text-align: right;
-}
-
-.message.received .message-timestamp {
-    text-align: left;
-}
-
-.message-edit-tag {
-    font-style: italic;
-    font-weight: 600;
-    margin-left: 5px;
-    color: #ffc107; /* Highlight for edited messages */
-}
-
-.message.received .message-edit-tag {
-    color: #888;
-}
-
-/* Edit button only for sent messages */
-.edit-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 0.8em;
-    margin-left: 5px;
-    cursor: pointer;
-    opacity: 0.8;
-}
-
-.message.received .edit-btn {
-    display: none;
-}
-
-#message-input-area {
-    display: flex;
-}
-
-#message-input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px 0 0 5px;
-    outline: none;
-}
-
-#send-btn {
-    padding: 10px 15px;
-    background-color: #006677; /* Your requested color */
-    color: white;
-    border: none;
-    border-radius: 0 5px 5px 0;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#send-btn:hover {
-    background-color: #004d59;
-}
-
-/* --- MODAL STYLES --- */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 100;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-    padding-top: 50px;
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 10px;
-}
-
-#edit-message-text {
-    width: 100%;
-    height: 100px;
-    padding: 10px;
-    margin-bottom: 15px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.modal-actions {
-    text-align: right;
-}
-
-.modal-actions button {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-#save-edit-btn {
-    background-color: #006677; /* Your requested color */
-    color: white;
-}
-
-#cancel-edit-btn {
-    background-color: #6c757d;
-    color: white;
+.message.other .sender-name{
+  /* Uses the accent color for other users */
+  color: var(--accent);
 }
