@@ -1,20 +1,20 @@
-body {
+ body {
   font-family: "Poppins", sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f0f0f0;
+  background: #f0f0f0;
   color: #222;
   transition: background 0.4s, color 0.4s;
 }
 
-/* DARK MODE */
+/* THEMES */
 body.dark {
-  background-color: #0e0e0e;
+  background: #0d0d0d;
   color: #f5f5f5;
 }
 body.dim {
-  background-color: #1a1a1a;
-  color: #ddd;
+  background: #1b1b1b;
+  color: #e0e0e0;
 }
 
 /* AUTH */
@@ -28,8 +28,8 @@ body.dim {
   background: #fff;
   padding: 20px;
   border-radius: 16px;
-  box-shadow: 0 0 10px #0002;
   width: 300px;
+  box-shadow: 0 4px 20px #0002;
 }
 body.dark .auth-box,
 body.dim .auth-box {
@@ -43,8 +43,8 @@ body.dim .auth-box {
 .tabs button {
   flex: 1;
   padding: 8px;
-  cursor: pointer;
   border: none;
+  cursor: pointer;
   background: #ccc;
 }
 .tabs .active {
@@ -52,30 +52,22 @@ body.dim .auth-box {
   color: white;
 }
 input {
-  display: block;
   width: 100%;
   margin: 8px 0;
   padding: 8px;
   border: 1px solid #999;
-  border-radius: 5px;
-  outline: none;
+  border-radius: 6px;
 }
 button {
   background: #0084ff;
-  color: #fff;
+  color: white;
   border: none;
   padding: 8px 12px;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: 0.2s;
 }
-button:hover {
-  background: #0072e3;
-}
-.hint {
-  font-size: 0.85em;
-  color: #f55;
-}
+button:hover { background: #0072e3; }
+.hint { font-size: 0.9em; color: #f55; }
 
 /* CHAT */
 #chatSection {
@@ -91,26 +83,14 @@ header {
   background: #0084ff;
   color: white;
 }
-header .right button {
-  margin-left: 6px;
-}
-
-main {
-  display: flex;
-  flex: 1;
-  height: calc(100vh - 60px);
-}
+main { display: flex; flex: 1; }
 aside {
-  width: 150px;
+  width: 160px;
   border-right: 1px solid #ccc;
   padding: 10px;
   overflow-y: auto;
 }
-#chatBox {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+#chatBox { flex: 1; display: flex; flex-direction: column; }
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -118,7 +98,7 @@ aside {
 }
 .message {
   background: #e8e8e8;
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: 8px;
   margin: 4px 0;
   max-width: 75%;
@@ -140,7 +120,7 @@ aside {
   cursor: pointer;
   position: absolute;
   top: 2px;
-  right: 4px;
+  right: 6px;
   color: #888;
 }
 form#sendForm {
