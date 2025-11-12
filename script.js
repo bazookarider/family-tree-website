@@ -22,10 +22,11 @@ import {
   deleteDoc,
   getDoc,
   getDocs,
-  where
+  where,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* 🔥 Firebase Config */
+/* === Firebase Config === */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -33,8 +34,7 @@ const firebaseConfig = {
   projectId: "cyou-db8f0",
   storageBucket: "cyou-db8f0.firebasestorage.app",
   messagingSenderId: "873569975141",
-  appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
-  measurementId: "G-T66B50HFJ8"
+  appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -42,7 +42,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 await setPersistence(auth, browserLocalPersistence);
 
-/* DOM Elements */
+/* === DOM Elements === */
 const authSection = document.getElementById("authSection");
 const chatSection = document.getElementById("chatSection");
 const tabRegister = document.getElementById("tabRegister");
@@ -71,14 +71,21 @@ const clearChatBtn = document.getElementById("clearChatBtn");
 let nickname = localStorage.getItem("cyou_nickname") || "";
 let typingTimeout;
 
-/* === THEME TOGGLE === */
+/* === Theme Toggle === */
 themeToggle.onclick = () => {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("cyou_theme", document.body.classList.contains("dark") ? "dark" : "light");
+  if (document.body.classList.contains("dark")) {
+    document.body.classList.remove("dark");
+    document.body.classList.add("dim");
+  } else if (document.body.classList.contains("dim")) {
+    document.body.classList.remove("dim");
+  } else {
+    document.body.classList.add("dark");
+  }
+  localStorage.setItem("cyou_theme", document.body.className);
 };
-if (localStorage.getItem("cyou_theme") === "dark") document.body.classList.add("dark");
+document.body.className = localStorage.getItem("cyou_theme") || "";
 
-/* === TABS === */
+/* === Tabs === */
 tabRegister.onclick = () => {
   registerForm.style.display = "";
   loginForm.style.display = "none";
@@ -92,7 +99,7 @@ tabLogin.onclick = () => {
   tabRegister.classList.remove("active");
 };
 
-/* === REGISTER === */
+/* === Register === */
 registerForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   regHint.textContent = "";
@@ -106,9 +113,10 @@ registerForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  const taken = await getDocs(query(collection(db, "cyou_users"), where("nickname", "==", nick)));
-  if (!taken.empty) {
-    regHint.textContent = "Nickname already taken.";
+  const nickQuery = query(collection(db, "cyou_users"), where("nickname", "==", nick));
+  const existing = await getDocs(nickQuery);
+  if (!existing.empty) {
+    regHint.textContent = "❌ Nickname already exists. Choose another.";
     return;
   }
 
@@ -116,23 +124,25 @@ registerForm.addEventListener("submit", async (e) => {
     const userCred = await createUserWithEmailAndPassword(auth, email, pass);
     await setDoc(doc(db, "cyou_users", userCred.user.uid), { nickname: nick, email });
     localStorage.setItem("cyou_nickname", nick);
+    regHint.textContent = "✅ Registered successfully!";
   } catch (err) {
-    regHint.textContent = err.message;
+    regHint.textContent = "⚠️ " + err.message;
   }
 });
 
-/* === LOGIN === */
+/* === Login === */
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  loginHint.textContent = "";
+  loginHint.textContent = "⏳ Logging in...";
   try {
     await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value.trim());
+    loginHint.textContent = "";
   } catch (err) {
-    loginHint.textContent = err.message;
+    loginHint.textContent = "⚠️ " + err.message;
   }
 });
 
-/* === AUTH STATE === */
+/* === Auth State === */
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const userDoc = await getDoc(doc(db, "cyou_users", user.uid));
@@ -148,40 +158,37 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* === SIGN OUT === */
+/* === Logout === */
 signOutBtn.onclick = async () => {
   await signOut(auth);
   localStorage.removeItem("cyou_nickname");
 };
 
-/* === CHAT SYSTEM === */
+/* === Chat System === */
 async function startChat() {
   addPresence();
   listenMessages();
   listenTyping();
 }
 
-/* SEND MESSAGE */
+/* Send Message */
 sendForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
   if (!text) return;
-
   const newMsg = {
     name: nickname,
     text,
     createdAt: serverTimestamp(),
-    seen: false,
     deleted: false
   };
-
   const docRef = await addDoc(collection(db, "cyou_messages"), newMsg);
   await updateDoc(docRef, { id: docRef.id });
   messageInput.value = "";
   setTyping(false);
 });
 
-/* LISTEN MESSAGES */
+/* Listen Messages */
 function listenMessages() {
   const q = query(collection(db, "cyou_messages"), orderBy("createdAt"));
   onSnapshot(q, (snap) => {
@@ -190,37 +197,27 @@ function listenMessages() {
       const msg = docSnap.data();
       const div = document.createElement("div");
       div.classList.add("message", msg.name === nickname ? "me" : "other");
-
       if (msg.deleted) {
         div.innerHTML = `<em>Message deleted</em>`;
       } else {
-        div.innerHTML = `
-          <strong>${msg.name}</strong><br>
-          ${msg.text}
-          <div class="meta">${new Date(msg.createdAt?.toDate?.() || Date.now())
-            .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </div>`;
+        div.innerHTML = `<strong>${msg.name}</strong><br>${msg.text}`;
       }
-
       if (msg.name === nickname && !msg.deleted) {
         const del = document.createElement("button");
         del.textContent = "🗑";
-        del.classList.add("msg-btn");
         del.onclick = async () => await updateDoc(doc(db, "cyou_messages", msg.id), { deleted: true });
         div.appendChild(del);
       }
-
       messagesDiv.appendChild(div);
     });
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
 
-/* === PRESENCE === */
+/* === Presence === */
 async function addPresence() {
   const ref = doc(db, "cyou_presence", nickname);
   await setDoc(ref, { online: true });
-
   onSnapshot(collection(db, "cyou_presence"), (snap) => {
     const users = snap.docs.filter((d) => d.data().online);
     onlineCount.textContent = users.length;
@@ -231,28 +228,26 @@ async function addPresence() {
       onlineUsersList.appendChild(li);
     });
   });
-
   window.addEventListener("beforeunload", async () => {
     await deleteDoc(ref);
   });
 }
 
-/* === TYPING === */
+/* === Typing === */
 messageInput.addEventListener("input", () => {
   setTyping(true);
   clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => setTyping(false), 1500);
 });
-
 async function setTyping(state) {
-  await setDoc(doc(db, "cyou_typing", nickname), { typing: state });
+  const ref = doc(db, "cyou_typing", nickname);
+  await setDoc(ref, { name: nickname, typing: state });
 }
-
 function listenTyping() {
   onSnapshot(collection(db, "cyou_typing"), (snap) => {
     const typers = [];
     snap.forEach((d) => {
-      if (d.data().typing && d.id !== nickname) typers.push(d.id);
+      if (d.data().typing && d.id !== nickname) typers.push(d.data().name);
     });
     if (typers.length > 0) {
       typingIndicator.textContent = `${typers.join(", ")} typing...`;
@@ -264,10 +259,13 @@ function listenTyping() {
   });
 }
 
-/* === CLEAR CHAT === */
+/* === Clear Chat === */
 clearChatBtn.onclick = async () => {
   if (confirm("Clear all chat messages?")) {
     const all = await getDocs(collection(db, "cyou_messages"));
-    all.forEach(async (d) => await deleteDoc(d.ref));
+    const batch = writeBatch(db);
+    all.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    alert("✅ Chat cleared.");
   }
 };
