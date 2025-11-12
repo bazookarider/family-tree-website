@@ -135,10 +135,21 @@ function initListeners(){
       const div=document.createElement("div");
       const me=m.sender===username;
       div.className="message "+(me?"me":"other");
+      
+      // FIX START: Add sender name display
+      const senderNameDiv=document.createElement("div");
+      senderNameDiv.className="sender-name";
+      senderNameDiv.textContent=me?"You":m.sender;
+      // FIX END
+      
       if(m.deleted){div.innerHTML=`<div class='deleted'>⚫ This message was deleted</div><div class='meta'>${fmt(m.createdAt)}</div>`;}
       else{
         const body=document.createElement("div");body.className="msg-body";body.textContent=m.text;
         const meta=document.createElement("div");meta.className="meta";
+        
+        // FIX: Prepend senderNameDiv to the message content
+        if(!me)div.append(senderNameDiv);
+        
         if(me){
           const time=document.createElement("span");time.textContent=fmt(m.createdAt);
           const tick=document.createElement("span");tick.className="tick"+(m.delivered?" delivered":"");tick.textContent=m.delivered?"✓✓":"✓";
