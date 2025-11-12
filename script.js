@@ -1,12 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import {
-  getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-import {
-  getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDocs
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -21,12 +16,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-/* DOM */
+/* DOM Elements */
 const authSection = document.getElementById("authSection");
 const chatSection = document.getElementById("chatSection");
 const googleSignInBtn = document.getElementById("googleSignInBtn");
 const authHint = document.getElementById("authHint");
-
 const messageInput = document.getElementById("messageInput");
 const sendForm = document.getElementById("sendForm");
 const messagesDiv = document.getElementById("messages");
@@ -51,7 +45,7 @@ googleSignInBtn.addEventListener("click", async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    username = user.email; // use email
+    username = user.email;
     localStorage.setItem("cyou_username", username);
     joinChat();
   } catch (err) {
@@ -72,7 +66,6 @@ onAuthStateChanged(auth, user => {
 function joinChat() {
   authSection.style.display = "none";
   chatSection.style.display = "flex";
-
   addPresence();
   listenForMessages();
   listenForTyping();
@@ -83,7 +76,7 @@ sendForm.addEventListener("submit", async e=>{
   e.preventDefault();
   const text = messageInput.value.trim();
   if(!text) return;
-  const msg={name:username,text,createdAt:serverTimestamp(),deleted:false};
+  const msg={name:username,text,createdAt:serverTimestamp(),deleted:false,seen:false};
   const docRef=await addDoc(collection(db,"cyou_messages"),msg);
   await updateDoc(doc(db,"cyou_messages",docRef.id),{id:docRef.id});
   messageInput.value="";
@@ -101,7 +94,7 @@ function listenForMessages(){
       const div=document.createElement("div");
       div.classList.add("message",isYou?"me":"other");
       if(msg.deleted) div.innerHTML=`<em>Message deleted</em>`;
-      else div.innerHTML=`<strong>${msg.name}</strong><br>${msg.text}<span class="meta">${new Date(msg.createdAt?.toDate?.()||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</span>`;
+      else div.innerHTML=`<strong>${msg.name}</strong><br>${msg.text}<span class="meta">${new Date(msg.createdAt?.toDate?.()||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}>${isYou ? (msg.seen ? "✓✓" : "✓") : ""}</span>`;
       if(isYou && !msg.deleted){
         const delBtn=document.createElement("button");
         delBtn.textContent="🗑";
@@ -132,7 +125,7 @@ async function addPresence(){
   window.addEventListener("beforeunload",()=>deleteDoc(doc(db,"cyou_presence",username)));
 }
 
-/* TYPING INDICATOR */
+/* TYPING */
 messageInput.addEventListener("input",handleTyping);
 async function handleTyping(){ setTyping(true); clearTimeout(typingTimeout); typingTimeout=setTimeout(()=>setTyping(false),2000); }
 async function setTyping(state){ await setDoc(doc(db,"cyou_typing",username),{typing:state}); }
