@@ -1,57 +1,53 @@
- <!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU — Chat</title>
+  <title>CYOU Chat (Final)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- LOGIN SCREEN: only this visible at first (unless auto-join runs) -->
-  <div id="loginScreen" class="screen">
-    <div class="card login-card">
-      <div class="logo">C</div>
-      <h1 class="app-title">CYOU</h1>
-      <input id="nameInput" placeholder="Enter your display name" maxlength="30" />
-      <div id="nameError" class="error"></div>
-      <button id="joinBtn" class="primary">Join Public Chat</button>
-      <p class="muted">Name is saved locally for auto-login next time.</p>
-    </div>
-  </div>
+  <div class="chat-container">
 
-  <!-- CHAT SCREEN: hidden until join -->
-  <div id="chatApp" class="screen hidden" aria-live="polite">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">C</div>
-        <div class="brand-text">
-          <div class="name">CYOU</div>
-          <div class="subtitle">Public chat</div>
-        </div>
+    <!-- HEADER (typing shown inside header) -->
+    <header class="chat-header">
+      <div class="title-block">
+        <h1 class="title">CYOU Chat</h1>
+        <div id="typingStatus" class="typing-status"></div>
       </div>
-      <div class="status">
-        <span id="onlineCount">0</span> online
+
+      <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
       </div>
+
+      <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <main class="main">
-      <section class="chat-area">
-        <div id="messages" class="messages" role="log" aria-live="polite"></div>
-        <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
+    <!-- JOIN (full-screen style) -->
+    <section id="joinSection" class="join-section">
+      <h2>Welcome to CYOU Chat</h2>
+      <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
+      <button id="enterBtn" class="primary">Join Chat</button>
+      <div id="joinHint" class="hint"></div>
+    </section>
 
-        <form id="sendForm" class="composer" autocomplete="off">
-          <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
-          <div id="emojiPanel" class="emoji-panel hidden" aria-hidden="true"></div>
+    <!-- CHAT (hidden until join) -->
+    <section id="chatSection" class="chat-section" style="display:none;">
+      <aside class="sidebar">
+        <h3>Online Users</h3>
+        <ul id="onlineUsers"></ul>
+      </aside>
 
-          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
-          <button id="sendBtn" type="submit" class="primary">Send</button>
+      <main class="main-chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">➤</button>
         </form>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <small>CYOU — C-Y-O-U</small>
-    </footer>
+      </main>
+    </section>
   </div>
 
   <script type="module" src="script.js"></script>
