@@ -1,25 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CYOU Chat</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <h1>CYOU Chat</h1>
-    <span id="onlineCount">Online: 0</span>
-  </header>
+  <div class="chat-container">
 
-  <main id="chatArea">
-    <ul id="messages"></ul>
-  </main>
+    <!-- HEADER -->
+    <header class="chat-header">
+      <div class="title-block">
+        <h1 class="title">CYOU Chat</h1>
+        <div id="typingStatus" class="typing-status"></div>
+      </div>
 
-  <footer>
-    <input id="messageInput" placeholder="Type a message..." autocomplete="off" />
-    <button id="sendBtn">Send</button>
-  </footer>
+      <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
+      </div>
+
+      <div class="online-count">Online: <span id="onlineCount">0</span></div>
+    </header>
+
+    <!-- JOIN -->
+    <section id="joinSection" class="join-section">
+      <input id="nameInput" type="text" placeholder="Enter your name..." />
+      <button id="enterBtn">Join Chat</button>
+      <div id="joinHint" class="hint"></div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="chatSection" class="chat-section" style="display:none;">
+      <aside class="sidebar">
+        <h3>Online Users</h3>
+        <ul id="onlineUsers"></ul>
+      </aside>
+
+      <main class="main-chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="typingIndicatorBottom" class="typing-indicator-bottom"></div>
+
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">➤</button>
+        </form>
+      </main>
+    </section>
+  </div>
 
   <script type="module" src="script.js"></script>
 </body>
