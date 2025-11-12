@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CYOU — Chat</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Firebase v12 modular -->
   <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js"></script>
@@ -13,17 +12,9 @@
 <body>
   <div class="join-screen" id="joinScreen">
     <h1>CYOU</h1>
-    <input id="nameInput" placeholder="Enter your username" maxlength="20" />
-    <button id="checkBtn">Continue</button>
+    <input id="userNameInput" placeholder="Enter your username" maxlength="20" />
+    <button id="joinBtn">Join Chat</button> 
     <div id="nameError" class="error"></div>
-    <div id="modeSelect" class="mode-select hidden">
-      <button id="publicBtn">🌍 Join Public Chat</button>
-      <button id="privateBtn">🔒 Private Chat</button>
-    </div>
-    <div id="privateBox" class="private-box hidden">
-      <input id="partnerInput" placeholder="Enter friend's username" />
-      <button id="joinPrivateBtn">Start Private Chat</button>
-    </div>
   </div>
 
   <div class="app hidden" id="chatApp">
@@ -48,6 +39,10 @@
         <button id="sendBtn">Send</button>
       </form>
     </main>
+    
+    <footer>
+      <a href="#" class="footer-link">CYOU Chat</a>
+    </footer>
   </div>
 
   <script type="module" src="script.js"></script>
