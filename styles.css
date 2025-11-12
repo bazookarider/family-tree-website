@@ -1,142 +1,102 @@
- body {
-  font-family: "Poppins", sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f0f0f0;
-  color: #222;
-  transition: background 0.4s, color 0.4s;
+:root {
+  --bg: #e8ecef;
+  --panel: #f8f9fa;
+  --accent: #006677;
+  --muted: #dfe6e9;
+  --text: #222;
+  --me-bg: #006677;
+  --me-text: #fff;
+  --other-bg: #dfe6e9;
 }
 
-/* THEMES */
+/* DARK THEME */
 body.dark {
-  background: #0d0d0d;
-  color: #f5f5f5;
-}
-body.dim {
-  background: #1b1b1b;
-  color: #e0e0e0;
+  --bg: #08090b;
+  --panel: #0f1113;
+  --accent: #0aa5e0;
+  --muted: #121417;
+  --text: #e6eef7;
+  --me-bg: #0aa5e0;
+  --me-text: #031016;
+  --other-bg: #14161a;
 }
 
-/* AUTH */
-.center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-.auth-box {
-  background: #fff;
-  padding: 20px;
-  border-radius: 16px;
-  width: 300px;
-  box-shadow: 0 4px 20px #0002;
-}
-body.dark .auth-box,
-body.dim .auth-box {
-  background: #222;
-}
-.tabs {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 10px;
-}
-.tabs button {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  cursor: pointer;
-  background: #ccc;
-}
-.tabs .active {
-  background: #0084ff;
-  color: white;
-}
-input {
+* { box-sizing: border-box; }
+html,body { height: 100%; margin: 0; padding: 0; font-family: "Poppins", sans-serif; background: var(--bg); color: var(--text); }
+
+/* container */
+.chat-container {
   width: 100%;
-  margin: 8px 0;
-  padding: 8px;
-  border: 1px solid #999;
-  border-radius: 6px;
-}
-button {
-  background: #0084ff;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-button:hover { background: #0072e3; }
-.hint { font-size: 0.9em; color: #f55; }
-
-/* CHAT */
-#chatSection {
+  max-width: 720px;
+  height: 100vh;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  background: var(--panel);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
 }
-header {
+
+/* header */
+.chat-header {
+  background: var(--accent);
+  color: #fff;
+  padding: 12px 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  background: #0084ff;
-  color: white;
-}
-main { display: flex; flex: 1; }
-aside {
-  width: 160px;
-  border-right: 1px solid #ccc;
-  padding: 10px;
-  overflow-y: auto;
-}
-#chatBox { flex: 1; display: flex; flex-direction: column; }
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-.message {
-  background: #e8e8e8;
-  padding: 8px 10px;
-  border-radius: 8px;
-  margin: 4px 0;
-  max-width: 75%;
+  justify-content: center;
   position: relative;
 }
-.message.me {
-  align-self: flex-end;
-  background: #0084ff22;
-  border-left: 3px solid #0084ff;
+.title-block { text-align:center; }
+.title { margin: 0; font-size: 1.1rem; }
+.typing-status { font-size: 0.85rem; margin-top: 6px; opacity: 0.95; font-style: italic; }
+
+.header-controls { position: absolute; left: 12px; top: 12px; display:flex; gap:8px; }
+.icon-btn { background: rgba(255,255,255,0.12); border: none; color: white; padding:6px 8px; border-radius:8px; cursor:pointer; }
+.icon-btn:hover { filter: brightness(0.95); }
+.chat-header .online-count { position: absolute; right: 12px; top: 12px; font-size: 0.85rem; }
+
+/* auth */
+.auth-section { display:flex; align-items:center; justify-content:center; height: calc(100vh - 64px); background: var(--bg); }
+.auth-box { background: var(--panel); padding:20px; border-radius:12px; width:80%; max-width:400px; box-shadow:0 0 10px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
+.auth-box input { padding:10px; border-radius:8px; border:1px solid #ccc; font-size:1rem; }
+.auth-box button { padding:10px; border:none; background:var(--accent); color:#fff; border-radius:8px; cursor:pointer; font-size:1rem; }
+.auth-box button:hover { opacity:0.9; }
+.auth-box p { text-align:center; font-size:0.9rem; }
+.hint { color:#ffdddd; font-size:0.9rem; text-align:center; }
+
+/* chat */
+.chat-section { display:flex; flex:1; height: calc(100vh - 64px); }
+.sidebar { width: 26%; min-width:180px; background: #f0f3f5; padding:10px; border-right: 2px solid #d3d9dd; overflow-y:auto; }
+body.dark .sidebar { background: var(--muted); border-right-color: rgba(255,255,255,0.03); }
+.sidebar h3 { color: var(--accent); text-align:center; margin:0 0 8px; }
+#onlineUsers { list-style:none; padding:0; margin:0; }
+#onlineUsers li { padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.03); }
+
+/* main chat */
+.main-chat { flex:1; display:flex; flex-direction:column; background: var(--panel); }
+.messages { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; padding-bottom: 120px; }
+
+/* message bubble */
+.message { max-width: 80%; padding:10px 12px; border-radius:12px; word-break:break-word; }
+.message.me { align-self:flex-end; background:var(--me-bg); color:var(--me-text); border-bottom-right-radius:0; }
+.message.other { align-self:flex-start; background:var(--other-bg); color:var(--text); border-bottom-left-radius:0; }
+.meta { font-size:0.75rem; opacity:0.85; text-align:right; }
+.typing-indicator-bottom { height:26px; padding-left:12px; color:#888; font-style:italic; }
+
+/* send form */
+.send-form {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  margin: 0 auto;
+  max-width: 720px;
+  display:flex;
+  gap:8px;
+  padding:10px;
+  background: var(--panel);
+  border-top:1px solid rgba(0,0,0,0.06);
+  z-index:40;
 }
-.message.other {
-  align-self: flex-start;
-  background: #f5f5f5;
-  border-left: 3px solid #999;
-}
-.msg-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  position: absolute;
-  top: 2px;
-  right: 6px;
-  color: #888;
-}
-form#sendForm {
-  display: flex;
-  padding: 8px;
-  border-top: 1px solid #ccc;
-}
-#messageInput {
-  flex: 1;
-  border-radius: 8px;
-  border: 1px solid #aaa;
-  padding: 8px;
-}
-#typingIndicatorBottom {
-  text-align: left;
-  font-size: 0.85em;
-  margin-left: 10px;
-  color: #777;
-}
+.send-form input[type="text"] { flex:1; padding:10px 12px; border-radius:22px; border:1px solid #ccc; font-size:1rem; }
+.send-form button { width:48px; height:48px; border-radius:50%; border:none; background:var(--accent); color:#fff; cursor:pointer; }
