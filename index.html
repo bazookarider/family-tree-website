@@ -1,27 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CYOU Chat</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU Chat (Final Fixed)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="chat-container">
+
     <header class="chat-header">
-      <h1>CYOU Chat</h1>
+      <div class="title-block">
+        <h1 class="title">CYOU Chat</h1>
+        <div id="typingStatus" class="typing-status"></div>
+      </div>
+
+      <div class="header-controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
+        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
+      </div>
+
       <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <!-- JOIN SECTION -->
-    <section class="join-section" id="joinSection">
-      <input type="text" id="nameInput" placeholder="Enter your name..." />
-      <button id="enterBtn">Join Chat</button>
-      <p id="joinHint" style="color:red; font-size:0.9rem;"></p>
+    <section id="joinSection" class="join-section">
+      <h2>Welcome to CYOU Chat</h2>
+      <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
+      <button id="enterBtn" class="primary">Join Chat</button>
+      <div id="joinHint" class="hint"></div>
     </section>
 
-    <!-- CHAT SECTION -->
-    <section class="chat-section" id="chatSection">
+    <section id="chatSection" class="chat-section" style="display:none;">
       <aside class="sidebar">
         <h3>Online Users</h3>
         <ul id="onlineUsers"></ul>
@@ -29,10 +38,10 @@
 
       <main class="main-chat">
         <div id="messages" class="messages"></div>
-        <div id="typingStatus" class="typing-indicator"></div>
-        <form id="sendForm" class="send-form">
-          <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
-          <button type="submit" id="sendBtn">Send</button>
+
+        <form id="sendForm" class="send-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button type="submit" id="sendBtn">➤</button>
         </form>
       </main>
     </section>
