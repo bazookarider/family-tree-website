@@ -7,39 +7,33 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="chat-container">
 
-    <!-- HEADER -->
+  <!-- AUTH SECTION -->
+  <section id="authSection" class="join-section">
+    <h2 id="authTitle">Register</h2>
+    <input id="emailInput" type="email" placeholder="Enter your email..." />
+    <input id="passwordInput" type="password" placeholder="Enter your password..." />
+    <button id="registerBtn">Register</button>
+    <button id="loginBtn" style="display:none;">Login</button>
+    <div class="hint" id="authHint"></div>
+    <a href="#" id="switchLink">Login</a>
+  </section>
+
+  <!-- CHAT SECTION -->
+  <div class="chat-container" id="chatSection" style="display:none;">
     <header class="chat-header">
       <div class="title-block">
         <h1 class="title">CYOU Chat</h1>
-        <div id="typingStatus" class="typing-status"></div>
+        <div id="typingIndicatorBottom" class="typing-status"></div>
       </div>
-
       <div class="header-controls">
         <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
         <button id="clearChatBtn" class="icon-btn" title="Clear chat">🧹</button>
       </div>
-
       <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <!-- LOGIN/REGISTER -->
-    <section id="authSection" class="auth-section">
-      <div class="auth-box">
-        <h2 id="authTitle">Register</h2>
-        <input id="nicknameInput" type="text" placeholder="Nickname (unique)" />
-        <input id="emailInput" type="email" placeholder="Email" />
-        <input id="passwordInput" type="password" placeholder="Password" />
-        <button id="registerBtn">Register</button>
-        <button id="loginBtn" style="display:none;">Login</button>
-        <p id="switchText">Already have an account? <a href="#" id="switchLink">Login</a></p>
-        <div id="authHint" class="hint"></div>
-      </div>
-    </section>
-
-    <!-- CHAT -->
-    <section id="chatSection" class="chat-section" style="display:none;">
+    <section class="chat-section">
       <aside class="sidebar">
         <h3>Online Users</h3>
         <ul id="onlineUsers"></ul>
@@ -47,8 +41,6 @@
 
       <main class="main-chat">
         <div id="messages" class="messages" aria-live="polite"></div>
-        <div id="typingIndicatorBottom" class="typing-indicator-bottom"></div>
-
         <form id="sendForm" class="send-form" autocomplete="off">
           <input id="messageInput" type="text" placeholder="Type a message..." />
           <button type="submit" id="sendBtn">➤</button>
