@@ -1,11 +1,12 @@
 :root{
-  --main: #006677;
-  --bg: #f0f0f0;
-  --bubble-me: #006677;
-  --bubble-other: #ffffff;
+  /* Updated colors for a lighter, "fast" chat theme */
+  --main: #075E54; /* Deep green */
+  --bg: #ECE5DD; /* Light canvas color */
+  --bubble-me: #DCF8C6; /* Light, bright green bubble */
+  --bubble-other: #FFFFFF; /* White bubble */
   --text-other: #222;
   --tick-gray: #888;
-  --tick-blue: #0088ff;
+  --tick-blue: #34B7F1; /* WhatsApp blue */
   font-family: Inter, system-ui, sans-serif;
 }
 
@@ -20,40 +21,40 @@ body {
 
 .hidden { display: none; }
 
-/* Join screen */
+/* Join screen (Updated ID for consistency) */
 .join-screen {
   text-align: center;
   background: white;
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  box-shadow: 0 0 15px rgba(0,0,0,0.1); /* Lighter shadow */
 }
 .join-screen h1 {
   color: var(--main);
   margin-bottom: 20px;
 }
 .join-screen input {
-  padding: 10px;
+  padding: 12px; /* Slightly larger padding */
   border-radius: 8px;
   border: 1px solid #ccc;
-  width: 200px;
+  width: 250px; /* Wider input */
   margin-bottom: 10px;
+  font-size: 16px;
 }
 .join-screen button {
   background: var(--main);
   color: white;
   border: none;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.join-screen button:hover {
+  background: #064c42; /* Darker hover effect */
 }
 .error { color: red; margin-top: 8px; }
-.mode-select button {
-  display: block;
-  margin: 8px auto;
-  width: 80%;
-  font-weight: 600;
-}
 
 /* Chat app */
 .app {
@@ -65,6 +66,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 90vh;
+  box-shadow: 0 0 20px rgba(0,0,0,0.15); /* Light shadow for the whole app */
 }
 
 .topbar {
@@ -75,6 +77,13 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent message area from pushing main */
+  background: #fdfcff; /* Light, clean background for main chat area */
+}
 
 .messages {
   flex: 1;
@@ -82,60 +91,110 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px; /* Slightly tighter gap */
 }
 
+/* Scrollbar styling for a smoother look on modern browsers */
+.messages::-webkit-scrollbar { width: 6px; }
+.messages::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
+
 .message {
-  max-width: 70%;
-  padding: 10px;
+  max-width: 75%; /* Slightly wider max-width */
+  padding: 8px 10px; /* Tighter padding */
   border-radius: 10px;
   font-size: 15px;
   position: relative;
   word-wrap: break-word;
 }
 
+.message .name-tag { /* NEW: Style for the user name above the message */
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    opacity: 0.8;
+}
+
 .message.me {
   align-self: flex-end;
   background: var(--bubble-me);
-  color: white;
+  color: #222;
+  border-bottom-right-radius: 2px; /* Sharp corner style */
 }
+.message.me .name-tag { color: #075E54; } /* Me tag color */
 
 .message.other {
   align-self: flex-start;
   background: var(--bubble-other);
   color: var(--text-other);
+  border: 1px solid #eee; /* Subtle border for white bubbles */
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  border-bottom-left-radius: 2px; /* Sharp corner style */
 }
+.message.other .name-tag { color: #0088cc; } /* Other user tag color */
 
 .meta {
   font-size: 11px;
-  opacity: 0.7;
-  margin-top: 4px;
+  color: var(--tick-gray); /* Time is light gray */
+  margin-top: 2px;
+  margin-left: 10px;
   text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.meta .ticks {
+  margin-left: 4px;
 }
 
 .typing-indicator {
   font-style: italic;
   padding: 4px 12px;
   color: #555;
+  height: 20px; /* Reserve space */
 }
 
 .composer {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   padding: 8px;
   border-top: 1px solid #ddd;
+  background: #f7f7f7;
 }
 .composer input {
   flex: 1;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 10px;
+  border: none; /* Removed border */
+  background: white;
+  border-radius: 20px; /* Pill shape */
+  padding: 10px 16px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
 }
 .composer button {
   background: var(--main);
   color: white;
   border: none;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 50%; /* Circle button */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+.composer button:hover { opacity: 0.9; }
+
+/* NEW: Footer Style */
+footer {
+  padding: 8px;
+  text-align: center;
+  border-top: 1px solid #eee;
+  background: white;
+}
+.footer-link {
+  color: #aaa;
+  font-size: 11px;
+  text-decoration: none;
 }
