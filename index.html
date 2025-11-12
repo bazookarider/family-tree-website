@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU Chat (Final Fixed)</title>
+  <title>CYOU Chat — Final</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="chat-container">
 
+    <!-- HEADER (title + last seen + controls) -->
     <header class="chat-header">
-      <div class="title-block">
+      <div class="title-left">
         <h1 class="title">CYOU Chat</h1>
-        <div id="typingStatus" class="typing-status"></div>
+        <div id="lastSeen" class="last-seen"></div>
       </div>
 
       <div class="header-controls">
@@ -23,6 +24,7 @@
       <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
+    <!-- JOIN (full screen style) -->
     <section id="joinSection" class="join-section">
       <h2>Welcome to CYOU Chat</h2>
       <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
@@ -30,6 +32,7 @@
       <div id="joinHint" class="hint"></div>
     </section>
 
+    <!-- MAIN CHAT (hidden until joined) -->
     <section id="chatSection" class="chat-section" style="display:none;">
       <aside class="sidebar">
         <h3>Online Users</h3>
@@ -37,17 +40,25 @@
       </aside>
 
       <main class="main-chat">
-        <div id="messages" class="messages"></div>
+        <div id="messages" class="messages" aria-live="polite"></div>
 
+        <!-- typing indicator now below input (per your request) -->
         <form id="sendForm" class="send-form" autocomplete="off">
           <input id="messageInput" type="text" placeholder="Type a message..." />
           <button type="submit" id="sendBtn">➤</button>
         </form>
+
+        <div id="typingIndicator" class="typing-indicator"></div>
       </main>
     </section>
+
+    <!-- popup menu for long-press (edit/delete) -->
+    <div id="msgPopup" class="msg-popup" role="dialog" aria-hidden="true">
+      <button id="editBtn" class="popup-btn">Edit</button>
+      <button id="deleteBtn" class="popup-btn">Delete</button>
+    </div>
   </div>
 
   <script type="module" src="script.js"></script>
 </body>
 </html>
-
