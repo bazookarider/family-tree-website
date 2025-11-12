@@ -5,9 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CYOU — Chat</title>
   <link rel="stylesheet" href="styles.css" />
+  <!-- Firebase v12 modular -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js"></script>
 </head>
 <body>
-  <div class="app">
+  <div class="join-screen" id="joinScreen">
+    <h1>CYOU</h1>
+    <input id="nameInput" placeholder="Enter your username" maxlength="20" />
+    <button id="checkBtn">Continue</button>
+    <div id="nameError" class="error"></div>
+    <div id="modeSelect" class="mode-select hidden">
+      <button id="publicBtn">🌍 Join Public Chat</button>
+      <button id="privateBtn">🔒 Private Chat</button>
+    </div>
+    <div id="privateBox" class="private-box hidden">
+      <input id="partnerInput" placeholder="Enter friend's username" />
+      <button id="joinPrivateBtn">Start Private Chat</button>
+    </div>
+  </div>
+
+  <div class="app hidden" id="chatApp">
     <header class="topbar">
       <div class="brand">
         <div class="logo-circle">C</div>
@@ -16,49 +35,21 @@
           <div class="subtitle">chat • connect • c-you</div>
         </div>
       </div>
-
-      <div class="controls">
-        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
+      <div class="status">
+        <span id="onlineCount">0</span> online
       </div>
     </header>
 
     <main class="main">
-      <section class="sidebar">
-        <div class="user-block">
-          <label for="nameInput">Enter name</label>
-          <input id="nameInput" placeholder="Type your display name" maxlength="30" />
-          <button id="enterBtn">Join CYOU</button>
-        </div>
-
-        <div class="online-list">
-          <h4>Online <small id="onlineCount">(0)</small></h4>
-          <ul id="onlineUsers"></ul>
-        </div>
-      </section>
-
-      <section class="chat-area">
-        <div id="messages" class="messages" role="log" aria-live="polite"></div>
-
-        <div id="typingIndicator" class="typing-indicator"></div>
-
-        <form id="sendForm" class="composer" autocomplete="off">
-          <div class="left-controls">
-            <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
-            <div id="emojiPanel" class="emoji-panel hidden" aria-hidden="true"></div>
-          </div>
-
-          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
-          <button id="sendBtn" type="submit">Send</button>
-        </form>
-      </section>
+      <div id="messages" class="messages"></div>
+      <div id="typingIndicator" class="typing-indicator"></div>
+      <form id="sendForm" class="composer" autocomplete="off">
+        <input id="messageInput" placeholder="Type a message..." />
+        <button id="sendBtn">Send</button>
+      </form>
     </main>
-
-    <footer class="footer">
-      <small>CYOU — C-Y-O-U</small>
-    </footer>
   </div>
 
-  <!-- main script -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
