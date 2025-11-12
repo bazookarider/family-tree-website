@@ -1,52 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU Chat (Final Fixed)</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
-  <div class="chat-container">
+    <div id="login-container" class="container active">
+        <h2>Sign In / Sign Up</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="signup-btn">Sign Up</button>
+        <button id="login-btn">Log In</button>
+    </div>
 
-    <header class="chat-header">
-      <div class="title-block">
-        <h1 class="title">CYOU Chat</h1>
-        <div id="typingStatus" class="typing-status"></div>
-      </div>
+    <div id="dashboard-container" class="container">
+        <div id="user-info">
+            <h3 id="current-user-email"></h3>
+            <button id="logout-btn">Log Out</button>
+        </div>
+        
+        <h3>Start a Private Chat</h3>
+        <ul id="user-list">
+            <p>Loading users...</p>
+        </ul>
+    </div>
 
-      <div class="header-controls">
-        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌓</button>
-        <button id="clearChatBtn" class="icon-btn" title="Clear local chat">🧹</button>
-      </div>
+    <div id="chat-container" class="container">
+        <div id="chat-header">
+            <button id="back-to-dashboard-btn">← Back</button>
+            <h3 id="chat-partner-email">Chatting with...</h3>
+        </div>
+        
+        <div id="messages">
+            </div>
 
-      <div class="online-count">Online: <span id="onlineCount">0</span></div>
-    </header>
+        <div id="message-input-area">
+            <input type="text" id="message-input" placeholder="Type your message...">
+            <button id="send-btn">Send</button>
+        </div>
 
-    <section id="joinSection" class="join-section">
-      <h2>Welcome to CYOU Chat</h2>
-      <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
-      <button id="enterBtn" class="primary">Join Chat</button>
-      <div id="joinHint" class="hint"></div>
-    </section>
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <h4>Edit Message</h4>
+                <textarea id="edit-message-text"></textarea>
+                <div class="modal-actions">
+                    <button id="save-edit-btn">Save</button>
+                    <button id="cancel-edit-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <section id="chatSection" class="chat-section" style="display:none;">
-      <aside class="sidebar">
-        <h3>Online Users</h3>
-        <ul id="onlineUsers"></ul>
-      </aside>
-
-      <main class="main-chat">
-        <div id="messages" class="messages"></div>
-
-        <form id="sendForm" class="send-form" autocomplete="off">
-          <input id="messageInput" type="text" placeholder="Type a message..." />
-          <button type="submit" id="sendBtn">➤</button>
-        </form>
-      </main>
-    </section>
-  </div>
-
-  <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
