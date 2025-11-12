@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU Chat (Final)</title>
+  <title>CYOU Chat (Final Fixed)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="chat-container">
 
-    <!-- HEADER (typing shown inside header) -->
     <header class="chat-header">
       <div class="title-block">
         <h1 class="title">CYOU Chat</h1>
@@ -24,7 +23,6 @@
       <div class="online-count">Online: <span id="onlineCount">0</span></div>
     </header>
 
-    <!-- JOIN (full-screen style) -->
     <section id="joinSection" class="join-section">
       <h2>Welcome to CYOU Chat</h2>
       <input id="nameInput" type="text" placeholder="Enter your nickname..." autocomplete="username" />
@@ -32,7 +30,6 @@
       <div id="joinHint" class="hint"></div>
     </section>
 
-    <!-- CHAT (hidden until join) -->
     <section id="chatSection" class="chat-section" style="display:none;">
       <aside class="sidebar">
         <h3>Online Users</h3>
@@ -40,7 +37,7 @@
       </aside>
 
       <main class="main-chat">
-        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="messages" class="messages"></div>
 
         <form id="sendForm" class="send-form" autocomplete="off">
           <input id="messageInput" type="text" placeholder="Type a message..." />
