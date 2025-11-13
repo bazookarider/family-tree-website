@@ -1,19 +1,27 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, set, update, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { 
+  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, 
+  set, update, remove, onValue 
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
+// ✅ Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-  databaseURL: "YOUR_FIREBASE_DATABASE_URL",
-  projectId: "YOUR_FIREBASE_PROJECT_ID",
-  storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
-  appId: "YOUR_FIREBASE_APP_ID"
+  apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+  authDomain: "cyou-db8f0.firebaseapp.com",
+  databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
+  projectId: "cyou-db8f0",
+  storageBucket: "cyou-db8f0.firebasestorage.app",
+  messagingSenderId: "873569975141",
+  appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+  measurementId: "G-T66B50HFJ8"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// DOM elements
 const nicknameInput = document.getElementById("nicknameInput");
 const joinBtn = document.getElementById("joinBtn");
 const loginContainer = document.getElementById("loginContainer");
@@ -27,27 +35,30 @@ const msgSound = document.getElementById("msgSound");
 let nickname = "";
 let typingTimeout = null;
 
-joinBtn.onclick = () => {
-  if (nicknameInput.value.trim() === "") return;
-  nickname = nicknameInput.value.trim();
+// ✅ Join chat
+joinBtn.addEventListener("click", () => {
+  const name = nicknameInput.value.trim();
+  if (name === "") {
+    alert("Please enter your nickname!");
+    return;
+  }
+  nickname = name;
   loginContainer.style.display = "none";
   chatBox.style.display = "flex";
+  startChat();
+});
+
+function startChat() {
   listenMessages();
-};
+  listenTyping();
+}
 
-sendBtn.onclick = sendMessage;
-
+// ✅ Send message
+sendBtn.addEventListener("click", sendMessage);
 messageInput.addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
   sendTypingStatus();
 });
-
-function sendTypingStatus() {
-  const typingRef = ref(db, "typing/" + nickname);
-  set(typingRef, true);
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => set(typingRef, false), 1500);
-}
 
 function sendMessage() {
   const text = messageInput.value.trim();
@@ -64,6 +75,7 @@ function sendMessage() {
 
 function listenMessages() {
   const msgRef = ref(db, "messages");
+
   onChildAdded(msgRef, (snapshot) => {
     const data = snapshot.val();
     displayMessage(snapshot.key, data);
@@ -87,15 +99,26 @@ function listenMessages() {
     const msgEl = document.getElementById(snapshot.key);
     if (msgEl) msgEl.remove();
   });
+}
 
+function sendTypingStatus() {
+  const typingRef = ref(db, "typing/" + nickname);
+  set(typingRef, true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => set(typingRef, false), 1500);
+}
+
+function listenTyping() {
   const typingRef = ref(db, "typing");
-  onChildAdded(typingRef, () => {});
-  onChildChanged(typingRef, snap => {
-    if (snap.val() && snap.key !== nickname) {
-      typingIndicator.textContent = `${snap.key} is typing...`;
-    } else if (!snap.val()) {
-      typingIndicator.textContent = "";
-    }
+  onValue(typingRef, (snapshot) => {
+    let someoneTyping = false;
+    snapshot.forEach(user => {
+      if (user.val() && user.key !== nickname) {
+        typingIndicator.textContent = `${user.key} is typing...`;
+        someoneTyping = true;
+      }
+    });
+    if (!someoneTyping) typingIndicator.textContent = "";
   });
 }
 
@@ -108,6 +131,7 @@ function displayMessage(id, data) {
   const name = document.createElement("div");
   name.classList.add("name");
   name.textContent = data.sender === nickname ? "You" : data.sender;
+  name.style.color = data.sender === nickname ? "gray" : "#006677";
   div.appendChild(name);
 
   const text = document.createElement("div");
@@ -115,25 +139,28 @@ function displayMessage(id, data) {
   text.textContent = data.text;
   div.appendChild(text);
 
-  const del = document.createElement("span");
-  del.classList.add("delete-btn");
-  del.textContent = "🗑️";
-  div.appendChild(del);
+  if (data.sender === nickname) {
+    const editBtn = document.createElement("span");
+    editBtn.classList.add("edit-btn");
+    editBtn.textContent = "📝";
+    div.appendChild(editBtn);
 
-  del.addEventListener("click", () => {
-    if (data.sender === nickname) {
-      remove(ref(db, "messages/" + id));
-    }
-  });
+    const delBtn = document.createElement("span");
+    delBtn.classList.add("delete-btn");
+    delBtn.textContent = "🗑️";
+    div.appendChild(delBtn);
 
-  div.addEventListener("dblclick", () => {
-    if (data.sender === nickname) {
+    editBtn.addEventListener("click", () => {
       const newText = prompt("Edit your message:", data.text);
       if (newText && newText.trim() !== data.text) {
         update(ref(db, "messages/" + id), { text: newText.trim(), edited: true });
       }
-    }
-  });
+    });
+
+    delBtn.addEventListener("click", () => {
+      remove(ref(db, "messages/" + id));
+    });
+  }
 
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
