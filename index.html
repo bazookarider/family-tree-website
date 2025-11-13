@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- FULL-SCREEN LOGIN (shows first) -->
+  <!-- FULL-SCREEN LOGIN -->
   <div id="loginScreen" class="screen">
     <div class="card login-card">
       <div class="logo">C</div>
@@ -31,20 +31,19 @@
           <div class="subtitle">Public chat</div>
         </div>
       </div>
-      <div class="status">
-        <span id="onlineCount">0</span> online
+
+      <div class="controls">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌙</button>
       </div>
     </header>
 
     <main class="main">
       <section class="chat-area">
         <div id="messages" class="messages" role="log" aria-live="polite"></div>
+
         <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
 
         <form id="sendForm" class="composer" autocomplete="off">
-          <button id="emojiBtn" type="button" class="icon-btn" aria-label="Emoji">😊</button>
-          <div id="emojiPanel" class="emoji-panel hidden" aria-hidden="true"></div>
-
           <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
           <button id="sendBtn" type="submit" class="primary">Send</button>
         </form>
