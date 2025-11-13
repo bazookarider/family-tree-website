@@ -1,13 +1,13 @@
-// script.js (module) — final fixed join flow, visible error alerts for Chrome, lighter ticks/time, auto-login
+// script.js (module) — final CYOU with delete/edit once, dark mode, no emoji panel, no online counter
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, serverTimestamp,
   onSnapshot, query, orderBy, limitToLast,
-  doc, setDoc, updateDoc, arrayUnion, getDoc
+  doc, setDoc, updateDoc, arrayUnion, getDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-/* firebase config (your project) */
+/* === Firebase config (your project) === */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -34,10 +34,7 @@ const messagesEl = document.getElementById("messages");
 const typingIndicator = document.getElementById("typingIndicator");
 const sendForm = document.getElementById("sendForm");
 const messageInput = document.getElementById("messageInput");
-const onlineCountEl = document.getElementById("onlineCount");
-
-const emojiBtn = document.getElementById("emojiBtn");
-const emojiPanel = document.getElementById("emojiPanel");
+const themeToggle = document.getElementById("themeToggle");
 
 /* state */
 let currentUser = null;
@@ -47,13 +44,29 @@ let presenceInterval = null;
 const HEARTBEAT_MS = 5000;
 const PRESENCE_FRESH_MS = 14000;
 
-/* prefill */
+/* prefill name if saved */
 if (displayName) nameInput.value = displayName;
+
+/* THEME: prefer system on first load, then store choice */
+const savedTheme = localStorage.getItem("cyou_theme");
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (!savedTheme) {
+  if (prefersDark) document.body.classList.add('dark');
+} else if (savedTheme === 'dark') {
+  document.body.classList.add('dark');
+} // else default light
+themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('cyou_theme', isDark ? 'dark' : 'light');
+});
 
 /* helper */
 function pad(n){ return n<10 ? "0"+n : n; }
 
-/* Auto-join when name saved: first ensure user doc exists then sign in */
+/* Auto-join if we have saved name (ensures user doc exists then sign in) */
 if (displayName) {
   (async () => {
     try {
@@ -64,33 +77,25 @@ if (displayName) {
       } else {
         await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
       }
-      // Attempt sign-in; show visible alert on failure
       try {
         const cred = await signInAnonymously(auth);
         currentUser = cred.user;
         afterSignIn();
       } catch (err) {
-        // show a clear alert with the error so you can see it on mobile Chrome
         alert("Sign-in failed on auto-join: " + (err && err.message ? err.message : String(err)));
         console.error("Auto sign-in error:", err);
       }
-    } catch (e) {
-      console.warn("Auto-join setup error:", e);
-    }
+    } catch (e) { console.warn("Auto-join setup error:", e); }
   })();
 }
 
-/* JOIN button */
+/* JOIN flow */
 joinBtn.addEventListener("click", async () => {
   nameError.textContent = "";
   const name = (nameInput.value || "").trim();
-  if (!name) {
-    nameError.textContent = "Please type a name.";
-    return;
-  }
+  if (!name) { nameError.textContent = "Please type a name."; return; }
 
   try {
-    // Check username doc
     const userRef = doc(db, "cyou_users", name);
     const snap = await getDoc(userRef);
     const saved = localStorage.getItem("cyou_name");
@@ -103,19 +108,16 @@ joinBtn.addEventListener("click", async () => {
       }
     }
 
-    // Accept name
     displayName = name;
     localStorage.setItem("cyou_name", displayName);
     await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
 
-    // sign in anonymously and show visible alert if error occurs
     try {
       const cred = await signInAnonymously(auth);
       currentUser = cred.user;
       afterSignIn();
     } catch (err) {
       console.error("Sign-in error:", err);
-      // visible mobile-friendly alert with the actual error message
       alert("Could not join — signInAnonymously failed: " + (err && err.message ? err.message : String(err)));
       nameError.textContent = "Could not join — check network or Firebase settings.";
     }
@@ -132,19 +134,19 @@ function afterSignIn(){
   messageInput.disabled = false;
   messageInput.focus();
 
-  startPresence();
-  subscribePresence();
   subscribeTyping();
   subscribeMessages();
+
+  // presence updates (kept backend but we don't render online list)
+  startPresence();
 }
 
-/* PRESENCE */
+/* PRESENCE (kept for ticks accuracy but not displayed) */
 async function startPresence(){
   if (!currentUser || !displayName) return;
   const presenceRef = doc(db, "cyou_presence", currentUser.uid);
-  try {
-    await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
-  } catch (e) { console.warn("presence set error", e); }
+  try { await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() }); }
+  catch (e) { console.warn("presence set error", e); }
 
   presenceInterval = setInterval(async () => {
     try { await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() }); }
@@ -152,31 +154,12 @@ async function startPresence(){
   }, HEARTBEAT_MS);
 
   window.addEventListener("beforeunload", async () => {
-    try {
-      await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
-    } catch (e) {}
+    try { await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true }); }
+    catch (e) {}
   });
 }
 
-function subscribePresence(){
-  const col = collection(db, "cyou_presence");
-  onSnapshot(col, (snap) => {
-    const now = Date.now();
-    const online = [];
-    snap.forEach(d => {
-      const data = d.data();
-      const lastActive = data.lastActive;
-      let isOnline = true;
-      if (lastActive && lastActive.toMillis) {
-        isOnline = (now - lastActive.toMillis()) < PRESENCE_FRESH_MS;
-      }
-      if (isOnline) online.push(data.name || "User");
-    });
-    onlineCountEl.textContent = online.length;
-  }, (err) => console.warn("presence onSnapshot", err));
-}
-
-/* TYPING */
+/* TYPING indicator */
 let lastTypedAt = 0;
 messageInput.addEventListener("input", () => {
   setTyping(true);
@@ -225,7 +208,10 @@ sendForm.addEventListener("submit", async (ev) => {
       uid: currentUser.uid,
       createdAt: serverTimestamp(),
       deliveredBy: [],
-      seenBy: []
+      seenBy: [],
+      edited: false,
+      deleted: false,
+      editCount: 0
     });
     try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
     messageInput.value = "";
@@ -236,16 +222,16 @@ sendForm.addEventListener("submit", async (ev) => {
   }
 });
 
-/* SUBSCRIBE MESSAGES */
+/* SUBSCRIBE MESSAGES + auto-scroll + mark delivered/seen */
 function subscribeMessages(){
-  const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(6));
+  const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(25));
   onSnapshot(q, async (snap) => {
     const docs = [];
     snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
     messagesEl.innerHTML = "";
     for (const m of docs) renderMessage(m.id, m.data);
 
-    // smooth auto-scroll to bottom
+    // smooth scroll to bottom
     const lastChild = messagesEl.lastElementChild;
     if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
@@ -257,25 +243,32 @@ function subscribeMessages(){
           await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
           await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid) });
           await updateDoc(mRef, { status: "seen" });
-        } catch (e) { /* ignore concurrency errors */ }
+        } catch (e) { /* ignore */ }
       }
     }
   }, (err) => console.error("messages subscribe error", err));
 }
 
-/* RENDER message */
+/* RENDER message with edit/delete UI for your messages */
 function renderMessage(id, data){
   const div = document.createElement("div");
   const isMe = data.uid === (currentUser && currentUser.uid);
+  if (data.deleted) {
+    div.className = "message deleted";
+    div.textContent = "This message was deleted.";
+    messagesEl.appendChild(div);
+    return;
+  }
   div.className = "message " + (isMe ? "me" : "other");
 
+  // content
   const content = document.createElement("div");
   content.textContent = data.text || "";
   div.appendChild(content);
 
+  // meta
   const meta = document.createElement("div");
   meta.className = "meta";
-
   const author = document.createElement("span");
   author.textContent = isMe ? "You" : (data.name || "User");
 
@@ -288,6 +281,16 @@ function renderMessage(id, data){
   meta.appendChild(document.createTextNode(" • "));
   meta.appendChild(time);
 
+  // show edited label if edited
+  if (data.edited) {
+    const edited = document.createElement("span");
+    edited.textContent = " (edited)";
+    edited.style.fontStyle = "italic";
+    edited.style.opacity = "0.9";
+    meta.appendChild(edited);
+  }
+
+  // ticks for sender
   if (isMe) {
     const ticks = document.createElement("span");
     ticks.className = "ticks";
@@ -301,30 +304,80 @@ function renderMessage(id, data){
   }
 
   div.appendChild(meta);
+
+  // add interaction: tap/long-press opens options for own messages (edit/delete)
+  if (isMe) {
+    div.style.cursor = "pointer";
+    attachMessageActions(div, id, data);
+  }
+
   messagesEl.appendChild(div);
 }
 
-/* Emoji panel (small) */
-const emojiList = ["😀","😁","😄","😂","😊","😍","😜","😎","🤗","🤩","😴","😢","😭","👍","👏","🙏","🔥"];
-function buildEmojiPanel(){
-  if (!emojiPanel) return;
-  emojiPanel.innerHTML = "";
-  emojiList.forEach(e => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "emoji";
-    b.textContent = e;
-    b.addEventListener("click", () => {
-      insertAtCursor(messageInput, e);
-      messageInput.focus();
-      emojiPanel.classList.add("hidden");
-    });
-    emojiPanel.appendChild(b);
+/* Attach edit/delete actions: allows one edit, and delete for everyone */
+function attachMessageActions(el, id, data){
+  let pressTimer = null;
+  const longPressMs = 500;
+
+  function openOptions(){
+    // simple prompt-based options so it works on mobile: Edit / Delete / Cancel
+    const choice = prompt("Options: type EDIT to edit once, DELETE to delete for everyone, or CANCEL to close.").trim();
+    if (!choice) return;
+    if (choice.toLowerCase() === "delete") {
+      deleteMessageConfirm(id);
+    } else if (choice.toLowerCase() === "edit") {
+      if (data.editCount && data.editCount >= 1) {
+        alert("You can edit this message only once.");
+        return;
+      }
+      const newText = prompt("Edit message (you can edit once):", data.text || "");
+      if (newText === null) return;
+      if (newText.trim() === "") { alert("Edit cancelled: cannot set empty message."); return; }
+      editMessage(id, newText.trim(), (data.editCount||0) + 1);
+    }
+  }
+
+  // long-press (touch) support
+  el.addEventListener("touchstart", (e) => {
+    pressTimer = window.setTimeout(openOptions, longPressMs);
+  });
+  el.addEventListener("touchend", (e) => {
+    if (pressTimer) clearTimeout(pressTimer);
+  });
+  // click fallback (desktop)
+  el.addEventListener("click", (e) => {
+    // small delay to avoid accidental open on quick taps
+    // quick tap = ignore, double-tap could be used; we open options on single click for accessibility
+    openOptions();
   });
 }
-buildEmojiPanel();
-if (emojiBtn) emojiBtn.addEventListener("click", () => { if (emojiPanel) emojiPanel.classList.toggle("hidden"); });
 
+/* delete message (mark deleted for everyone) */
+async function deleteMessageConfirm(id){
+  if (!confirm("Delete this message for everyone?")) return;
+  try {
+    const mRef = doc(db, "cyou_messages", id);
+    await updateDoc(mRef, { deleted: true, text: "", status: "deleted" });
+  } catch (e) {
+    console.error("delete error", e);
+    alert("Could not delete message.");
+  }
+}
+
+/* edit message once */
+async function editMessage(id, newText, newEditCount){
+  try {
+    const mRef = doc(db, "cyou_messages", id);
+    await updateDoc(mRef, { text: newText, edited: true, editCount: newEditCount });
+  } catch (e) {
+    console.error("edit error", e);
+    alert("Could not edit message.");
+  }
+}
+
+/* Emoji removed: we do not build or show emoji panel (user requested) */
+
+/* helper insertAtCursor kept for future (unused now) */
 function insertAtCursor(el, text) {
   const start = el.selectionStart || 0;
   const end = el.selectionEnd || 0;
@@ -333,4 +386,4 @@ function insertAtCursor(el, text) {
   el.dispatchEvent(new Event('input'));
 }
 
-console.log("CYOU final fixed script loaded");
+console.log("CYOU final upgraded script loaded");
