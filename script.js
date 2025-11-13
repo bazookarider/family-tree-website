@@ -1,167 +1,336 @@
-// Import Firebase modules
+// script.js (module) — final fixed join flow, visible error alerts for Chrome, lighter ticks/time, auto-login
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-import { 
-  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, 
-  set, update, remove, onValue 
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp,
+  onSnapshot, query, orderBy, limitToLast,
+  doc, setDoc, updateDoc, arrayUnion, getDoc
+} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// ✅ Your Firebase configuration
+/* firebase config (your project) */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
-  databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
   projectId: "cyou-db8f0",
-  storageBucket: "cyou-db8f0.firebasestorage.app",
+  storageBucket: "cyou-db8f0.appspot.com",
   messagingSenderId: "873569975141",
   appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
   measurementId: "G-T66B50HFJ8"
 };
 
-// Initialize Firebase
+/* init */
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// DOM elements
-const nicknameInput = document.getElementById("nicknameInput");
+/* UI refs */
+const loginScreen = document.getElementById("loginScreen");
+const nameInput = document.getElementById("nameInput");
+const nameError = document.getElementById("nameError");
 const joinBtn = document.getElementById("joinBtn");
-const loginContainer = document.getElementById("loginContainer");
-const chatBox = document.getElementById("chatBox");
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const messagesDiv = document.getElementById("messages");
+
+const chatApp = document.getElementById("chatApp");
+const messagesEl = document.getElementById("messages");
 const typingIndicator = document.getElementById("typingIndicator");
-const msgSound = document.getElementById("msgSound");
+const sendForm = document.getElementById("sendForm");
+const messageInput = document.getElementById("messageInput");
+const onlineCountEl = document.getElementById("onlineCount");
 
-let nickname = "";
+const emojiBtn = document.getElementById("emojiBtn");
+const emojiPanel = document.getElementById("emojiPanel");
+
+/* state */
+let currentUser = null;
+let displayName = localStorage.getItem("cyou_name") || "";
 let typingTimeout = null;
+let presenceInterval = null;
+const HEARTBEAT_MS = 5000;
+const PRESENCE_FRESH_MS = 14000;
 
-// ✅ Join chat
-joinBtn.addEventListener("click", () => {
-  const name = nicknameInput.value.trim();
-  if (name === "") {
-    alert("Please enter your nickname!");
+/* prefill */
+if (displayName) nameInput.value = displayName;
+
+/* helper */
+function pad(n){ return n<10 ? "0"+n : n; }
+
+/* Auto-join when name saved: first ensure user doc exists then sign in */
+if (displayName) {
+  (async () => {
+    try {
+      const userRef = doc(db, "cyou_users", displayName);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() });
+      } else {
+        await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+      }
+      // Attempt sign-in; show visible alert on failure
+      try {
+        const cred = await signInAnonymously(auth);
+        currentUser = cred.user;
+        afterSignIn();
+      } catch (err) {
+        // show a clear alert with the error so you can see it on mobile Chrome
+        alert("Sign-in failed on auto-join: " + (err && err.message ? err.message : String(err)));
+        console.error("Auto sign-in error:", err);
+      }
+    } catch (e) {
+      console.warn("Auto-join setup error:", e);
+    }
+  })();
+}
+
+/* JOIN button */
+joinBtn.addEventListener("click", async () => {
+  nameError.textContent = "";
+  const name = (nameInput.value || "").trim();
+  if (!name) {
+    nameError.textContent = "Please type a name.";
     return;
   }
-  nickname = name;
-  loginContainer.style.display = "none";
-  chatBox.style.display = "flex";
-  startChat();
-});
 
-function startChat() {
-  listenMessages();
-  listenTyping();
-}
+  try {
+    // Check username doc
+    const userRef = doc(db, "cyou_users", name);
+    const snap = await getDoc(userRef);
+    const saved = localStorage.getItem("cyou_name");
 
-// ✅ Send message
-sendBtn.addEventListener("click", sendMessage);
-messageInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") sendMessage();
-  sendTypingStatus();
-});
-
-function sendMessage() {
-  const text = messageInput.value.trim();
-  if (!text) return;
-  const msgRef = ref(db, "messages");
-  push(msgRef, {
-    sender: nickname,
-    text,
-    edited: false,
-    timestamp: Date.now()
-  });
-  messageInput.value = "";
-}
-
-function listenMessages() {
-  const msgRef = ref(db, "messages");
-
-  onChildAdded(msgRef, (snapshot) => {
-    const data = snapshot.val();
-    displayMessage(snapshot.key, data);
-    if (data.sender !== nickname) msgSound.play();
-  });
-
-  onChildChanged(msgRef, (snapshot) => {
-    const msgEl = document.getElementById(snapshot.key);
-    if (msgEl) {
-      msgEl.querySelector(".msg-text").textContent = snapshot.val().text;
-      if (snapshot.val().edited && !msgEl.querySelector(".edit-label")) {
-        const edit = document.createElement("span");
-        edit.classList.add("edit-label");
-        edit.textContent = "edited";
-        msgEl.appendChild(edit);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.online && saved !== name) {
+        nameError.textContent = "Username already taken — choose another.";
+        return;
       }
     }
-  });
 
-  onChildRemoved(msgRef, (snapshot) => {
-    const msgEl = document.getElementById(snapshot.key);
-    if (msgEl) msgEl.remove();
+    // Accept name
+    displayName = name;
+    localStorage.setItem("cyou_name", displayName);
+    await setDoc(userRef, { online: true, lastSeen: serverTimestamp() }, { merge: true });
+
+    // sign in anonymously and show visible alert if error occurs
+    try {
+      const cred = await signInAnonymously(auth);
+      currentUser = cred.user;
+      afterSignIn();
+    } catch (err) {
+      console.error("Sign-in error:", err);
+      // visible mobile-friendly alert with the actual error message
+      alert("Could not join — signInAnonymously failed: " + (err && err.message ? err.message : String(err)));
+      nameError.textContent = "Could not join — check network or Firebase settings.";
+    }
+  } catch (err) {
+    console.error("Join error:", err);
+    alert("Could not join — unexpected error: " + (err && err.message ? err.message : String(err)));
+  }
+});
+
+/* After sign-in: show chat and start listeners */
+function afterSignIn(){
+  loginScreen.classList.add("hidden");
+  chatApp.classList.remove("hidden");
+  messageInput.disabled = false;
+  messageInput.focus();
+
+  startPresence();
+  subscribePresence();
+  subscribeTyping();
+  subscribeMessages();
+}
+
+/* PRESENCE */
+async function startPresence(){
+  if (!currentUser || !displayName) return;
+  const presenceRef = doc(db, "cyou_presence", currentUser.uid);
+  try {
+    await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() });
+  } catch (e) { console.warn("presence set error", e); }
+
+  presenceInterval = setInterval(async () => {
+    try { await setDoc(presenceRef, { uid: currentUser.uid, name: displayName, lastActive: serverTimestamp() }); }
+    catch (e) { console.warn("presence heartbeat error", e); }
+  }, HEARTBEAT_MS);
+
+  window.addEventListener("beforeunload", async () => {
+    try {
+      await setDoc(doc(db, "cyou_users", displayName), { online: false, lastSeen: serverTimestamp() }, { merge: true });
+    } catch (e) {}
   });
 }
 
-function sendTypingStatus() {
-  const typingRef = ref(db, "typing/" + nickname);
-  set(typingRef, true);
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => set(typingRef, false), 1500);
-}
-
-function listenTyping() {
-  const typingRef = ref(db, "typing");
-  onValue(typingRef, (snapshot) => {
-    let someoneTyping = false;
-    snapshot.forEach(user => {
-      if (user.val() && user.key !== nickname) {
-        typingIndicator.textContent = `${user.key} is typing...`;
-        someoneTyping = true;
+function subscribePresence(){
+  const col = collection(db, "cyou_presence");
+  onSnapshot(col, (snap) => {
+    const now = Date.now();
+    const online = [];
+    snap.forEach(d => {
+      const data = d.data();
+      const lastActive = data.lastActive;
+      let isOnline = true;
+      if (lastActive && lastActive.toMillis) {
+        isOnline = (now - lastActive.toMillis()) < PRESENCE_FRESH_MS;
       }
+      if (isOnline) online.push(data.name || "User");
     });
-    if (!someoneTyping) typingIndicator.textContent = "";
-  });
+    onlineCountEl.textContent = online.length;
+  }, (err) => console.warn("presence onSnapshot", err));
 }
 
-function displayMessage(id, data) {
+/* TYPING */
+let lastTypedAt = 0;
+messageInput.addEventListener("input", () => {
+  setTyping(true);
+  lastTypedAt = Date.now();
+  if (typingTimeout) clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    if (Date.now() - lastTypedAt >= 1400) setTyping(false);
+  }, 1400);
+});
+
+async function setTyping(isTyping){
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, "cyou_typing", currentUser.uid), {
+      uid: currentUser.uid,
+      name: displayName,
+      typing: isTyping,
+      lastUpdated: serverTimestamp()
+    });
+  } catch (e) { console.warn("typing set error", e); }
+}
+
+function subscribeTyping(){
+  const col = collection(db, "cyou_typing");
+  onSnapshot(col, (snap) => {
+    const typers = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.typing && data.uid !== (currentUser && currentUser.uid)) typers.push(data.name || "Someone");
+    });
+    if (typers.length === 0) typingIndicator.textContent = "";
+    else if (typers.length === 1) typingIndicator.textContent = `${typers[0]} is typing...`;
+    else typingIndicator.textContent = `${typers.slice(0,3).join(", ")} are typing...`;
+  }, (err) => console.warn("typing subscribe error", err));
+}
+
+/* SEND MESSAGE */
+sendForm.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const text = (messageInput.value || "").trim();
+  if (!text || !currentUser) return;
+  try {
+    const ref = await addDoc(collection(db, "cyou_messages"), {
+      text,
+      name: displayName,
+      uid: currentUser.uid,
+      createdAt: serverTimestamp(),
+      deliveredBy: [],
+      seenBy: []
+    });
+    try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
+    messageInput.value = "";
+    setTyping(false);
+  } catch (e) {
+    console.error("send error", e);
+    alert("Could not send message (see console).");
+  }
+});
+
+/* SUBSCRIBE MESSAGES */
+function subscribeMessages(){
+  const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(6));
+  onSnapshot(q, async (snap) => {
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
+    messagesEl.innerHTML = "";
+    for (const m of docs) renderMessage(m.id, m.data);
+
+    // smooth auto-scroll to bottom
+    const lastChild = messagesEl.lastElementChild;
+    if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+    // mark delivered & seen by this client (if not sender)
+    for (const m of docs) {
+      if (m.data.uid !== currentUser.uid) {
+        try {
+          const mRef = doc(db, "cyou_messages", m.id);
+          await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
+          await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid) });
+          await updateDoc(mRef, { status: "seen" });
+        } catch (e) { /* ignore concurrency errors */ }
+      }
+    }
+  }, (err) => console.error("messages subscribe error", err));
+}
+
+/* RENDER message */
+function renderMessage(id, data){
   const div = document.createElement("div");
-  div.classList.add("message");
-  div.classList.add(data.sender === nickname ? "you" : "other");
-  div.id = id;
+  const isMe = data.uid === (currentUser && currentUser.uid);
+  div.className = "message " + (isMe ? "me" : "other");
 
-  const name = document.createElement("div");
-  name.classList.add("name");
-  name.textContent = data.sender === nickname ? "You" : data.sender;
-  name.style.color = data.sender === nickname ? "gray" : "#006677";
-  div.appendChild(name);
+  const content = document.createElement("div");
+  content.textContent = data.text || "";
+  div.appendChild(content);
 
-  const text = document.createElement("div");
-  text.classList.add("msg-text");
-  text.textContent = data.text;
-  div.appendChild(text);
+  const meta = document.createElement("div");
+  meta.className = "meta";
 
-  if (data.sender === nickname) {
-    const editBtn = document.createElement("span");
-    editBtn.classList.add("edit-btn");
-    editBtn.textContent = "📝";
-    div.appendChild(editBtn);
+  const author = document.createElement("span");
+  author.textContent = isMe ? "You" : (data.name || "User");
 
-    const delBtn = document.createElement("span");
-    delBtn.classList.add("delete-btn");
-    delBtn.textContent = "🗑️";
-    div.appendChild(delBtn);
+  const time = document.createElement("span");
+  time.className = "time";
+  const ts = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate() : new Date();
+  time.textContent = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
 
-    editBtn.addEventListener("click", () => {
-      const newText = prompt("Edit your message:", data.text);
-      if (newText && newText.trim() !== data.text) {
-        update(ref(db, "messages/" + id), { text: newText.trim(), edited: true });
-      }
-    });
+  meta.appendChild(author);
+  meta.appendChild(document.createTextNode(" • "));
+  meta.appendChild(time);
 
-    delBtn.addEventListener("click", () => {
-      remove(ref(db, "messages/" + id));
-    });
+  if (isMe) {
+    const ticks = document.createElement("span");
+    ticks.className = "ticks";
+    const seenCount = Array.isArray(data.seenBy) ? data.seenBy.length : 0;
+    const deliveredCount = Array.isArray(data.deliveredBy) ? data.deliveredBy.length : 0;
+    if (seenCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-blue)"; }
+    else if (deliveredCount > 0) { ticks.textContent = "✔✔"; ticks.style.color = "var(--tick-gray)"; }
+    else { ticks.textContent = "✔"; ticks.style.color = "var(--tick-gray)"; }
+    meta.appendChild(document.createTextNode(" "));
+    meta.appendChild(ticks);
   }
 
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  div.appendChild(meta);
+  messagesEl.appendChild(div);
 }
+
+/* Emoji panel (small) */
+const emojiList = ["😀","😁","😄","😂","😊","😍","😜","😎","🤗","🤩","😴","😢","😭","👍","👏","🙏","🔥"];
+function buildEmojiPanel(){
+  if (!emojiPanel) return;
+  emojiPanel.innerHTML = "";
+  emojiList.forEach(e => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "emoji";
+    b.textContent = e;
+    b.addEventListener("click", () => {
+      insertAtCursor(messageInput, e);
+      messageInput.focus();
+      emojiPanel.classList.add("hidden");
+    });
+    emojiPanel.appendChild(b);
+  });
+}
+buildEmojiPanel();
+if (emojiBtn) emojiBtn.addEventListener("click", () => { if (emojiPanel) emojiPanel.classList.toggle("hidden"); });
+
+function insertAtCursor(el, text) {
+  const start = el.selectionStart || 0;
+  const end = el.selectionEnd || 0;
+  el.value = el.value.slice(0, start) + text + el.value.slice(end);
+  el.selectionStart = el.selectionEnd = start + text.length;
+  el.dispatchEvent(new Event('input'));
+}
+
+console.log("CYOU final fixed script loaded");
