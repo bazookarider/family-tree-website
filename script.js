@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onChildAdded, onChildChanged, onValue, update, set, remove
+  getDatabase, ref, push, onChildAdded, onChildChanged, onValue, update, set
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
 /* ---------------- Firebase config (your project) ---------------- */
@@ -15,7 +15,18 @@ const firebaseConfig = {
   measurementId: "G-T66B50HFJ8"
 };
 
-const app = initializeApp(firebaseConfig);
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (e) {
+  console.error("Firebase init error:", e);
+  document.addEventListener("DOMContentLoaded", () => {
+    const joinHint = document.getElementById("joinHint");
+    if (joinHint) joinHint.textContent = "Firebase initialization failed — check network or enable modules (Chrome may block file://).";
+  });
+  throw e;
+}
+
 const db = getDatabase(app);
 
 /* ---------------- DOM ---------------- */
@@ -49,7 +60,10 @@ function uid() {
 }
 function shortTime(ts) {
   const d = new Date(ts);
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // full date + time: e.g. 2025-11-14 09:32
+  const date = d.toLocaleDateString();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `${date} ${time}`;
 }
 function escapeHtml(s = "") {
   return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
@@ -59,10 +73,9 @@ function escapeHtml(s = "") {
 async function setPresence(name, sid) {
   try {
     await set(ref(db, `presence/${sid}`), { name, online: true, lastSeen: Date.now() });
-    // schedule offline removal with onDisconnect (RTDB web doesn't support onDisconnect in modular SDK easily here),
-    // but we'll update lastSeen on unload:
     window.addEventListener("beforeunload", async () => {
       try { await update(ref(db, `presence/${sid}`), { online: false, lastSeen: Date.now() }); } catch(e){}
+      try { await update(ref(db, "typing"), { [sid]: false }); } catch(e){}
     });
   } catch(e){ console.error("presence set failed", e); }
 }
@@ -99,19 +112,26 @@ async function doSend() {
     text,
     edited: false,
     deleted: false,
-    time: Date.now()
+    time: Date.now(),
+    // ensure delivered/read exist so sender sees single tick immediately
+    delivered: {},
+    read: {}
   };
-  const pushRef = await push(messagesRef, payload);
-  // mark our own message as sent (server has it)
+  try {
+    await push(messagesRef, payload);
+  } catch (e) {
+    console.error("send failed", e);
+    joinHint.textContent = "Send failed — check connection.";
+  }
   messageInput.value = "";
-  // update typing false
   try { await update(typingRef, { [sessionId]: false }); } catch(e){}
 }
 
-/* ---------------- Typing indicator ---------------- */
+/* ---------------- Typing indicator (stores name) ---------------- */
 messageInput.addEventListener("input", () => {
-  if (!sessionId) return;
-  try { set(typingRef, { [sessionId]: messageInput.value.length > 0 }); } catch(e){}
+  if (!sessionId || !username) return;
+  // store username for this session while typing
+  try { set(typingRef, { [sessionId]: username }); } catch(e){}
   clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => {
     try { set(typingRef, { [sessionId]: false }); } catch(e){}
@@ -120,38 +140,36 @@ messageInput.addEventListener("input", () => {
 
 /* ---------------- Listeners ---------------- */
 function startListeners() {
-  // messages listener: when new message arrives
-  onChildAdded(messagesRef, (snap) => {
+  // messages listener
+  onChildAdded(messagesRef, async (snap) => {
     const id = snap.key;
     const m = snap.val();
     renderMessage(id, m);
-    // if message is from others, mark delivered and play sound (after ready)
+    // if message is from others, mark delivered and read and play sound (after ready)
     if (m.senderId !== sessionId) {
-      // mark delivered for this session
-      update(ref(db, `messages/${id}/delivered/${sessionId}`), true).catch(()=>{});
+      try { await update(ref(db, `messages/${id}/delivered`), { [sessionId]: true }); } catch(e){}
+      try { await update(ref(db, `messages/${id}/read`), { [sessionId]: true }); } catch(e){}
       if (readyForSound) { try { receiveSound.currentTime = 0; receiveSound.play(); } catch(e){} }
-      // mark read immediately when added (we consider appended messages as seen)
-      update(ref(db, `messages/${id}/read/${sessionId}`), true).catch(()=>{});
     }
   });
 
-  // message changed -> update UI
   onChildChanged(messagesRef, (snap) => {
     const id = snap.key;
     const m = snap.val();
     renderMessage(id, m, true);
   });
 
-  // typing indicator (show first other typer)
+  // typing indicator (show first other user's name)
   onValue(typingRef, (snap) => {
     const obj = snap.val() || {};
-    const typers = Object.keys(obj).filter(u => u !== sessionId && obj[u]);
-    typingIndicator.textContent = typers.length ? `${obj[typers[0]]===true? typers[0] : ''} is typing...` : "";
+    // values are either false or username strings
+    const typers = Object.entries(obj).filter(([sid, val]) => sid !== sessionId && Boolean(val)).map(([sid,val]) => val);
+    typingIndicator.textContent = typers.length ? `${typers[0]} is typing...` : "";
   });
 }
 
 /* ---------------- Render message ---------------- */
-function renderMessage(id, m, changed = false) {
+async function renderMessage(id, m, changed = false) {
   let el = document.getElementById(id);
   const isMine = m.senderId === sessionId;
 
@@ -159,7 +177,7 @@ function renderMessage(id, m, changed = false) {
     el = document.createElement("div");
     el.id = id;
     el.className = "message " + (isMine ? "you" : "them");
-    // for them messages show avatar left
+    // for others show avatar left
     if (!isMine) {
       const avatar = document.createElement("div");
       avatar.className = "avatar";
@@ -170,30 +188,28 @@ function renderMessage(id, m, changed = false) {
     setTimeout(()=>el.classList.add("show"), 12);
   }
 
-  // deleted message
+  // deleted
   if (m.deleted) {
     el.classList.add("deleted");
     el.innerHTML = `${!isMine ? `<div class="avatar">${(m.sender||"?").charAt(0).toUpperCase()}</div>` : "" }
       <div style="display:flex;flex-direction:column;">
         <div class="senderName">${isMine ? "You" : escapeHtml(m.sender)}</div>
         <div class="msg-text">This message was deleted</div>
-        <div class="meta">${shortTime(m.time)}</div>
+        <div class="meta"><span class="timestamp">${shortTime(m.time)}</span></div>
       </div>`;
-    // remove actions if any
     const act = el.querySelector(".msg-actions"); if (act) act.remove();
     scrollToBottom();
     return;
   }
 
-  // normal content
+  // normal message content
   const nameLabel = `<div class="senderName">${isMine ? "You" : escapeHtml(m.sender)}</div>`;
   const textHtml = `<div class="msg-text">${escapeHtml(m.text || "")}${m.edited ? ' <span class="edited">(edited)</span>' : ''}</div>`;
-  const timeHtml = `<div class="meta">${shortTime(m.time)}</div>`;
+  const timeHtml = `<span class="timestamp">${shortTime(m.time)}</span>`;
 
   // compute ticks for sender view
   let ticksHtml = "";
   if (isMine) {
-    // if no delivered children => single gray tick (sent)
     const delivered = m.delivered ? Object.keys(m.delivered || {}) : [];
     const read = m.read ? Object.keys(m.read || {}) : [];
     if ((!delivered || delivered.length === 0) && (!read || read.length === 0)) {
@@ -211,16 +227,13 @@ function renderMessage(id, m, changed = false) {
       <button class="act del" title="Delete">🗑️</button>
     </div>` : "";
 
-  // build inner HTML: if not mine include avatar already appended as first child; we'll recreate nodes to keep simple
   if (!isMine) {
     el.innerHTML = `<div style="display:flex;gap:8px;align-items:flex-start;">
       <div class="avatar">${(m.sender||"?").charAt(0).toUpperCase()}</div>
       <div style="display:flex;flex-direction:column;">
         ${nameLabel}
         ${textHtml}
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${timeHtml}
-        </div>
+        <div class="meta">${timeHtml}</div>
       </div>
     </div>`;
   } else {
@@ -228,10 +241,7 @@ function renderMessage(id, m, changed = false) {
       <div style="display:flex;flex-direction:column;align-items:flex-end;">
         ${nameLabel}
         ${textHtml}
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${timeHtml}
-          ${ticksHtml}
-        </div>
+        <div class="meta">${timeHtml}${ticksHtml}</div>
       </div>
       ${actionsHtml}
     `;
@@ -269,7 +279,7 @@ function scrollToBottom() {
   setTimeout(()=>{ messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 80);
 }
 
-/* ---------------- start presence cleanup on unload (best-effort) ---------------- */
+/* on unload - mark presence offline & clear typing */
 window.addEventListener("beforeunload", async () => {
   if (sessionId) {
     try { await update(ref(db, `presence/${sessionId}`), { online: false, lastSeen: Date.now() }); } catch(e){}
