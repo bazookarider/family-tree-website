@@ -1,4 +1,4 @@
- :root{
+:root{
   --main: #006677;
   --bg: #f2f5f7;
   --panel: #ffffff;
@@ -36,6 +36,7 @@ html,body{height:100%;margin:0;padding:0;background:var(--bg);display:flex;align
 .primary:active{transform:translateY(1px)}
 .muted{font-size:13px;color:var(--muted);margin-top:8px}
 .error{color:#c0392b;font-size:13px;min-height:18px;margin-bottom:6px}
+.small{font-size:12px}
 
 /* app */
 .app{width:100%;max-width:var(--max-width);height:90vh;display:flex;flex-direction:column;border-radius:14px;overflow:hidden}
