@@ -1,4 +1,4 @@
-// script.js (module)
+ // script.js (module)
 // CYOU final: replies (WhatsApp style), edit once, delete-for-all, copy, seen timestamps, dark mode, typing indicator.
 // Uses Firestore. Keep Firestore rules in test mode while developing.
 
@@ -568,4 +568,4 @@ function insertAtCursor(el, text) {
   el.dispatchEvent(new Event('input'));
 }
 
-console.log
+console.log("cyou eltimated update loaded");
