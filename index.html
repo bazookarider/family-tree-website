@@ -1,67 +1,38 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CYOU — Chat</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYou Chat</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <!-- FULL-SCREEN LOGIN -->
-  <div id="loginScreen" class="screen">
-    <div class="card login-card">
-      <div class="logo">C</div>
-      <h1 class="app-title">CYOU</h1>
 
-      <input id="nameInput" placeholder="Enter your display name" maxlength="30" />
-      <div id="nameError" class="error" aria-live="polite"></div>
+<div id="join-screen">
+    <h2>Enter Your Name</h2>
+    <input type="text" id="usernameInput" placeholder="Your nickname...">
+    <button id="joinBtn">Join Chat</button>
+</div>
 
-      <button id="joinBtn" class="primary">Join Public Chat</button>
-      <p class="muted">Name is saved locally for auto-login next time.</p>
-      <p class="muted small" id="envHint"></p>
-    </div>
-  </div>
+<div id="chat-screen" class="hidden">
 
-  <!-- CHAT (hidden until join) -->
-  <div id="chatApp" class="screen hidden" aria-live="polite">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo-circle">C</div>
-        <div class="brand-text">
-          <div class="name">CYOU</div>
-          <div class="subtitle">Public chat</div>
-        </div>
-      </div>
-
-      <div class="controls">
-        <button id="themeToggle" class="icon-btn" title="Toggle theme">🌙</button>
-      </div>
+    <header id="topBar">
+        <h1>CYou Chat</h1>
     </header>
 
-    <main class="main">
-      <section class="chat-area">
-        <div id="messages" class="messages" role="log" aria-live="polite"></div>
+    <div id="messages"></div>
 
-        <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
+    <p id="typingIndicator" class="typing"></p>
 
-        <!-- Reply preview (WhatsApp style) -->
-        <div id="replyPreview" class="reply-preview hidden-el">
-          <div class="reply-line"><strong id="replyName"></strong><span id="replyText"></span></div>
-          <button id="cancelReply" class="icon-btn" title="Cancel reply">✕</button>
-        </div>
+    <div id="input-area">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
 
-        <form id="sendForm" class="composer" autocomplete="off">
-          <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
-          <button id="sendBtn" type="submit" class="primary">Send</button>
-        </form>
-      </section>
-    </main>
+<audio id="receiveSound" src="incoming.mp3"></audio>
 
-    <footer class="footer">
-      <small>CYOU — C-Y-O-U</small>
-    </footer>
-  </div>
-
-  <script type="module" src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
