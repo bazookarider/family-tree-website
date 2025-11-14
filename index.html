@@ -43,6 +43,12 @@
 
         <div id="typingIndicator" class="typing-indicator" aria-live="polite"></div>
 
+        <!-- Reply preview (WhatsApp style) -->
+        <div id="replyPreview" class="reply-preview hidden-el">
+          <div class="reply-line"><strong id="replyName"></strong><span id="replyText"></span></div>
+          <button id="cancelReply" class="icon-btn" title="Cancel reply">✕</button>
+        </div>
+
         <form id="sendForm" class="composer" autocomplete="off">
           <input id="messageInput" placeholder="Say hi to everyone..." autocomplete="off" />
           <button id="sendBtn" type="submit" class="primary">Send</button>
