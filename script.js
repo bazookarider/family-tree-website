@@ -1,5 +1,6 @@
  // script.js (module)
-// CYOU final: replies (WhatsApp style), edit once, delete-for-all, copy, seen timestamps, dark mode, typing indicator.
+// CYOU: final stable build with robust join flow and clearer mobile error messages
+// Features: edit once, delete-for-all, reply (WhatsApp style), copy, seen timestamps, dark mode, typing indicator.
 // Uses Firestore. Keep Firestore rules in test mode while developing.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
@@ -31,6 +32,7 @@ const loginScreen = document.getElementById("loginScreen");
 const nameInput = document.getElementById("nameInput");
 const nameError = document.getElementById("nameError");
 const joinBtn = document.getElementById("joinBtn");
+const envHint = document.getElementById("envHint");
 
 const chatApp = document.getElementById("chatApp");
 const messagesEl = document.getElementById("messages");
@@ -50,10 +52,14 @@ let displayName = localStorage.getItem("cyou_name") || "";
 let typingTimeout = null;
 let replyTo = null; // {id, name, text}
 const HEARTBEAT_MS = 5000;
-const PRESENCE_FRESH_MS = 14000;
 
 /* prefill name */
 if (displayName) nameInput.value = displayName;
+
+/* Environment hint: HTTPS required on many browsers for auth */
+if (window.location.protocol !== 'https:' && !location.hostname.match(/localhost|127.0.0.1/)) {
+  envHint.textContent = "⚠️ Warning: site is not served over HTTPS — sign-in may fail in Chrome. Use your HTTPS-hosted link.";
+}
 
 /* theme init */
 const savedTheme = localStorage.getItem("cyou_theme");
@@ -91,7 +97,7 @@ if (displayName) {
         currentUser = cred.user;
         afterSignIn();
       } catch (err) {
-        alert("Sign-in failed on auto-join: " + (err && err.message ? err.message : String(err)));
+        alert("Sign-in failed on auto-join: [" + (err.code||"no-code") + "] " + (err.message||String(err)));
         console.error("Auto sign-in error:", err);
       }
     } catch (e) { console.warn("Auto-join setup error:", e); }
@@ -126,8 +132,9 @@ joinBtn.addEventListener("click", async () => {
       afterSignIn();
     } catch (err) {
       console.error("Sign-in error:", err);
-      alert("Could not join — signInAnonymously failed: " + (err && err.message ? err.message : String(err)));
-      nameError.textContent = "Could not join — check network or Firebase settings.";
+      // show mobile-friendly alert with code + message
+      alert("Sign-in failed: [" + (err.code||"no-code") + "] " + (err.message||String(err)) + "\n\nCheck: Anonymous sign-in enabled, Firestore rules, and Authorized domains.");
+      nameError.textContent = "Could not join — check console / alerts for details.";
     }
   } catch (err) {
     console.error("Join error:", err);
@@ -147,7 +154,7 @@ function afterSignIn(){
   startPresence(); // presence used internally for ticks/lastSeen
 }
 
-/* PRESENCE (internal only) */
+/* PRESENCE (internal only, not displayed) */
 async function startPresence(){
   if (!currentUser || !displayName) return;
   const presenceRef = doc(db, "cyou_presence", currentUser.uid);
@@ -202,11 +209,31 @@ function subscribeTyping(){
   }, (err) => console.warn("typing subscribe error", err));
 }
 
-/* SEND MESSAGE (includes replyTo if set) */
+/* SEND (supports replyTo) */
 sendForm.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const text = (messageInput.value || "").trim();
   if (!text || !currentUser) return;
+
+  // if editing (editId stored globally)
+  const editId = window._cyou_editId || null;
+  if (editId) {
+    try {
+      const mRef = doc(db, "cyou_messages", editId);
+      const mSnap = await getDoc(mRef);
+      if (!mSnap.exists()) { alert("Message not found for edit."); window._cyou_editId = null; return; }
+      const md = mSnap.data();
+      if (md.editCount && md.editCount >= 1) { alert("You can edit only once."); window._cyou_editId = null; return; }
+      await updateDoc(mRef, { text, edited: true, editCount: (md.editCount||0) + 1, editedAt: serverTimestamp() });
+      window._cyou_editId = null;
+      messageInput.value = "";
+      return;
+    } catch (err) {
+      console.error("edit save error", err);
+      alert("Could not save edit.");
+      return;
+    }
+  }
 
   const payload = {
     text,
@@ -224,7 +251,6 @@ sendForm.addEventListener("submit", async (ev) => {
 
   try {
     const ref = await addDoc(collection(db, "cyou_messages"), payload);
-    // optimistic mark delivered
     try { await updateDoc(ref, { status: "delivered" }); } catch(e){}
     messageInput.value = "";
     clearReply();
@@ -254,7 +280,6 @@ function subscribeMessages(){
         try {
           const mRef = doc(db, "cyou_messages", m.id);
           await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
-          // set seen + timestamp in seenAt map
           const field = `seenAt.${currentUser.uid}`;
           await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid), [field]: serverTimestamp(), status: "seen" });
         } catch (e) { /* ignore concurrency errors */ }
@@ -263,7 +288,7 @@ function subscribeMessages(){
   }, (err) => console.error("messages subscribe error", err));
 }
 
-/* RENDER message with actions for your messages */
+/* RENDER message */
 function renderMessage(id, data){
   const div = document.createElement("div");
   const isMe = data.uid === (currentUser && currentUser.uid);
@@ -276,9 +301,9 @@ function renderMessage(id, data){
   }
 
   div.className = "message " + (isMe ? "me" : "other");
-  div.tabIndex = 0; // allow focus
+  div.tabIndex = 0;
 
-  // quoted reply (if exists)
+  // quoted reply
   if (data.replyTo && data.replyTo.name) {
     const quote = document.createElement("div");
     quote.className = "quote";
@@ -289,15 +314,12 @@ function renderMessage(id, data){
     div.appendChild(quote);
   }
 
-  // content
   const content = document.createElement("div");
   content.textContent = safeText(data.text);
   div.appendChild(content);
 
-  // meta row
   const meta = document.createElement("div");
   meta.className = "meta";
-
   const author = document.createElement("span");
   author.textContent = isMe ? "You" : (data.name || "User");
 
@@ -317,7 +339,6 @@ function renderMessage(id, data){
     meta.appendChild(edited);
   }
 
-  // ticks for sender
   if (isMe) {
     const ticks = document.createElement("span");
     ticks.className = "ticks";
@@ -332,12 +353,12 @@ function renderMessage(id, data){
 
   div.appendChild(meta);
 
-  // actions for own messages: edit, delete, copy, seen timestamp
+  // actions for own messages
   if (isMe) {
     const actions = document.createElement("div");
     actions.className = "msg-actions";
 
-    // edit icon
+    // edit
     const editBtn = document.createElement("button");
     editBtn.title = "Edit (once)";
     editBtn.innerHTML = "✏️";
@@ -347,45 +368,33 @@ function renderMessage(id, data){
       if (data.editCount && data.editCount >= 1) { alert("You can edit only once."); return; }
       messageInput.focus();
       messageInput.value = data.text || "";
-      // set reply preserved
       replyTo = null;
-      showReply(); // hide
-      // set editing state in element dataset
-      div.dataset.editing = id;
-      // store id for save
-      div.dataset.editId = id;
-      // show small instruction
+      showReply();
+      window._cyou_editId = id;
       alert("Edit mode: change message in input and press Send. You can edit only once.");
-      // attach one-time save on next send
-      handleEditOnce(id);
     });
     actions.appendChild(editBtn);
 
-    // delete icon
+    // delete
     const delBtn = document.createElement("button");
     delBtn.title = "Delete for everyone";
     delBtn.innerHTML = "🗑️";
     delBtn.className = "icon-btn";
-    delBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      deleteMessageConfirm(id);
-    });
+    delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteMessageConfirm(id); });
     actions.appendChild(delBtn);
 
-    // copy icon
+    // copy
     const copyBtn = document.createElement("button");
     copyBtn.title = "Copy message";
     copyBtn.innerHTML = "📋";
     copyBtn.className = "icon-btn";
     copyBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      navigator.clipboard?.writeText(data.text || "")?.then(() => {
-        alert("Copied to clipboard");
-      }).catch(() => { alert("Copy failed"); });
+      navigator.clipboard?.writeText(data.text || "")?.then(() => alert("Copied to clipboard")).catch(() => alert("Copy failed"));
     });
     actions.appendChild(copyBtn);
 
-    // seen timestamp icon (shows seenAt map)
+    // seen info
     const seenBtn = document.createElement("button");
     seenBtn.title = "Seen info";
     seenBtn.innerHTML = "👁️";
@@ -400,7 +409,6 @@ function renderMessage(id, data){
         const seenAt = md.seenAt || {};
         const keys = Object.keys(seenAt);
         if (keys.length === 0) { alert("No one has read this yet."); return; }
-        // build readable list
         const lines = keys.map(k => {
           const t = seenAt[k];
           const when = t && t.toDate ? t.toDate() : new Date();
@@ -416,103 +424,18 @@ function renderMessage(id, data){
 
     div.appendChild(actions);
   } else {
-    // for other people's messages: long-press to reply or copy
+    // clicking other's message => set reply
     div.addEventListener("click", () => {
-      // single click opens quick reply prompt (or set reply directly)
-      // we set replyTo to this message
       replyTo = { id, name: data.name || "User", text: data.text || "" };
       showReply();
       messageInput.focus();
     });
-    // long press copy support for mobile
+    // long-press copy (context menu) fallback
     div.addEventListener("contextmenu", (e) => { e.preventDefault(); navigator.clipboard?.writeText(data.text||"")?.then(()=>alert("Copied")); });
   }
 
   messagesEl.appendChild(div);
 }
-
-/* Handle edit once: when user sends next message and an editId exists, do update instead of add */
-function handleEditOnce(editId){
-  // we rely on the sendForm listener; to avoid memory leaks we simply check for an edit id stored globally.
-  // store globally
-  window._cyou_editId = editId;
-}
-
-/* Clear reply preview */
-function clearReply(){
-  replyTo = null;
-  showReply();
-}
-
-/* show reply preview */
-function showReply(){
-  if (!replyTo) {
-    replyPreview.classList.add("hidden-el");
-    replyName.textContent = "";
-    replyText.textContent = "";
-  } else {
-    replyPreview.classList.remove("hidden-el");
-    replyName.textContent = replyTo.name + " ·";
-    replyText.textContent = " " + (replyTo.text || "").slice(0,120);
-  }
-}
-
-/* cancel reply button */
-cancelReply?.addEventListener?.("click", (e) => { e.preventDefault(); clearReply(); });
-
-/* send form override to support edit mode */
-sendForm.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const text = (messageInput.value || "").trim();
-  if (!text || !currentUser) return;
-
-  // if editing
-  const editId = window._cyou_editId || null;
-  if (editId) {
-    // fetch doc to check editCount
-    try {
-      const mRef = doc(db, "cyou_messages", editId);
-      const mSnap = await getDoc(mRef);
-      if (!mSnap.exists()) { alert("Message not found for edit."); window._cyou_editId = null; return; }
-      const md = mSnap.data();
-      if (md.editCount && md.editCount >= 1) { alert("You can edit only once."); window._cyou_editId = null; return; }
-      await updateDoc(mRef, { text, edited: true, editCount: (md.editCount||0) + 1, editedAt: serverTimestamp() });
-      window._cyou_editId = null;
-      messageInput.value = "";
-      return;
-    } catch (err) {
-      console.error("edit save error", err);
-      alert("Could not save edit.");
-      return;
-    }
-  }
-
-  // normal send with possible replyTo
-  const payload = {
-    text,
-    name: displayName,
-    uid: currentUser.uid,
-    createdAt: serverTimestamp(),
-    deliveredBy: [],
-    seenBy: [],
-    seenAt: {},
-    edited: false,
-    deleted: false,
-    editCount: 0,
-    replyTo: replyTo ? { id: replyTo.id, name: replyTo.name, text: replyTo.text } : null
-  };
-
-  try {
-    const ref = await addDoc(collection(db, "cyou_messages"), payload);
-    try { await updateDoc(ref, { status: "delivered" }); } catch (e) {}
-    messageInput.value = "";
-    clearReply();
-    setTyping(false);
-  } catch (e) {
-    console.error("send error", e);
-    alert("Could not send message.");
-  }
-});
 
 /* delete message */
 async function deleteMessageConfirm(id){
@@ -526,40 +449,25 @@ async function deleteMessageConfirm(id){
   }
 }
 
-/* subscribe typing already defined above; subscribeMessages below used earlier */
-function renderLocalMessageForDebug(){}
+/* reply preview helpers */
+function clearReply(){
+  replyTo = null;
+  showReply();
+}
+function showReply(){
+  if (!replyTo) {
+    replyPreview.classList.add("hidden-el");
+    replyName.textContent = "";
+    replyText.textContent = "";
+  } else {
+    replyPreview.classList.remove("hidden-el");
+    replyName.textContent = replyTo.name + " ·";
+    replyText.textContent = " " + (replyTo.text || "").slice(0,120);
+  }
+}
+cancelReply?.addEventListener?.("click", (e) => { e.preventDefault(); clearReply(); });
 
-/* subscribeMessages (separate to avoid duplication) */
-function subscribeMessages(){ /* defined earlier — replaced by single implementation above */ }
-
-/* already defined earlier; but to ensure subscribeMessages is the actual function used: */
-(function defineSubscribe(){
-  const q = query(collection(db, "cyou_messages"), orderBy("createdAt"), limitToLast(50));
-  onSnapshot(q, async (snap) => {
-    const docs = [];
-    snap.forEach(d => docs.push({ id: d.id, data: d.data() }));
-    messagesEl.innerHTML = "";
-    for (const m of docs) renderMessage(m.id, m.data);
-
-    // auto-scroll to bottom
-    const lastChild = messagesEl.lastElementChild;
-    if (lastChild) lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-
-    // mark delivered & seen by this client (if not sender)
-    for (const m of docs) {
-      if (m.data.uid !== currentUser.uid) {
-        try {
-          const mRef = doc(db, "cyou_messages", m.id);
-          await updateDoc(mRef, { deliveredBy: arrayUnion(currentUser.uid) });
-          const field = `seenAt.${currentUser.uid}`;
-          await updateDoc(mRef, { seenBy: arrayUnion(currentUser.uid), [field]: serverTimestamp(), status: "seen" });
-        } catch (e) { /* ignore concurrency errors */ }
-      }
-    }
-  }, (err) => console.error("messages subscribe error", err));
-})();
-
-/* helper insertAtCursor kept (unused now) */
+/* helper insertAtCursor (kept for future) */
 function insertAtCursor(el, text) {
   const start = el.selectionStart || 0;
   const end = el.selectionEnd || 0;
@@ -568,4 +476,13 @@ function insertAtCursor(el, text) {
   el.dispatchEvent(new Event('input'));
 }
 
-console.log("uyh"):
+console.log("CYOU final stable script loaded");
+
+/* ---------------------------------------------------------
+  PRIVATE CHAT NOTE (how to implement without changing Firebase setup)
+  - Use a unique path for each private room, e.g.:
+      /private_chats/{roomId}/messages
+    where roomId could be a deterministic string like "alice_bob" (sorted usernames)
+  - When user selects "Private", create or join that room and subscribe the same way
+  - No change to Realtime/Firestore rules required if auth & rules already permit
+--------------------------------------------------------- */
