@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CYOU Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="chat-container">
+
+    <!-- JOIN SCREEN (always first) -->
+    <section id="join-screen" class="join-screen">
+      <h2>Enter Your Name</h2>
+      <input id="usernameInput" type="text" placeholder="Your nickname..." />
+      <button id="joinBtn">Join Chat</button>
+      <div id="joinHint" class="hint"></div>
+    </section>
+
+    <!-- CHAT SCREEN (hidden until join) -->
+    <section id="chat-screen" class="chat-screen hidden">
+      <header id="topBar" class="top-bar">
+        <h1>CYOU Chat</h1>
+        <div id="presenceSummary" class="presence-summary"></div>
+      </header>
+
+      <main class="main">
+        <!-- pinned messages area -->
+        <div id="pinnedArea" class="pinned-area hidden"></div>
+
+        <!-- messages -->
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <!-- "new messages" button (shows when user scrolled up) -->
+        <button id="scrollDownBtn" class="scroll-down-btn hidden">New Messages ↓</button>
+
+        <!-- typing indicator (above input) -->
+        <div id="typingIndicator" class="typing-indicator"></div>
+
+        <!-- reply preview -->
+        <div id="replyPreview" class="reply-preview hidden"></div>
+
+        <form id="inputForm" class="input-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button id="sendBtn" type="submit">Send</button>
+        </form>
+      </main>
+    </section>
+  </div>
+
+  <!-- incoming sound (plays only for incoming messages) -->
+  <audio id="receiveSound" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
