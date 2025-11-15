@@ -1,12 +1,9 @@
-// script.js - CYOU Chat upgraded (global room, ticks simple mode, reactions, pin, forward, reply swipe, timestamps, presence, smart autoscroll)
-// Uses Firebase Realtime Database modular SDK v12.5.0
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onChildAdded, onChildChanged, onValue, update, set, get, remove
+  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-/* ----------------- Firebase config (your project) ----------------- */
+/* ---------------- Firebase config (your project) ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -25,470 +22,510 @@ try {
   console.error("Firebase init error:", e);
   document.addEventListener("DOMContentLoaded", () => {
     const joinHint = document.getElementById("joinHint");
-    if (joinHint) joinHint.textContent = "Firebase initialization failed — check network or use a server (Chrome file:// blocks modules).";
+    if (joinHint) joinHint.textContent = "Firebase initialization failed — check network or enable modules (Chrome may block file://).";
   });
   throw e;
 }
 
 const db = getDatabase(app);
 
-/* ----------------- DOM ----------------- */
+/* ---------------- DOM ---------------- */
+// Join
 const joinScreen = document.getElementById("join-screen");
 const chatScreen = document.getElementById("chat-screen");
 const usernameInput = document.getElementById("usernameInput");
 const joinBtn = document.getElementById("joinBtn");
 const joinHint = document.getElementById("joinHint");
-
+// Chat
+const topBar = document.getElementById("topBar");
+const onlineStatus = document.getElementById("onlineStatus");
+const pinnedMessageBar = document.getElementById("pinned-message-bar");
 const messagesDiv = document.getElementById("messages");
-const pinnedArea = document.getElementById("pinnedArea");
-const scrollDownBtn = document.getElementById("scrollDownBtn");
+const newMessagesButton = document.getElementById("new-messages-button");
 const typingIndicator = document.getElementById("typingIndicator");
+const replyContextBar = document.getElementById("reply-context-bar");
 const inputForm = document.getElementById("inputForm");
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 const receiveSound = document.getElementById("receiveSound");
-const presenceSummary = document.getElementById("presenceSummary");
-const replyPreview = document.getElementById("replyPreview");
 
-/* ----------------- State ----------------- */
+/* ---------------- State ---------------- */
 let username = null;
 let sessionId = null;
 let readyForSound = false;
 let typingTimeout = null;
-let currentReply = null; // { id, sender, text }
-let isAtBottom = true;
-let initialLoad = true;
+// New state for new features
+let activeReply = null; // { id, sender, text }
+let userIsScrolledUp = false;
+let newMessagesCount = 0;
+const DELETE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes to delete
+const AVAILABLE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
-/* ----------------- Refs ----------------- */
+/* ---------------- Realtime refs ---------------- */
 const messagesRef = ref(db, "messages");
 const presenceRef = ref(db, "presence");
 const typingRef = ref(db, "typing");
+const pinnedMessageRef = ref(db, "pinnedMessage"); // New ref for pinned message
 
-/* ----------------- Helpers ----------------- */
+/* ---------------- Helpers ---------------- */
 function uid() {
-  return 's_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36);
+  return 's_' + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
 }
-function escapeHtml(s = "") {
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-function fullTimestamp(ts) {
+// Upgraded to full date + time
+function shortTime(ts) {
+  if (!ts) return "";
   const d = new Date(ts);
-  const date = d.toLocaleDateString();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  // Format: YYYY-MM-DD HH:MM:SS
+  const date = d.toLocaleDateString('sv-SE'); // 'sv-SE' gives YYYY-MM-DD
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   return `${date} ${time}`;
 }
-
-/* ----------------- Presence ----------------- */
-async function setPresence(name, sid) {
-  try {
-    await set(ref(db, `presence/${sid}`), { name, online: true, lastSeen: Date.now() });
-    // best-effort mark offline on unload
-    window.addEventListener("beforeunload", async () => {
-      try { await update(ref(db, `presence/${sid}`), { online: false, lastSeen: Date.now() }); } catch(e){}
-      try { await set(typingRef, { [sid]: false }); } catch(e){}
-    });
-  } catch (e) { console.error("presence error", e); }
+function escapeHtml(s = "") {
+  return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function truncate(s = "", len = 50) {
+    if (s.length <= len) return escapeHtml(s);
+    return escapeHtml(s.substring(0, len)) + "...";
 }
 
-/* ----------------- Join flow ----------------- */
+/* ---------------- Presence helpers ---------------- */
+async function setPresence(name, sid) {
+  const presenceNode = ref(db, `presence/${sid}`);
+  try {
+    await set(presenceNode, { name, online: true, lastSeen: serverTimestamp() });
+    window.addEventListener("beforeunload", async () => {
+      try { await update(presenceNode, { online: false, lastSeen: serverTimestamp() }); } catch (e) { }
+      try { await set(ref(db, `typing/${sid}`), false); } catch (e) { }
+    });
+  } catch (e) { console.error("presence set failed", e); }
+}
+
+/* ---------------- Join flow ---------------- */
 joinBtn.addEventListener("click", async () => {
   const name = (usernameInput.value || "").trim();
-  if (!name) { joinHint.textContent = "Enter a valid name."; return; }
+  if (!name || name.length < 1) { joinHint.textContent = "Enter a valid name."; return; }
   username = name;
   sessionId = uid();
-  localStorage.setItem("cyou-username", username);
-  localStorage.setItem("cyou-session", sessionId);
+  // We use session storage so a new tab is a new session
+  sessionStorage.setItem("cyou-username", username);
+  sessionStorage.setItem("cyou-session", sessionId);
+
   joinScreen.classList.add("hidden");
   chatScreen.classList.remove("hidden");
   await setPresence(username, sessionId);
   startListeners();
-  // allow sound after initial load
-  setTimeout(()=> readyForSound = true, 700);
+  setTimeout(() => { readyForSound = true; }, 700);
 });
 
-/* ----------------- Send message (supports reply, forwarded) ----------------- */
+// Check if already joined in this session
+function checkSession() {
+  const storedName = sessionStorage.getItem("cyou-username");
+  const storedSession = sessionStorage.getItem("cyou-session");
+  if (storedName && storedSession) {
+    username = storedName;
+    sessionId = storedSession;
+    joinScreen.classList.add("hidden");
+    chatScreen.classList.remove("hidden");
+    // Ensure presence is set again on reload
+    setPresence(username, sessionId).then(() => {
+        startListeners();
+        setTimeout(() => { readyForSound = true; }, 700);
+    });
+  }
+}
+// Run check on load
+document.addEventListener('DOMContentLoaded', checkSession);
+
+
+/* ---------------- Sending ---------------- */
 inputForm.addEventListener("submit", async (e) => { e.preventDefault(); await doSend(); });
 sendBtn.addEventListener("click", async (e) => { e.preventDefault(); await doSend(); });
 
-async function doSend() {
+async function doSend(forwardedData = null) {
   if (!username || !sessionId) return alert("Please join first.");
+  
   const text = (messageInput.value || "").trim();
-  if (!text) return;
+  if (!text && !forwardedData) return;
 
-  // build payload
   const payload = {
     sender: username,
     senderId: sessionId,
-    text,
+    text: forwardedData ? forwardedData.text : text,
     edited: false,
     deleted: false,
-    time: Date.now(),
-    delivered: {},        // maps sessionId => true
-    read: {},             // maps sessionId => true
-    reactions: {},        // maps user => emoji
-    pinnedBy: null,
-    forwardedFrom: null,
-    replyTo: currentReply ? { id: currentReply.id, sender: currentReply.sender, text: currentReply.text } : null,
-    deletableUntil: Date.now() + (60 * 1000) // 60 seconds for delete-for-everyone
+    time: serverTimestamp(), // Use server time
+    delivered: {},
+    read: {},
+    reactions: {}, // New: reactions object
+    replyTo: activeReply || null, // New: reply data
+    forwarded: forwardedData ? { from: forwardedData.sender } : null, // New: forward data
   };
 
   try {
     await push(messagesRef, payload);
-    messageInput.value = "";
-    currentReply = null;
-    hideReplyPreview();
-    try { await update(typingRef, { [sessionId]: false }); } catch(e){}
-  } catch (err) {
-    console.error("send failed", err);
-    joinHint.textContent = "Send failed — check network.";
+  } catch (e) {
+    console.error("send failed", e);
+    joinHint.textContent = "Send failed — check connection.";
   }
+
+  messageInput.value = "";
+  cancelReply(); // Clear reply context
+  try { await set(ref(db, `typing/${sessionId}`), false); } catch (e) { }
 }
 
-/* ----------------- Typing (store username string) ----------------- */
+/* ---------------- Typing indicator (stores name) ---------------- */
 messageInput.addEventListener("input", () => {
   if (!sessionId || !username) return;
-  try { set(typingRef, { [sessionId]: username }); } catch(e){}
+  try { set(ref(db, `typing/${sessionId}`), username); } catch (e) { }
   clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => {
-    try { set(typingRef, { [sessionId]: false }); } catch(e){}
+    try { set(ref(db, `typing/${sessionId}`), false); } catch (e) { }
   }, 1400);
 });
 
-/* ----------------- Smart autoscroll & "New messages" button ----------------- */
+/* ---------------- Reply Logic ---------------- */
+function showReplyContext(id, sender, text) {
+  activeReply = { id, sender, text };
+  replyContextBar.innerHTML = `
+    <div class="reply-context-bar-text">
+      Replying to <span class="reply-context-sender">${escapeHtml(sender)}</span>:
+      <span>${truncate(text, 40)}</span>
+    </div>
+    <button class="cancel-reply-btn" id="cancelReplyBtn" title="Cancel reply">✖</button>
+  `;
+  replyContextBar.classList.remove("hidden");
+  document.getElementById("cancelReplyBtn").addEventListener("click", cancelReply);
+  messageInput.focus();
+}
+
+function cancelReply() {
+  activeReply = null;
+  replyContextBar.classList.add("hidden");
+  replyContextBar.innerHTML = "";
+}
+
+/* ---------------- Smart Scroll Logic ---------------- */
 messagesDiv.addEventListener("scroll", () => {
-  const threshold = 160;
-  const atBottom = (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight) < threshold;
-  isAtBottom = atBottom;
-  if (atBottom) scrollDownBtn.classList.add("hidden"); 
-});
-scrollDownBtn.addEventListener("click", () => {
-  scrollToBottom();
-  scrollDownBtn.classList.add("hidden");
+  const atBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100;
+  if (atBottom) {
+    userIsScrolledUp = false;
+    newMessagesCount = 0;
+    newMessagesButton.classList.add("hidden");
+  } else {
+    userIsScrolledUp = true;
+  }
 });
 
-/* ----------------- Listeners: messages, typing, presence ----------------- */
+newMessagesButton.addEventListener("click", () => {
+  scrollToBottom(true); // Force scroll
+  newMessagesButton.classList.add("hidden");
+  newMessagesCount = 0;
+});
+
+function updateNewMessagesButton() {
+  if (newMessagesCount > 0) {
+    newMessagesButton.textContent = `${newMessagesCount} New Message${newMessagesCount > 1 ? 's' : ''} ↓`;
+    newMessagesButton.classList.remove("hidden");
+  } else {
+    newMessagesButton.classList.add("hidden");
+  }
+}
+
+/* ---------------- Listeners ---------------- */
 function startListeners() {
-  // presence summary
-  onValue(presenceRef, (snap) => {
-    const obj = snap.val() || {};
-    const online = Object.values(obj).filter(v => v && v.online).length;
-    const lastSeenArr = Object.entries(obj).filter(([sid,v]) => v && v.lastSeen).map(([sid,v]) => ({name: v.name, lastSeen: v.lastSeen}));
-    presenceSummary.textContent = `${online} online`;
-    // optional: show last seen on hover or extend UI
-  });
-
-  // typing indicator shows first other user typing (their name)
-  onValue(typingRef, (snap) => {
-    const obj = snap.val() || {};
-    const typers = Object.entries(obj).filter(([sid,val]) => sid !== sessionId && val).map(([sid,val]) => val);
-    typingIndicator.textContent = typers.length ? `${typers[0]} is typing...` : "";
-  });
-
-  // messages added
+  // messages listener
   onChildAdded(messagesRef, async (snap) => {
     const id = snap.key;
     const m = snap.val();
     renderMessage(id, m);
-    // if message from others: mark delivered and read and play sound (after initial)
+
     if (m.senderId !== sessionId) {
-      try { await update(ref(db, `messages/${id}/delivered`), { [sessionId]: true }); } catch(e){}
-      try { await update(ref(db, `messages/${id}/read`), { [sessionId]: true }); } catch(e){}
-      if (readyForSound && !initialLoad) { try { receiveSound.currentTime = 0; receiveSound.play(); } catch(e){} }
+      // Mark delivered (read is handled by render)
+      try { await update(ref(db, `messages/${id}/delivered`), { [sessionId]: true }); } catch (e) { }
+      
+      if (userIsScrolledUp) {
+        newMessagesCount++;
+        updateNewMessagesButton();
+      }
+      
+      if (readyForSound) {
+        try { receiveSound.currentTime = 0; receiveSound.play(); } catch (e) { }
+      }
     }
-    initialLoad = false;
   });
 
-  // messages changed
   onChildChanged(messagesRef, (snap) => {
     const id = snap.key;
     const m = snap.val();
-    renderMessage(id, m, true);
+    renderMessage(id, m, true); // Re-render on change (for edits, reactions, deletes)
   });
 
-  // initial presence and messages will populate UI
+  onChildRemoved(messagesRef, (snap) => {
+    const el = document.getElementById(snap.key);
+    if (el) el.remove();
+  });
+
+  // typing indicator
+  onValue(typingRef, (snap) => {
+    const obj = snap.val() || {};
+    const typers = Object.entries(obj).filter(([sid, val]) => sid !== sessionId && Boolean(val)).map(([sid, val]) => val);
+    typingIndicator.textContent = typers.length ? `${typers[0]} is typing...` : "";
+  });
+
+  // New: presence listener
+  onValue(presenceRef, (snap) => {
+    const users = snap.val() || {};
+    const onlineUsers = Object.values(users).filter(u => u.online);
+    if (onlineUsers.length > 0) {
+      onlineStatus.textContent = `${onlineUsers.length} user${onlineUsers.length > 1 ? 's' : ''} online`;
+    } else {
+      onlineStatus.textContent = "Offline";
+    }
+  });
+
+  // New: pinned message listener
+  onValue(pinnedMessageRef, (snap) => {
+    const pinned = snap.val();
+    if (pinned && pinned.msgId) {
+      pinnedMessageBar.innerHTML = `
+        <span><b>Pinned:</b> ${truncate(pinned.text, 60)}</span>
+        <button class="unpin-btn" id="unpinBtn" title="Unpin">✖</button>
+      `;
+      pinnedMessageBar.classList.remove("hidden");
+      document.getElementById("unpinBtn").addEventListener("click", async () => {
+        await set(pinnedMessageRef, null); // Clear the pin
+      });
+    } else {
+      pinnedMessageBar.classList.add("hidden");
+      pinnedMessageBar.innerHTML = "";
+    }
+  });
 }
 
-/* ----------------- Render message & actions ----------------- */
+/* ---------------- Render Message (Majorly Upgraded) ---------------- */
 async function renderMessage(id, m, changed = false) {
   let el = document.getElementById(id);
   const isMine = m.senderId === sessionId;
 
-  // check if pinned area needed
-  if (m.pinnedBy) {
-    // display pinned messages at top (simple: one per pinned message)
-    renderPinnedMessage(id, m);
-  } else {
-    removePinnedDisplay(id);
-  }
-
   if (!el) {
     el = document.createElement("div");
     el.id = id;
-    el.className = "message " + (isMine ? "you" : "them");
-    // add touch handlers for swipe-to-reply (left→right)
-    addSwipeToReplyHandlers(el, id, m);
     messagesDiv.appendChild(el);
-    setTimeout(()=> el.classList.add("show"), 12);
+    setTimeout(() => el.classList.add("show"), 12);
   }
+  el.className = "message " + (isMine ? "you" : "them") + " show";
 
   // deleted
   if (m.deleted) {
     el.classList.add("deleted");
-    el.innerHTML = `${!isMine ? `<div class="avatar">${(m.sender||"?").charAt(0).toUpperCase()}</div>` : "" }
+    el.innerHTML = `
+      ${!isMine ? `<div class="avatar">${(m.sender || "?").charAt(0).toUpperCase()}</div>` : ""}
       <div style="display:flex;flex-direction:column;">
         <div class="senderName">${isMine ? "You" : escapeHtml(m.sender)}</div>
         <div class="msg-text">This message was deleted</div>
-        <div class="meta"><span class="timestamp">${fullTimestamp(m.time)}</span></div>
+        <div class="meta"><span class="timestamp">${shortTime(m.time)}</span></div>
       </div>`;
-    const act = el.querySelector(".msg-actions"); if (act) act.remove();
-    maybeShowScrollDown();
+    scrollToBottom();
     return;
   }
 
-  // normal message content
+  // --- Build HTML components ---
+  
   const nameLabel = `<div class="senderName">${isMine ? "You" : escapeHtml(m.sender)}</div>`;
-  const replyHtml = m.replyTo ? `<div class="reply-snippet"><small>↪ ${escapeHtml(m.replyTo.sender)}: ${escapeHtml(String(m.replyTo.text).slice(0,80))}</small></div>` : "";
-  const forwardedHtml = m.forwardedFrom ? `<div class="reply-snippet"><small>Forwarded from ${escapeHtml(m.forwardedFrom)}</small></div>` : "";
-  const textHtml = `<div class="msg-text">${escapeHtml(m.text || "")}${m.edited ? ' <span class="edited">(edited)</span>' : ''}</div>`;
-  const timeHtml = `<span class="timestamp">${fullTimestamp(m.time)}</span>`;
+  
+  // New: Forwarded label
+  const forwardLabel = m.forwarded ? `<div class="forwarded">(Forwarded from ${escapeHtml(m.forwarded.from || '?')})</div>` : '';
 
-  // ticks logic (simple mode - global room)
+  // New: Reply context
+  let replyHtml = '';
+  if (m.replyTo) {
+    replyHtml = `
+      <div class="reply-context">
+        <div class="reply-context-sender">${escapeHtml(m.replyTo.sender)}</div>
+        <div class="reply-context-text">${truncate(m.replyTo.text, 60)}</div>
+      </div>
+    `;
+  }
+  
+  const textHtml = `<div class="msg-text">${escapeHtml(m.text || "")}</div>`;
+  const editedLabel = m.edited ? ` <span class="edited">(edited)</span>` : '';
+  
+  // Ticks
   let ticksHtml = "";
   if (isMine) {
-    const delivered = m.delivered ? Object.keys(m.delivered || {}) : [];
-    const read = m.read ? Object.keys(m.read || {}) : [];
-    if ((delivered.length === 0) && (read.length === 0)) {
-      ticksHtml = `<span class="ticks gray">✓</span>`;
-    } else if ((delivered.length > 0) && (read.length === 0)) {
-      ticksHtml = `<span class="ticks gray">✓✓</span>`;
-    } else if (read.length > 0) {
-      ticksHtml = `<span class="ticks blue">✓✓</span>`;
-    }
+    const read = m.read ? Object.keys(m.read || {}).length : 0;
+    const delivered = m.delivered ? Object.keys(m.delivered || {}).length : 0;
+    if (read > 0) ticksHtml = `<span class="ticks blue">✓✓</span>`;
+    else if (delivered > 0) ticksHtml = `<span class="ticks gray">✓✓</span>`;
+    else ticksHtml = `<span class="ticks gray">✓</span>`;
   }
+  
+  const metaHtml = `<div class="meta"><span class="timestamp">${shortTime(m.time)}</span>${editedLabel}${ticksHtml}</div>`;
 
-  // reactions summary
-  let reactionsHtml = "";
+  // New: Reactions
+  let reactionsHtml = '';
+  let reactionsPickerHtml = '';
   if (m.reactions) {
-    // count each emoji
-    const counts = {};
-    Object.values(m.reactions).forEach(e => { counts[e] = (counts[e]||0) + 1; });
-    reactionsHtml = `<div class="reaction-bar">` + Object.entries(counts).map(([emoji,c]) => `<div class="reaction-btn">${emoji} ${c}</div>`).join("") + `</div>`;
+    // Group reactions by emoji
+    const counts = Object.values(m.reactions).reduce((acc, emoji) => {
+      acc[emoji] = (acc[emoji] || 0) + 1;
+      return acc;
+    }, {});
+    
+    if (Object.keys(counts).length > 0) {
+      reactionsHtml = '<div class="reactions-bar">';
+      for (const [emoji, count] of Object.entries(counts)) {
+        // Check if I reacted with this emoji
+        const iReacted = m.reactions[sessionId] === emoji;
+        reactionsHtml += `<div class="reaction-pill ${iReacted ? 'reacted' : ''}" data-msg-id="${id}" data-emoji="${emoji}">${emoji} ${count}</div>`;
+      }
+      reactionsHtml += '</div>';
+    }
   }
 
-  // actions for own messages
-  const actionsHtml = isMine ? `
-    <div class="msg-actions">
-      <button class="act edit" title="Edit">✏️</button>
-      <button class="act del" title="Delete">🗑️</button>
-      <button class="act pin" title="Pin">📌</button>
-      <button class="act fwd" title="Forward">🔁</button>
-      <button class="act react" title="React">😊</button>
-    </div>` : `
-    <div class="msg-actions">
-      <button class="act react" title="React">😊</button>
-      <button class="act fwd" title="Forward">🔁</button>
-    </div>`;
+  // New: Reaction Picker (hidden by default)
+  reactionsPickerHtml = `<div class="reactions-picker hidden" id="picker-${id}">`;
+  for (const emoji of AVAILABLE_REACTIONS) {
+    reactionsPickerHtml += `<span class="react-emoji" data-msg-id="${id}" data-emoji="${emoji}">${emoji}</span>`;
+  }
+  reactionsPickerHtml += `</div>`;
 
-  // build HTML
+
+  // New: Actions (now available on all messages)
+  let actionsHtml = `
+    <div class="msg-actions">
+      <button class="act" title="Reply" data-action="reply" data-id="${id}">↩️</button>
+      <button class="act" title="React" data-action="react" data-id="${id}">😊</button>
+      <button class="act" title="Forward" data-action="forward" data-id="${id}">↪️</button>
+      <button class="act" title="Pin" data-action="pin" data-id="${id}">📌</button>
+      ${isMine ? `
+        <button class="act" title="Edit" data-action="edit" data-id="${id}">✏️</button>
+        <button class="act" title="Delete" data-action="delete" data-id="${id}">🗑️</button>
+      ` : ''}
+    </div>
+  `;
+  
+  // --- Assemble the final HTML ---
   if (!isMine) {
-    el.innerHTML = `<div style="display:flex;gap:8px;align-items:flex-start;">
-      // ===============================
-// CHAT APP – FULL JAVASCRIPT FILE
-// ===============================
+    el.innerHTML = `
+      <div class="avatar">${(m.sender || "?").charAt(0).toUpperCase()}</div>
+      <div style="display:flex;flex-direction:column;width:100%;">
+        ${actionsHtml}
+        ${reactionsPickerHtml}
+        ${nameLabel}
+        ${forwardLabel}
+        ${replyHtml}
+        ${textHtml}
+        ${metaHtml}
+        ${reactionsHtml}
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;width:100%;align-items:flex-end;">
+        ${actionsHtml}
+        ${reactionsPickerHtml}
+        ${nameLabel}
+        ${forwardLabel}
+        ${replyHtml}
+        ${textHtml}
+        ${metaHtml}
+        ${reactionsHtml}
+      </div>`;
+  }
 
-// ---- GLOBAL VARIABLES ----
-let messages = [];
-let selectedMessageId = null;   // For reply, forward, delete
-let onlineStatus = true;        // Simulated online/offline
-let typingTimeout;
-
-// ---- DOM ELEMENTS ----
-const chatArea = document.getElementById("chatArea");
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const typingIndicator = document.getElementById("typingIndicator");
-const lastSeenText = document.getElementById("lastSeen");
-
-// ---- UTILITIES ----
-function formatTimestamp() {
-    const now = new Date();
-    return now.toLocaleDateString() + " " + now.toLocaleTimeString();
-}
-
-function renderMessages() {
-    chatArea.innerHTML = "";
-
-    messages.forEach((msg) => {
-        const div = document.createElement("div");
-        div.className = msg.isMine ? "my-message message" : "other-message message";
-
-        let replyBlock = "";
-        if (msg.replyTo) {
-            replyBlock = `
-                <div class="reply-block">
-                    <div class="reply-author">${msg.replyTo.isMine ? "You" : "Friend"}</div>
-                    <div class="reply-text">${msg.replyTo.text}</div>
-                </div>
-            `;
-        }
-
-        div.innerHTML = `
-            ${replyBlock}
-            <div class="message-text">${msg.text}</div>
-
-            <div class="message-footer">
-                <span class="timestamp">${msg.timestamp}</span>
-
-                <span class="status">
-                    ${msg.status === 1 ? "✔" : ""}
-                    ${msg.status === 2 ? "✔✔" : ""}
-                    ${msg.status === 3 ? "<span class='blue'>✔✔</span>" : ""}
-                </span>
-            </div>
-
-            <div class="actions">
-                <button onclick="startReply(${msg.id})">Reply</button>
-                <button onclick="forwardMessage(${msg.id})">Forward</button>
-                <button onclick="pingMessage(${msg.id})">Ping</button>
-                <button onclick="deleteForEveryone(${msg.id})">Delete</button>
-                <button onclick="reactToMessage(${msg.id})">React</button>
-            </div>
-        `;
-
-        div.addEventListener("swipeleft", () => startReply(msg.id));
-
-        chatArea.appendChild(div);
+  // --- Attach all event listeners ---
+  el.querySelectorAll('.act').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.action;
+      switch(action) {
+        case 'reply':
+          showReplyContext(id, m.sender, m.text);
+          break;
+        case 'react':
+          document.getElementById(`picker-${id}`).classList.toggle('hidden');
+          break;
+        case 'forward':
+          if (confirm(`Forward this message from ${m.sender}?`)) {
+            await doSend({ sender: m.sender, text: m.text });
+          }
+          break;
+        case 'pin':
+          if (confirm(`Pin this message?`)) {
+            await set(pinnedMessageRef, { msgId: id, text: m.text, sender: m.sender, time: m.time });
+          }
+          break;
+        case 'edit':
+          if ((m.editCount || 0) >= 1) return alert("You can only edit once.");
+          const newText = prompt("Edit your message:", m.text || "");
+          if (newText === null) return;
+          const trimmed = (newText || "").trim();
+          if (!trimmed) return alert("Message cannot be empty.");
+          await update(ref(db, `messages/${id}`), { text: trimmed, edited: true, editCount: (m.editCount || 0) + 1, editedAt: serverTimestamp() });
+          break;
+        case 'delete':
+          // Timed delete check
+          const timeSinceSent = Date.now() - m.time;
+          if (timeSinceSent > DELETE_WINDOW_MS) {
+            return alert(`You can only delete messages for everyone within 15 minutes. (This message is ${Math.round(timeSinceSent/60000)} mins old)`);
+          }
+          if (!confirm("Delete this message for everyone?")) return;
+          await update(ref(db, `messages/${id}`), { text: "", deleted: true, deletedAt: serverTimestamp() });
+          break;
+      }
     });
+  });
 
-    chatArea.scrollTop = chatArea.scrollHeight;
+  // Reaction picker emoji click
+  el.querySelectorAll('.react-emoji').forEach(emojiBtn => {
+    emojiBtn.addEventListener('click', async () => {
+      const emoji = emojiBtn.dataset.emoji;
+      const msgId = emojiBtn.dataset.msgId;
+      const currentReaction = m.reactions ? m.reactions[sessionId] : null;
+      
+      if (currentReaction === emoji) {
+        // Un-react
+        await set(ref(db, `messages/${msgId}/reactions/${sessionId}`), null);
+      } else {
+        // React
+        await set(ref(db, `messages/${msgId}/reactions/${sessionId}`), emoji);
+      }
+      document.getElementById(`picker-${msgId}`).classList.add('hidden');
+    });
+  });
+
+  // Reaction pill click (for un-reacting)
+  el.querySelectorAll('.reaction-pill.reacted').forEach(pill => {
+    pill.addEventListener('click', async () => {
+        const emoji = pill.dataset.emoji;
+        const msgId = pill.dataset.msgId;
+        // Only un-react if you clicked your own reacted pill
+        if (m.reactions[sessionId] === emoji) {
+             await set(ref(db, `messages/${msgId}/reactions/${sessionId}`), null);
+        }
+    });
+  });
+
+  // If this client is not the sender, mark as read
+  if (!isMine) {
+    try { await update(ref(db, `messages/${id}/read`), { [sessionId]: true }); } catch (e) { }
+  }
+
+  // Only auto-scroll if it's a new message (not a change) and user is at bottom
+  if (!changed && !userIsScrolledUp) {
+    scrollToBottom();
+  }
 }
 
-// ---- SEND MESSAGE ----
-function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    const message = {
-        id: Date.now(),
-        text,
-        isMine: true,
-        timestamp: formatTimestamp(),
-        status: 1,
-        replyTo: selectedMessageId ? messages.find(m => m.id === selectedMessageId) : null
-    };
-
-    messages.push(message);
-    selectedMessageId = null;
-    messageInput.value = "";
-
-    renderMessages();
-
-    // Simulate "Delivered" + "Read"
-    setTimeout(() => {
-        message.status = 2;
-        renderMessages();
-    }, 500);
-
-    setTimeout(() => {
-        message.status = 3;
-        renderMessages();
-    }, 1000);
+/* ---------------- Utilities ---------------- */
+function scrollToBottom(force = false) {
+  if (userIsScrolledUp && !force) return;
+  setTimeout(() => { messagesDiv.scrollTop = messagesDiv.scrollHeight; }, 80);
 }
 
-sendBtn.onclick = sendMessage;
-
-// ---- TYPING INDICATOR ----
-messageInput.addEventListener("input", () => {
-    typingIndicator.style.display = "block";
-    clearTimeout(typingTimeout);
-
-    typingTimeout = setTimeout(() => {
-        typingIndicator.style.display = "none";
-    }, 700);
+/* on unload - mark presence offline & clear typing */
+window.addEventListener("beforeunload", async () => {
+  if (sessionId) {
+    try { await update(ref(db, `presence/${sessionId}`), { online: false, lastSeen: serverTimestamp() }); } catch (e) { }
+    try { await set(ref(db, `typing/${sessionId}`), false); } catch (e) { }
+  }
 });
-
-// ---- ONLINE/OFFLINE SYSTEM ----
-function updateOnlineStatus(isOnline) {
-    onlineStatus = isOnline;
-    lastSeenText.textContent = isOnline
-        ? "Online"
-        : "Last seen today at " + new Date().toLocaleTimeString();
-}
-
-// ---- REPLY SYSTEM ----
-function startReply(id) {
-    selectedMessageId = id;
-    const msg = messages.find(m => m.id === id);
-    messageInput.placeholder = "Replying to: " + msg.text;
-}
-
-// ---- FORWARD SYSTEM ----
-function forwardMessage(id) {
-    const original = messages.find(m => m.id === id);
-
-    const newMsg = {
-        id: Date.now(),
-        text: "Forwarded: " + original.text,
-        isMine: true,
-        timestamp: formatTimestamp(),
-        status: 1,
-        replyTo: null
-    };
-
-    messages.push(newMsg);
-    renderMessages();
-}
-
-// ---- PING MESSAGE ----
-function pingMessage(id) {
-    alert("Ping sent for message ID: " + id);
-}
-
-// ---- DELETE FOR EVERYONE ----
-function deleteForEveryone(id) {
-    if (!confirm("Delete this message for everyone?")) return;
-
-    const msg = messages.find(m => m.id === id);
-
-    msg.text = "Message deleted";
-    msg.status = "";
-    msg.replyTo = null;
-
-    renderMessages();
-}
-
-// ---- MESSAGE REACTIONS ----
-function reactToMessage(id) {
-    const emojis = ["👍", "❤️", "😂", "😮", "🔥"];
-    const choice = prompt("Choose reaction: \n1 👍\n2 ❤️\n3 😂\n4 😮\n5 🔥");
-
-    if (!choice || choice < 1 || choice > 5) return;
-
-    const msg = messages.find(m => m.id === id);
-    msg.text += " " + emojis[choice - 1];
-
-    renderMessages();
-}
-
-// ---- SWIPE TO REPLY ----
-let touchStartX = 0;
-
-document.addEventListener("touchstart", (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-});
-
-document.addEventListener("touchend", (e) => {
-    const endX = e.changedTouches[0].screenX;
-
-    if (touchStartX - endX > 60) {
-        const msgDiv = e.target.closest(".message");
-        if (!msgDiv) return;
-
-        const index = Array.from(chatArea.children).indexOf(msgDiv);
-        startReply(messages[index].id);
-    }
-});
-
-// ---- INITIALIZATION ----
-updateOnlineStatus(true);
-renderMessages();
