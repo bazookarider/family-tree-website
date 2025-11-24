@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>CYOU Chat</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="chat-container">
+    
+    <section id="join-screen" class="join-screen">
+      <div class="logo-area">
+        <i class="fa-solid fa-comments fa-3x" style="color:var(--accent);"></i>
+        <h2>Welcome to CYOU</h2>
+      </div>
+      <input id="usernameInput" type="text" placeholder="Enter your nickname..." autocomplete="off" />
+      <button id="joinBtn">Start Chatting</button>
+      <div id="joinHint" class="hint"></div>
+    </section>
+
+    <section id="chat-screen" class="chat-screen hidden">
+      <header id="topBar" class="top-bar">
+        <div class="header-left">
+          <h1>CYOU</h1>
+          <div id="onlineStatus" class="online-status">Connecting...</div>
+        </div>
+        <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
+      </header>
+      
+      <div id="pinned-message-bar" class="pinned-message-bar hidden"></div>
+
+      <main class="main">
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <button id="new-messages-button" class="new-messages-button hidden">
+          New Messages <i class="fa-solid fa-arrow-down"></i>
+        </button>
+
+        <div id="typingIndicator" class="typing-indicator"></div>
+        
+        <div id="reply-context-bar" class="reply-context-bar hidden"></div>
+
+        <form id="inputForm" class="input-form" autocomplete="off">
+          <input id="messageInput" type="text" placeholder="Type a message..." />
+          <button id="sendBtn" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+      </main>
+    </section>
+
+  </div>
+  <audio id="receiveSound" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
