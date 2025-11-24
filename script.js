@@ -1,6 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp
+  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp,
+  query, orderByChild, equalTo, get
 } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
 /* ---------------- Firebase config ---------------- */
@@ -77,7 +78,6 @@ function truncate(s = "", len = 50) {
     return escapeHtml(s.substring(0, len)) + "...";
 }
 
-// NEW: Make links clickable
 function linkify(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   return text.replace(urlRegex, function(url) {
@@ -95,7 +95,6 @@ async function setPresence(name, sid) {
   });
 }
 
-// Theme Toggle Logic
 themeToggle.addEventListener("click", () => {
   const isDark = document.body.getAttribute("data-theme") === "dark";
   if (isDark) {
@@ -107,20 +106,55 @@ themeToggle.addEventListener("click", () => {
   }
 });
 
-/* ---------------- Join flow ---------------- */
+/* ---------------- Join flow (UPDATED FOR UNIQUENESS) ---------------- */
 joinBtn.addEventListener("click", () => attemptJoin());
 usernameInput.addEventListener("keypress", (e) => { if(e.key === "Enter") attemptJoin(); });
 
 async function attemptJoin() {
   const name = (usernameInput.value || "").trim();
-  if (!name || name.length < 1) { joinHint.textContent = "Please enter a name."; return; }
+  if (!name || name.length < 1) { 
+    joinHint.textContent = "Please enter a name."; 
+    return; 
+  }
   
-  username = name;
-  sessionId = uid();
-  sessionStorage.setItem("cyou-username", username);
-  sessionStorage.setItem("cyou-session", sessionId);
-  
-  startApp();
+  // Disable button while checking
+  joinBtn.disabled = true;
+  joinHint.textContent = "Checking availability...";
+
+  try {
+    // Check if name exists in presence list
+    const q = query(presenceRef, orderByChild("name"), equalTo(name));
+    const snapshot = await get(q);
+    
+    let isTaken = false;
+    
+    // Snapshot might return data, but we must check if that user is actually ONLINE
+    snapshot.forEach((child) => {
+      const userData = child.val();
+      if (userData.online === true) {
+        isTaken = true;
+      }
+    });
+
+    if (isTaken) {
+      joinHint.textContent = `Username '${name}' is already taken! Choose another.`;
+      joinBtn.disabled = false;
+      return;
+    }
+
+    // Name is free, proceed
+    username = name;
+    sessionId = uid();
+    sessionStorage.setItem("cyou-username", username);
+    sessionStorage.setItem("cyou-session", sessionId);
+    
+    startApp();
+
+  } catch (error) {
+    console.error("Check failed", error);
+    joinHint.textContent = "Connection error. Try again.";
+    joinBtn.disabled = false;
+  }
 }
 
 function checkSession() {
@@ -262,7 +296,6 @@ async function renderMessage(id, m, changed = false) {
     return;
   }
 
-  // UPDATED ACTIONS WITH ICONS
   let actionsHtml = `
     <div class="msg-actions">
       <button class="act" data-action="reply" title="Reply"><i class="fa-solid fa-reply"></i></button>
@@ -276,7 +309,6 @@ async function renderMessage(id, m, changed = false) {
     </div>
   `;
 
-  // Reactions
   let reactionsHtml = '';
   if (m.reactions) {
     const counts = {};
@@ -289,7 +321,6 @@ async function renderMessage(id, m, changed = false) {
     reactionsHtml += '</div>';
   }
 
-  // Picker
   let pickerHtml = `<div class="reactions-picker hidden" id="picker-${id}">`;
   AVAILABLE_REACTIONS.forEach(e => pickerHtml += `<span class="react-emoji" data-emoji="${e}">${e}</span>`);
   pickerHtml += `</div>`;
@@ -315,12 +346,9 @@ async function renderMessage(id, m, changed = false) {
 
   el.innerHTML = content;
 
-  // Events
-  el.querySelectorAll('.act').forEach((btn, index) => {
-    // Mapping index to action for simplicity or use specific classes. 
-    // Here we need to grab the buttons carefully.
+  el.querySelectorAll('.act').forEach((btn) => {
     btn.onclick = async () => {
-      const action = btn.title.toLowerCase(); 
+      const action = btn.dataset.action; 
       if(action === 'reply') showReplyContext(id, m.sender, m.text);
       if(action === 'react') document.getElementById(`picker-${id}`).classList.toggle('hidden');
       if(action === 'forward') { if(confirm("Forward?")) doSend({ sender: m.sender, text: m.text }); }
@@ -335,7 +363,6 @@ async function renderMessage(id, m, changed = false) {
     };
   });
 
-  // Reaction clicks
   el.querySelectorAll('.react-emoji').forEach(btn => {
     btn.onclick = () => {
       const emoji = btn.dataset.emoji;
