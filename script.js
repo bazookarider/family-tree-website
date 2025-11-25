@@ -1,10 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
   getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp, get
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { 
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut 
-} from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 /* ---------------- Config ---------------- */
 const firebaseConfig = {
@@ -62,13 +62,19 @@ const AVAILABLE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     // User is signed in, fetch profile
-    const snapshot = await get(ref(db, `users/${user.uid}`));
-    if (snapshot.exists()) {
-      currentUser = { uid: user.uid, email: user.email, username: snapshot.val().username };
-      startApp();
-    } else {
-      // Fallback if DB record missing
-      authError.textContent = "Profile missing. Contact support.";
+    try {
+      const snapshot = await get(ref(db, `users/${user.uid}`));
+      if (snapshot.exists()) {
+        currentUser = { uid: user.uid, email: user.email, username: snapshot.val().username };
+        startApp();
+      } else {
+        // Fallback: If Auth exists but DB doesn't (rare error), let them recreate
+        authError.textContent = "Profile not found. Please Sign Up again.";
+        signOut(auth);
+      }
+    } catch (e) {
+      console.error(e);
+      authError.textContent = "Connection failed.";
     }
   } else {
     // User is logged out
@@ -93,13 +99,18 @@ signupForm.onsubmit = async (e) => {
   const email = document.getElementById("signupEmail").value.trim();
   const pass = document.getElementById("signupPass").value;
 
-  if (name.length < 3) { authError.textContent = "Username must be 3+ chars."; signupBtn.disabled = false; return; }
+  if (name.length < 3) { 
+    authError.textContent = "Username must be 3+ chars."; 
+    signupBtn.disabled = false; 
+    return; 
+  }
 
   try {
     // Unique Check: Look in 'usernames' node
     const nameCheck = await get(ref(db, `usernames/${name}`));
     if (nameCheck.exists()) {
-      authError.textContent = `Username '${name}' is already taken permanently.`;
+      alert(`Username '${name}' is already taken!`);
+      authError.textContent = `Username '${name}' is taken.`;
       signupBtn.disabled = false;
       return;
     }
@@ -112,10 +123,11 @@ signupForm.onsubmit = async (e) => {
     await set(ref(db, `users/${uid}`), { username: name, email: email, joined: serverTimestamp() });
     await set(ref(db, `usernames/${name}`), uid);
 
-    // Success - onAuthStateChanged will trigger startApp
+    // Success - onAuthStateChanged will trigger startApp automatically
   } catch (err) {
     console.error(err);
-    authError.textContent = err.message.replace("Firebase:", "").trim();
+    alert("Sign Up Error: " + err.message); // POPUP ERROR
+    authError.textContent = "Error: " + err.message;
     signupBtn.disabled = false;
   }
 };
@@ -132,6 +144,8 @@ loginForm.onsubmit = async (e) => {
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch (err) {
+    console.error(err);
+    alert("Login Error: " + err.message); // POPUP ERROR
     authError.textContent = "Invalid email or password.";
     loginBtn.disabled = false;
   }
