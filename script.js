@@ -23,7 +23,6 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 /* ---------------- DOM Elements ---------------- */
-// Auth
 const authScreen = document.getElementById("auth-screen");
 const loginForm = document.getElementById("loginForm");
 const signupForm = document.getElementById("signupForm");
@@ -37,7 +36,6 @@ const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-// Chat
 const chatScreen = document.getElementById("chat-screen");
 const messagesDiv = document.getElementById("messages");
 const inputForm = document.getElementById("inputForm");
@@ -72,7 +70,7 @@ let typingTimeout = null;
 let activeReply = null; 
 let userIsScrolledUp = false;
 let newMessagesCount = 0;
-let incomingRequestData = null; // Stores info about pending request
+let incomingRequestData = null;
 const AVAILABLE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
 /* ---------------- Auth Logic ---------------- */
@@ -101,7 +99,6 @@ onAuthStateChanged(auth, async (user) => {
     chatScreen.classList.add("hidden");
     authScreen.classList.remove("hidden");
     messagesDiv.innerHTML = "";
-    off(ref(db, "requests/" + (currentUser ? currentUser.uid : ""))); // Stop listening
   }
 });
 
@@ -149,7 +146,7 @@ resetForm.onsubmit = async (e) => {
 
 logoutBtn.onclick = () => { 
   if(confirm("Log out?")) {
-    update(ref(db, `presence/${currentUser.uid}`), { online: false }); // Force offline
+    update(ref(db, `presence/${currentUser.uid}`), { online: false }); 
     signOut(auth);
   }
 };
@@ -159,10 +156,9 @@ async function startApp() {
   authScreen.classList.add("hidden");
   chatScreen.classList.remove("hidden");
   
-  // FIX: Accurate Presence Logic
   const presenceRef = ref(db, `presence/${currentUser.uid}`);
   await set(presenceRef, { name: currentUser.username, online: true, lastSeen: serverTimestamp() });
-  onDisconnect(presenceRef).update({ online: false, lastSeen: serverTimestamp() }); // Auto offline on close
+  onDisconnect(presenceRef).update({ online: false, lastSeen: serverTimestamp() });
 
   startRequestListeners();
   switchChat("messages", "CYOU Global");
@@ -200,44 +196,27 @@ function startRequestListeners() {
   onChildAdded(myReqRef, (snap) => {
     const req = snap.val();
     const reqId = snap.key;
-    
-    // Type 1: I received a request
     if (req.type === "INVITE") {
       incomingRequestData = { id: reqId, ...req };
       requestText.textContent = `${req.senderName} wants to private chat.`;
       requestModal.classList.remove("hidden");
     }
-    
-    // Type 2: My request was ACCEPTED
     if (req.type === "ACCEPTED") {
       alert(`${req.senderName} accepted your request!`);
-      // Start chat
       const chatId = currentUser.uid < req.senderUid ? `${currentUser.uid}_${req.senderUid}` : `${req.senderUid}_${currentUser.uid}`;
       switchChat(`private_messages/${chatId}`, req.senderName);
-      // Delete the notification
       remove(ref(db, `requests/${currentUser.uid}/${reqId}`));
     }
   });
 }
 
-// User Actions for Requests
 acceptReqBtn.onclick = async () => {
   if (!incomingRequestData) return;
   const targetUid = incomingRequestData.senderUid;
   const targetName = incomingRequestData.senderName;
-  
-  // Notify sender "ACCEPTED"
-  await push(ref(db, `requests/${targetUid}`), {
-    type: "ACCEPTED",
-    senderUid: currentUser.uid,
-    senderName: currentUser.username
-  });
-  
-  // Enter Chat
+  await push(ref(db, `requests/${targetUid}`), { type: "ACCEPTED", senderUid: currentUser.uid, senderName: currentUser.username });
   const chatId = currentUser.uid < targetUid ? `${currentUser.uid}_${targetUid}` : `${targetUid}_${currentUser.uid}`;
   switchChat(`private_messages/${chatId}`, targetName);
-  
-  // Clean up
   remove(ref(db, `requests/${currentUser.uid}/${incomingRequestData.id}`));
   requestModal.classList.add("hidden");
 };
@@ -250,31 +229,30 @@ declineReqBtn.onclick = () => {
 async function sendRequest(targetUid, targetName) {
   if(targetUid === currentUser.uid) return;
   if(!confirm(`Send chat request to ${targetName}?`)) return;
-  
-  await push(ref(db, `requests/${targetUid}`), {
-    type: "INVITE",
-    senderUid: currentUser.uid,
-    senderName: currentUser.username
-  });
-  
-  alert("Request sent! Wait for them to accept.");
+  await push(ref(db, `requests/${targetUid}`), { type: "INVITE", senderUid: currentUser.uid, senderName: currentUser.username });
+  alert("Request sent!");
   usersModal.classList.add("hidden");
 }
 
-/* ---------------- Users List ---------------- */
+/* ---------------- Users List with AVATARS ---------------- */
 usersBtn.onclick = () => { usersModal.classList.remove("hidden"); loadUsers(); };
 closeUsersBtn.onclick = () => usersModal.classList.add("hidden");
 
 async function loadUsers() {
   usersList.innerHTML = '<div style="text-align:center;padding:20px;">Loading...</div>';
   try {
-    // Attempt to load users (Will fail if Rules aren't updated)
     const usersSnap = await get(ref(db, "users"));
-    const presenceSnap = await get(ref(db, "presence"));
     
-    usersList.innerHTML = "";
+    // FIX: Handle empty database
+    if (!usersSnap.exists()) {
+       usersList.innerHTML = '<div style="text-align:center;padding:20px;">No other users found.</div>';
+       return;
+    }
+
+    const presenceSnap = await get(ref(db, "presence"));
     const presenceData = presenceSnap.val() || {};
     
+    usersList.innerHTML = "";
     const usersArr = [];
     usersSnap.forEach(child => {
       if (child.key !== currentUser.uid) {
@@ -285,14 +263,21 @@ async function loadUsers() {
       }
     });
 
-    // Sort: Online first
     usersArr.sort((a, b) => (b.isOnline ? 1 : 0) - (a.isOnline ? 1 : 0));
 
+    if (usersArr.length === 0) {
+        usersList.innerHTML = '<div style="text-align:center;padding:20px;">No other users yet.</div>';
+        return;
+    }
+
     usersArr.forEach(u => {
+      // AVATAR GENERATOR (DiceBear)
+      const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}&backgroundColor=006677`;
+      
       const div = document.createElement("div");
       div.className = `user-item ${u.isOnline ? 'online-user' : ''}`;
       div.innerHTML = `
-        <div class="user-avatar">${u.username[0].toUpperCase()}</div>
+        <img src="${avatarUrl}" class="user-avatar" alt="${u.username}" style="width:40px;height:40px;border-radius:50%;">
         <div class="user-info">
           <div class="user-name">${u.username}</div>
           <div class="user-status">
@@ -301,31 +286,45 @@ async function loadUsers() {
           </div>
         </div>
       `;
-      // Click triggers REQUEST, not instant chat
       div.onclick = () => sendRequest(u.uid, u.username);
       usersList.appendChild(div);
     });
 
-    if(usersArr.length === 0) usersList.innerHTML = '<div style="text-align:center;padding:20px;">No other users yet.</div>';
-
   } catch (e) {
     console.error(e);
-    // Explicit Error for Rules
-    usersList.innerHTML = '<div style="color:red;padding:20px;text-align:center;">Error: Permission Denied.<br>Please update Firebase Rules in Console.</div>';
+    // Print REAL error
+    usersList.innerHTML = `<div style="color:red;padding:20px;text-align:center;">Error: ${e.message}</div>`;
   }
 }
 
-/* ---------------- Messaging Logic ---------------- */
+/* ---------------- Messaging Logic (Sending) ---------------- */
 inputForm.onsubmit = async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
-  if(!text) return;
-  const payload = { sender: currentUser.username, senderId: currentUser.uid, text: text, time: serverTimestamp(), replyTo: activeReply||null };
+  if(!text && !activeReply) return; 
+  await doSend(text);
+};
+
+async function doSend(text, forwardedData = null) {
+  const payload = { 
+    sender: currentUser.username, 
+    senderId: currentUser.uid, 
+    text: forwardedData ? forwardedData.text : text, 
+    time: serverTimestamp(), 
+    replyTo: activeReply || null,
+    forwarded: forwardedData ? { from: forwardedData.sender } : null,
+    edited: false,
+    deleted: false,
+    reactions: {}
+  };
+
   try { await push(ref(db, currentChatPath), payload); } catch(e) {}
   messageInput.value = "";
   cancelReply();
+  set(ref(db, `typing/${currentUser.uid}`), false);
 }
 
+/* ---------------- Realtime Listeners ---------------- */
 function startChatListeners(path) {
   const chatRef = ref(db, path);
   onChildAdded(chatRef, (snap) => {
@@ -336,36 +335,133 @@ function startChatListeners(path) {
     }
     if (snap.val().senderId !== currentUser.uid && readyForSound) receiveSound.play().catch(()=>{});
   });
-  
-  // Online Count only for Global
+
+  onChildChanged(chatRef, (snap) => renderMessage(snap.key, snap.val(), true));
+  onChildRemoved(chatRef, (snap) => document.getElementById(snap.key)?.remove());
+
+  // Online Count (Global Only)
   if (path === "messages") {
     onValue(ref(db, "presence"), (snap) => {
        const count = Object.values(snap.val() || {}).filter(u => u.online).length;
        onlineStatus.textContent = count > 0 ? `${count} Online` : "Offline";
     });
   }
+
+  // Pinned Message (Global Only)
+  if (path === "messages") {
+    onValue(ref(db, "pinnedMessage"), (snap) => {
+       const pinned = snap.val();
+       if(pinned && pinned.msgId) {
+          pinnedMessageBar.innerHTML = `<span><i class="fa-solid fa-thumbtack"></i> ${pinned.text.substring(0,30)}...</span> <button id="unpinBtn" class="unpin-btn"><i class="fa-solid fa-xmark"></i></button>`;
+          pinnedMessageBar.classList.remove("hidden");
+          document.getElementById("unpinBtn").onclick = () => set(ref(db, "pinnedMessage"), null);
+       } else {
+          pinnedMessageBar.classList.add("hidden");
+       }
+    });
+  }
 }
 
-/* ---------------- Render ---------------- */
+/* ---------------- RENDER (RESTORED ALL FEATURES) ---------------- */
 function renderMessage(id, m, changed=false) {
   let el = document.getElementById(id);
   const isMine = m.senderId === currentUser.uid;
-  if(!el) { el = document.createElement("div"); el.id = id; messagesDiv.appendChild(el); setTimeout(()=>el.classList.add("show"),10); }
+
+  if(!el) {
+    el = document.createElement("div");
+    el.id = id;
+    messagesDiv.appendChild(el);
+    setTimeout(()=>el.classList.add("show"), 10);
+  }
   el.className = "message " + (isMine ? "you" : "them") + " show";
 
-  if(m.deleted) { el.classList.add("deleted"); el.innerHTML = "Deleted"; return; }
+  if(m.deleted) {
+    el.classList.add("deleted");
+    el.innerHTML = `<div class="msg-text"><i class="fa-solid fa-ban"></i> Message Deleted</div>`;
+    return;
+  }
 
-  const actions = `<div class="msg-actions"><button class="act" data-a="reply"><i class="fa-solid fa-reply"></i></button>${isMine?`<button class="act" data-a="delete"><i class="fa-solid fa-trash"></i></button>`:''}</div>`;
-  const safeText = m.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+  // Action Buttons
+  const actionsHtml = `
+    <div class="msg-actions">
+      <button class="act" data-a="reply" title="Reply"><i class="fa-solid fa-reply"></i></button>
+      <button class="act" data-a="react" title="React"><i class="fa-regular fa-face-smile"></i></button>
+      <button class="act" data-a="forward" title="Forward"><i class="fa-solid fa-share"></i></button>
+      <button class="act" data-a="pin" title="Pin"><i class="fa-solid fa-thumbtack"></i></button>
+      ${isMine ? `
+        <button class="act" data-a="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+        <button class="act" data-a="delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      ` : ''}
+    </div>`;
+
+  // Reactions
+  let reactHtml = '';
+  if(m.reactions) {
+    const counts = {};
+    Object.values(m.reactions).forEach(r => counts[r]=(counts[r]||0)+1);
+    reactHtml = '<div class="reactions-bar">';
+    for(let [e, c] of Object.entries(counts)) {
+       reactHtml += `<div class="reaction-pill ${m.reactions[currentUser.uid]===e?'reacted':''}" data-e="${e}">${e} ${c}</div>`;
+    }
+    reactHtml += '</div>';
+  }
+
+  // Helper: Linkify
+  const safeText = (m.text||"").replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
   const time = m.time ? new Date(m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : "";
+  
+  // Avatar URL
+  const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${m.sender}&backgroundColor=006677`;
 
-  el.innerHTML = `${!isMine?`<div class="avatar">${m.sender[0]}</div>`:''}<div>${actions}<div class="senderName">${isMine?"You":m.sender}</div>${m.replyTo?`<div class="reply-context"><b>${m.replyTo.sender}</b>: ${m.replyTo.text.substring(0,10)}...</div>`:''}<div class="msg-text">${safeText}</div><div class="meta">${time}</div></div>`;
+  el.innerHTML = `
+    ${!isMine ? `<img src="${avatarUrl}" class="avatar" style="border-radius:50%;background:#ccc;">` : ''}
+    <div style="display:flex;flex-direction:column;width:100%;">
+      ${actionsHtml}
+      <div class="reactions-picker hidden" id="pick-${id}">${AVAILABLE_REACTIONS.map(e=>`<span class="react-emoji" data-e="${e}">${e}</span>`).join('')}</div>
+      
+      <div class="senderName">${isMine?"You":m.sender}</div>
+      ${m.replyTo ? `<div class="reply-context"><b>${m.replyTo.sender}</b>: ${m.replyTo.text.substring(0,25)}...</div>`:''}
+      ${m.forwarded ? `<div style="font-size:0.75rem;opacity:0.7;font-style:italic"><i class="fa-solid fa-share"></i> Fwd from ${m.forwarded.from}</div>` : ''}
+      
+      <div class="msg-text">${safeText}</div>
+      
+      <div class="meta">
+         ${m.edited ? '<i class="fa-solid fa-pen" style="font-size:8px"></i>' : ''}
+         ${time} 
+         ${isMine ? '<span class="ticks blue">✓✓</span>' : ''}
+      </div>
+      ${reactHtml}
+    </div>
+  `;
 
-  el.querySelectorAll('.act').forEach(btn => btn.onclick = () => {
-     if(btn.dataset.a==='reply'){ activeReply={id, sender:m.sender, text:m.text}; replyContextBar.innerHTML=`Replying to <b>${m.sender}</b> <button id="noRep">x</button>`; replyContextBar.classList.remove("hidden"); document.getElementById("noRep").onclick=cancelReply; }
-     if(btn.dataset.a==='delete' && confirm("Delete?")) update(ref(db, `${currentChatPath}/${id}`), {deleted:true});
+  // Attach Events
+  el.querySelectorAll('.act').forEach(btn => {
+     btn.onclick = () => {
+        const action = btn.dataset.a;
+        if(action==='reply') { activeReply={id, sender:m.sender, text:m.text}; replyContextBar.innerHTML=`Reply to <b>${m.sender}</b> <button id="noRep">x</button>`; replyContextBar.classList.remove("hidden"); document.getElementById("noRep").onclick=cancelReply; messageInput.focus(); }
+        if(action==='react') document.getElementById(`pick-${id}`).classList.toggle("hidden");
+        if(action==='forward') { if(confirm("Forward?")) doSend(m.text, {sender:m.sender}); }
+        if(action==='pin') set(ref(db, "pinnedMessage"), {msgId:id, text:m.text});
+        if(action==='edit') { const t=prompt("Edit:", m.text); if(t) update(ref(db, `${currentChatPath}/${id}`), {text:t, edited:true}); }
+        if(action==='delete') { if(confirm("Delete?")) update(ref(db, `${currentChatPath}/${id}`), {deleted:true}); }
+     };
   });
+  
+  el.querySelectorAll('.react-emoji').forEach(btn => {
+     btn.onclick = () => {
+        const e = btn.dataset.e;
+        set(ref(db, `${currentChatPath}/${id}/reactions/${currentUser.uid}`), m.reactions?.[currentUser.uid]===e ? null : e);
+        document.getElementById(`pick-${id}`).classList.add("hidden");
+     }
+  });
+
   if(!changed && !userIsScrolledUp) messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
+
 function cancelReply() { activeReply=null; replyContextBar.classList.add("hidden"); }
-themeToggle.onclick = () => { const d=document.body.getAttribute("data-theme")==="dark"; document.body.setAttribute("data-theme", d?"":"dark"); themeToggle.innerHTML=d?'<i class="fa-solid fa-moon"></i>':'<i class="fa-solid fa-sun"></i>'; }
+
+themeToggle.onclick = () => {
+   const dark = document.body.getAttribute("data-theme")==="dark";
+   document.body.setAttribute("data-theme", dark ? "" : "dark");
+   themeToggle.innerHTML = dark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+}
