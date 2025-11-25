@@ -72,7 +72,6 @@
         </button>
 
         <div id="typingIndicator" class="typing-indicator"></div>
-        
         <div id="reply-context-bar" class="reply-context-bar hidden"></div>
 
         <form id="inputForm" class="input-form" autocomplete="off">
@@ -84,16 +83,29 @@
       <div id="usersModal" class="users-modal hidden">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>Start Chat</h3>
+            <h3>Online Users</h3>
             <button id="closeUsersBtn"><i class="fa-solid fa-xmark"></i></button>
           </div>
-          <div id="usersList" class="users-list">
+          <div id="usersList" class="users-list"></div>
+        </div>
+      </div>
+
+      <div id="requestModal" class="users-modal hidden" style="z-index:60;">
+        <div class="modal-content" style="height:auto; padding-bottom:30px;">
+          <div class="modal-header">
+            <h3>Chat Request</h3>
+          </div>
+          <div style="padding:20px; text-align:center;">
+            <p id="requestText" style="font-size:1.1rem; margin-bottom:20px;">User wants to chat</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+              <button id="acceptReqBtn" style="background:#00cc44; color:white; padding:10px 20px; border:none; border-radius:8px; font-weight:bold;">Accept</button>
+              <button id="declineReqBtn" style="background:#cc0000; color:white; padding:10px 20px; border:none; border-radius:8px; font-weight:bold;">Decline</button>
             </div>
+          </div>
         </div>
       </div>
 
     </section>
-
   </div>
   <audio id="receiveSound" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
