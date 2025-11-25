@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -12,24 +12,35 @@
     
     <section id="auth-screen" class="auth-screen">
       <div class="logo-area">
-        <i class="fa-solid fa-comments fa-3x" style="color:var(--accent);"></i>
+        <i class="fa-solid fa-shield-halved fa-3x" style="color:var(--accent);"></i>
         <h2>Welcome to CYOU</h2>
-        <p>Secure. Fast. Yours.</p>
+        <p>Verified & Secure Chat</p>
       </div>
 
       <form id="loginForm" class="auth-form">
         <input type="email" id="loginEmail" placeholder="Email Address" required />
         <input type="password" id="loginPass" placeholder="Password" required />
         <button type="submit" id="loginBtn">Log In</button>
-        <div class="switch-link">New here? <span id="showSignup">Create an Account</span></div>
+        <div class="links-row">
+           <span id="forgotPassBtn">Forgot Password?</span>
+           <span id="showSignup">Create Account</span>
+        </div>
       </form>
 
       <form id="signupForm" class="auth-form hidden">
-        <input type="text" id="signupName" placeholder="Choose unique username" required />
+        <input type="text" id="signupName" placeholder="Choose Username" required />
         <input type="email" id="signupEmail" placeholder="Email Address" required />
         <input type="password" id="signupPass" placeholder="Password (6+ chars)" required />
-        <button type="submit" id="signupBtn">Sign Up & Claim Name</button>
+        <button type="submit" id="signupBtn">Sign Up & Verify</button>
         <div class="switch-link">Have an account? <span id="showLogin">Log In</span></div>
+      </form>
+
+      <form id="resetForm" class="auth-form hidden">
+        <h3>Reset Password</h3>
+        <p style="font-size:0.8rem; color:var(--muted); text-align:center">Enter your email to receive a reset link.</p>
+        <input type="email" id="resetEmail" placeholder="Your Email" required />
+        <button type="submit" id="resetBtn">Send Reset Link</button>
+        <div class="switch-link"><span id="cancelReset">Back to Login</span></div>
       </form>
 
       <div id="authError" class="hint"></div>
