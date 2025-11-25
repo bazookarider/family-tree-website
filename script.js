@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp, get
+  getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp, get, off
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { 
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, sendPasswordResetEmail 
@@ -28,13 +28,11 @@ const authScreen = document.getElementById("auth-screen");
 const loginForm = document.getElementById("loginForm");
 const signupForm = document.getElementById("signupForm");
 const resetForm = document.getElementById("resetForm");
-
 const authError = document.getElementById("authError");
 const showSignup = document.getElementById("showSignup");
 const showLogin = document.getElementById("showLogin");
 const forgotPassBtn = document.getElementById("forgotPassBtn");
 const cancelReset = document.getElementById("cancelReset");
-
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -52,9 +50,17 @@ const logoutBtn = document.getElementById("logoutBtn");
 const newMessagesButton = document.getElementById("new-messages-button");
 const replyContextBar = document.getElementById("reply-context-bar");
 const pinnedMessageBar = document.getElementById("pinned-message-bar");
+const chatTitle = document.getElementById("chatTitle");
+const usersBtn = document.getElementById("usersBtn");
+const backToGlobalBtn = document.getElementById("backToGlobalBtn");
+const usersModal = document.getElementById("usersModal");
+const usersList = document.getElementById("usersList");
+const closeUsersBtn = document.getElementById("closeUsersBtn");
 
 /* ---------------- State ---------------- */
 let currentUser = null; 
+let currentChatPath = "messages"; // Defaults to Global
+let currentChatName = "Global";
 let readyForSound = false;
 let typingTimeout = null;
 let activeReply = null; 
@@ -63,159 +69,194 @@ let newMessagesCount = 0;
 const AVAILABLE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
 /* ---------------- Auth Logic ---------------- */
-
-// 1. Monitor Auth State
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // SECURITY CHECK: Is email verified?
     if (!user.emailVerified) {
-      authError.innerHTML = `Please verify your email to continue.<br><button id="resendBtn" style="margin-top:5px;padding:4px 8px;">Resend Link</button>`;
-      document.getElementById("resendBtn").onclick = () => {
-         sendEmailVerification(user).then(() => alert("Verification link resent!"));
-      };
-      // We do NOT let them in.
+      authError.innerHTML = `Verify your email to continue.<br><button id="resendBtn">Resend Link</button>`;
+      document.getElementById("resendBtn").onclick = () => sendEmailVerification(user).then(() => alert("Resent!"));
       return; 
     }
-
-    // User is verified, load profile
     try {
       const snapshot = await get(ref(db, `users/${user.uid}`));
       if (snapshot.exists()) {
         currentUser = { uid: user.uid, email: user.email, username: snapshot.val().username };
         startApp();
       } else {
-        authError.textContent = "Profile error. Please contact admin.";
+        authError.textContent = "Profile missing.";
         signOut(auth);
       }
     } catch (e) {
       console.error(e);
-      authError.textContent = "Connection failed.";
+      authError.textContent = "Connection error.";
     }
   } else {
-    // Logged out
     currentUser = null;
     chatScreen.classList.add("hidden");
     authScreen.classList.remove("hidden");
-    resetChat();
+    messagesDiv.innerHTML = "";
   }
 });
 
-// 2. Switch Views
-showSignup.onclick = () => { loginForm.classList.add("hidden"); signupForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent = ""; };
-showLogin.onclick = () => { signupForm.classList.add("hidden"); loginForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent = ""; };
-forgotPassBtn.onclick = () => { loginForm.classList.add("hidden"); resetForm.classList.remove("hidden"); authError.textContent = ""; };
-cancelReset.onclick = () => { resetForm.classList.add("hidden"); loginForm.classList.remove("hidden"); authError.textContent = ""; };
+// View Switching
+showSignup.onclick = () => { loginForm.classList.add("hidden"); signupForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent=""; };
+showLogin.onclick = () => { signupForm.classList.add("hidden"); loginForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent=""; };
+forgotPassBtn.onclick = () => { loginForm.classList.add("hidden"); resetForm.classList.remove("hidden"); authError.textContent=""; };
+cancelReset.onclick = () => { resetForm.classList.add("hidden"); loginForm.classList.remove("hidden"); authError.textContent=""; };
 
-// 3. Sign Up (With Verification)
+// Sign Up
 signupForm.onsubmit = async (e) => {
   e.preventDefault();
-  authError.textContent = "Checking availability...";
+  authError.textContent = "Checking...";
   signupBtn.disabled = true;
-
   const name = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const pass = document.getElementById("signupPass").value;
 
-  if (name.length < 3) { authError.textContent = "Username must be 3+ chars."; signupBtn.disabled = false; return; }
-
   try {
     const nameCheck = await get(ref(db, `usernames/${name}`));
-    if (nameCheck.exists()) {
-      alert(`Username '${name}' is already taken!`);
-      authError.textContent = `Username '${name}' is taken.`;
-      signupBtn.disabled = false;
-      return;
-    }
-
+    if (nameCheck.exists()) throw new Error("Username taken.");
+    
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid = cred.user.uid;
-
-    // Save Profile
-    await set(ref(db, `users/${uid}`), { username: name, email: email, joined: serverTimestamp() });
-    await set(ref(db, `usernames/${name}`), uid);
-
-    // SEND VERIFICATION EMAIL
+    await set(ref(db, `users/${cred.user.uid}`), { username: name, email: email, joined: serverTimestamp() });
+    await set(ref(db, `usernames/${name}`), cred.user.uid);
     await sendEmailVerification(cred.user);
-    
-    alert(`Account created! We sent a verification link to ${email}. Please check your inbox (and spam) to activate your account.`);
-    authError.textContent = "Check your email inbox to verify account.";
-    
-    // Auto sign-out so they can't chat yet
+    alert(`Verification link sent to ${email}`);
     await signOut(auth);
-    
-    // Return to login
-    signupForm.classList.add("hidden");
-    loginForm.classList.remove("hidden");
-    signupBtn.disabled = false;
-
+    showLogin.click();
   } catch (err) {
-    console.error(err);
-    alert("Sign Up Error: " + err.message);
-    authError.textContent = "Error: " + err.message;
-    signupBtn.disabled = false;
+    alert(err.message);
+    authError.textContent = err.message;
   }
+  signupBtn.disabled = false;
 };
 
-// 4. Log In
+// Log In
 loginForm.onsubmit = async (e) => {
   e.preventDefault();
-  authError.textContent = "Logging in...";
   loginBtn.disabled = true;
-
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPass").value;
-
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    // onAuthStateChanged handles the rest (checking verification)
-    loginBtn.disabled = false;
+    await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value, document.getElementById("loginPass").value);
   } catch (err) {
-    console.error(err);
-    authError.textContent = "Invalid email or password.";
-    loginBtn.disabled = false;
+    authError.textContent = "Invalid credentials.";
   }
+  loginBtn.disabled = false;
 };
 
-// 5. Reset Password
+// Reset Password
 resetForm.onsubmit = async (e) => {
   e.preventDefault();
   resetBtn.disabled = true;
-  const email = document.getElementById("resetEmail").value;
   try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Password reset link sent to " + email);
-    resetForm.classList.add("hidden");
-    loginForm.classList.remove("hidden");
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
+    await sendPasswordResetEmail(auth, document.getElementById("resetEmail").value);
+    alert("Reset link sent!");
+    cancelReset.click();
+  } catch (err) { alert(err.message); }
   resetBtn.disabled = false;
 };
 
-// 6. Log Out
 logoutBtn.onclick = () => { if(confirm("Log out?")) signOut(auth); };
 
 /* ---------------- App Start ---------------- */
 async function startApp() {
   authScreen.classList.add("hidden");
   chatScreen.classList.remove("hidden");
-  authError.textContent = "";
   
+  // Presence
   const presenceNode = ref(db, `presence/${currentUser.uid}`);
   await set(presenceNode, { name: currentUser.username, online: true, lastSeen: serverTimestamp() });
-  
-  window.addEventListener("beforeunload", async () => {
-    await update(presenceNode, { online: false, lastSeen: serverTimestamp() });
-  });
+  window.addEventListener("beforeunload", () => update(presenceNode, { online: false, lastSeen: serverTimestamp() }));
 
-  startListeners();
+  // Load Global Chat by default
+  switchChat("messages", "CYOU Global");
   setTimeout(() => { readyForSound = true; }, 1000);
 }
 
-function resetChat() {
+/* ---------------- Chat Switching Logic ---------------- */
+async function switchChat(path, name) {
+  // 1. Clean up old listeners
+  if (currentChatPath) off(ref(db, currentChatPath));
+  off(ref(db, "typing")); // Global typing
+  
+  // 2. Clear UI
   messagesDiv.innerHTML = "";
-  onlineStatus.textContent = "Connecting...";
-  readyForSound = false;
+  currentChatPath = path;
+  currentChatName = name;
+  chatTitle.textContent = name;
+  usersModal.classList.add("hidden");
+
+  // 3. UI Toggles
+  if (path === "messages") {
+    // Global
+    backToGlobalBtn.classList.add("hidden");
+    usersBtn.classList.remove("hidden");
+    onlineStatus.classList.remove("hidden");
+  } else {
+    // Private
+    backToGlobalBtn.classList.remove("hidden");
+    usersBtn.classList.add("hidden");
+    onlineStatus.classList.add("hidden");
+  }
+
+  // 4. Start Listeners for NEW path
+  startChatListeners(path);
+}
+
+// Back Button
+backToGlobalBtn.onclick = () => switchChat("messages", "CYOU Global");
+
+/* ---------------- Users List Logic ---------------- */
+usersBtn.onclick = () => {
+  usersModal.classList.remove("hidden");
+  loadUsers();
+};
+closeUsersBtn.onclick = () => usersModal.classList.add("hidden");
+
+async function loadUsers() {
+  usersList.innerHTML = "Loading...";
+  try {
+    // Fetch all registered users
+    const usersSnap = await get(ref(db, "users"));
+    // Fetch online status
+    const presenceSnap = await get(ref(db, "presence"));
+    
+    usersList.innerHTML = "";
+    const presenceData = presenceSnap.val() || {};
+    
+    usersSnap.forEach(child => {
+      const u = child.val();
+      const uid = child.key;
+      if (uid === currentUser.uid) return; // Don't show myself
+
+      const isOnline = presenceData[uid] && presenceData[uid].online;
+      
+      const div = document.createElement("div");
+      div.className = "user-item";
+      div.innerHTML = `
+        <div class="user-avatar">${u.username[0].toUpperCase()}</div>
+        <div class="user-info">
+          <div class="user-name">${u.username}</div>
+          <div class="user-status">
+            <span class="status-dot ${isOnline ? 'online' : ''}"></span>
+            ${isOnline ? 'Online' : 'Offline'}
+          </div>
+        </div>
+      `;
+      
+      div.onclick = () => startPrivateChat(uid, u.username);
+      usersList.appendChild(div);
+    });
+  } catch (e) {
+    usersList.innerHTML = "Error loading users.";
+  }
+}
+
+function startPrivateChat(targetUid, targetName) {
+  // Generate Chat ID: Alphabetical order ensures both users get same ID
+  const chatId = currentUser.uid < targetUid 
+    ? `${currentUser.uid}_${targetUid}` 
+    : `${targetUid}_${currentUser.uid}`;
+  
+  switchChat(`private_messages/${chatId}`, targetName);
 }
 
 /* ---------------- Messaging Logic ---------------- */
@@ -223,11 +264,7 @@ inputForm.onsubmit = async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
   if(!text) return;
-  await doSend(text);
-};
-
-async function doSend(text, forwardedData = null) {
-  if (!currentUser) return;
+  
   const payload = {
     sender: currentUser.username,
     senderId: currentUser.uid,
@@ -237,61 +274,41 @@ async function doSend(text, forwardedData = null) {
     deleted: false,
     reactions: {},
     replyTo: activeReply || null,
-    forwarded: forwardedData ? { from: forwardedData.sender } : null
   };
-  try { await push(ref(db, "messages"), payload); } catch(e) { console.error(e); }
+
+  try { await push(ref(db, currentChatPath), payload); } catch(e) { console.error(e); }
   messageInput.value = "";
   cancelReply();
-  set(ref(db, `typing/${currentUser.uid}`), false);
 }
 
 /* ---------------- Realtime Listeners ---------------- */
-function startListeners() {
-  const messagesRef = ref(db, "messages");
+function startChatListeners(path) {
+  const chatRef = ref(db, path);
 
-  onChildAdded(messagesRef, (snap) => {
+  onChildAdded(chatRef, (snap) => {
     renderMessage(snap.key, snap.val());
     if (snap.val().senderId !== currentUser.uid && userIsScrolledUp) {
       newMessagesCount++;
       newMessagesButton.classList.remove("hidden");
-      newMessagesButton.innerHTML = `${newMessagesCount} New <i class="fa-solid fa-arrow-down"></i>`;
     }
     if (snap.val().senderId !== currentUser.uid && readyForSound) {
       receiveSound.play().catch(()=>{});
     }
   });
 
-  onChildChanged(messagesRef, (snap) => renderMessage(snap.key, snap.val(), true));
-  onChildRemoved(messagesRef, (snap) => document.getElementById(snap.key)?.remove());
+  onChildChanged(chatRef, (snap) => renderMessage(snap.key, snap.val(), true));
+  onChildRemoved(chatRef, (snap) => document.getElementById(snap.key)?.remove());
 
-  messageInput.oninput = () => {
-    set(ref(db, `typing/${currentUser.uid}`), currentUser.username);
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => set(ref(db, `typing/${currentUser.uid}`), false), 1500);
-  };
-
-  onValue(ref(db, "typing"), (snap) => {
-    const data = snap.val() || {};
-    const typers = Object.entries(data).filter(([uid, name]) => uid !== currentUser.uid && name).map(([_, name]) => name);
-    typingIndicator.textContent = typers.length ? `${typers[0]} is typing...` : "";
-  });
-
-  onValue(ref(db, "presence"), (snap) => {
-    const count = Object.values(snap.val() || {}).filter(u => u.online).length;
-    onlineStatus.textContent = count > 0 ? `${count} Online` : "Offline";
-  });
+  // Typing logic depends on chat
+  // Note: Simple typing only supported in global for now to keep code simple
+  if (path === "messages") {
+    onValue(ref(db, "presence"), (snap) => {
+       const count = Object.values(snap.val() || {}).filter(u => u.online).length;
+       onlineStatus.textContent = count > 0 ? `${count} Online` : "Offline";
+    });
+  }
   
-  onValue(ref(db, "pinnedMessage"), (snap) => {
-     const pinned = snap.val();
-     if(pinned && pinned.msgId) {
-        pinnedMessageBar.innerHTML = `<span><i class="fa-solid fa-thumbtack"></i> ${truncate(pinned.text, 40)}</span> <button id="unpinBtn" class="unpin-btn"><i class="fa-solid fa-xmark"></i></button>`;
-        pinnedMessageBar.classList.remove("hidden");
-        document.getElementById("unpinBtn").onclick = () => set(ref(db, "pinnedMessage"), null);
-     } else {
-        pinnedMessageBar.classList.add("hidden");
-     }
-  });
-
+  // Scroll
   messagesDiv.onscroll = () => {
     userIsScrolledUp = (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight > 100);
     if(!userIsScrolledUp) { newMessagesCount=0; newMessagesButton.classList.add("hidden"); }
@@ -300,11 +317,6 @@ function startListeners() {
 }
 
 /* ---------------- Render Helpers ---------------- */
-function linkify(text) { return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>'); }
-function truncate(s, l) { return s.length > l ? s.substring(0, l) + "..." : s; }
-function escapeHtml(s) { return s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;") : ""; }
-function shortTime(ts) { return ts ? new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ""; }
-
 function renderMessage(id, m, changed=false) {
   let el = document.getElementById(id);
   const isMine = m.senderId === currentUser.uid;
@@ -325,14 +337,9 @@ function renderMessage(id, m, changed=false) {
 
   const actionsHtml = `
     <div class="msg-actions">
-      <button class="act" data-a="reply" title="Reply"><i class="fa-solid fa-reply"></i></button>
-      <button class="act" data-a="react" title="React"><i class="fa-regular fa-face-smile"></i></button>
-      <button class="act" data-a="forward" title="Forward"><i class="fa-solid fa-share"></i></button>
-      <button class="act" data-a="pin" title="Pin"><i class="fa-solid fa-thumbtack"></i></button>
-      ${isMine ? `
-        <button class="act" data-a="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
-        <button class="act" data-a="delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      ` : ''}
+      <button class="act" data-a="reply"><i class="fa-solid fa-reply"></i></button>
+      <button class="act" data-a="react"><i class="fa-regular fa-face-smile"></i></button>
+      ${isMine ? `<button class="act" data-a="delete"><i class="fa-solid fa-trash"></i></button>` : ''}
     </div>`;
 
   let reactHtml = '';
@@ -346,43 +353,36 @@ function renderMessage(id, m, changed=false) {
     reactHtml += '</div>';
   }
 
-  const safeText = linkify(escapeHtml(m.text));
+  // Linkify & Time
+  const safeText = m.text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+  const time = m.time ? new Date(m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : "";
 
   el.innerHTML = `
     ${!isMine ? `<div class="avatar">${m.sender[0].toUpperCase()}</div>` : ''}
     <div style="display:flex;flex-direction:column;width:100%;">
       ${actionsHtml}
       <div class="reactions-picker hidden" id="pick-${id}">${AVAILABLE_REACTIONS.map(e=>`<span class="react-emoji" data-e="${e}">${e}</span>`).join('')}</div>
-      <div class="senderName">${isMine?"You":escapeHtml(m.sender)}</div>
-      ${m.replyTo ? `<div class="reply-context"><b>${escapeHtml(m.replyTo.sender)}</b>: ${truncate(m.replyTo.text, 30)}</div>`:''}
-      ${m.forwarded ? `<div style="font-size:0.75rem;opacity:0.7;font-style:italic"><i class="fa-solid fa-share"></i> Fwd from ${m.forwarded.from}</div>` : ''}
+      <div class="senderName">${isMine?"You":m.sender}</div>
+      ${m.replyTo ? `<div class="reply-context"><b>${m.replyTo.sender}</b>: ${m.replyTo.text.substring(0,20)}...</div>`:''}
       <div class="msg-text">${safeText}</div>
-      <div class="meta">
-         ${m.edited ? '<i class="fa-solid fa-pen" style="font-size:8px"></i>' : ''}
-         ${shortTime(m.time)}
-         ${isMine ? '<span class="ticks blue">✓✓</span>' : ''}
-      </div>
+      <div class="meta">${time} ${isMine ? '<span class="ticks blue">✓✓</span>' : ''}</div>
       ${reactHtml}
     </div>
   `;
 
+  // Events
   el.querySelectorAll('.act').forEach(btn => {
      btn.onclick = () => {
         const action = btn.dataset.a;
-        if(action==='reply') { activeReply={id, sender:m.sender, text:m.text}; replyContextBar.innerHTML=`Replying to <b>${m.sender}</b> <button id="noRep">x</button>`; replyContextBar.classList.remove("hidden"); document.getElementById("noRep").onclick=cancelReply; messageInput.focus(); }
+        if(action==='reply') { activeReply={id, sender:m.sender, text:m.text}; replyContextBar.innerHTML=`Reply to <b>${m.sender}</b> <button id="noRep">x</button>`; replyContextBar.classList.remove("hidden"); document.getElementById("noRep").onclick=cancelReply; messageInput.focus(); }
         if(action==='react') document.getElementById(`pick-${id}`).classList.toggle("hidden");
-        if(action==='forward') { if(confirm("Forward?")) doSend(m.text, {sender:m.sender}); }
-        if(action==='pin') set(ref(db, "pinnedMessage"), {msgId:id, text:m.text});
-        if(action==='edit') { const t=prompt("Edit:", m.text); if(t) update(ref(db, `messages/${id}`), {text:t, edited:true}); }
-        if(action==='delete') { if(confirm("Delete?")) update(ref(db, `messages/${id}`), {deleted:true}); }
+        if(action==='delete') { if(confirm("Delete?")) update(ref(db, `${currentChatPath}/${id}`), {deleted:true}); }
      };
   });
-  
   el.querySelectorAll('.react-emoji').forEach(btn => {
      btn.onclick = () => {
         const e = btn.dataset.e;
-        const p = `messages/${id}/reactions/${currentUser.uid}`;
-        set(ref(db, p), m.reactions?.[currentUser.uid]===e ? null : e);
+        set(ref(db, `${currentChatPath}/${id}/reactions/${currentUser.uid}`), m.reactions?.[currentUser.uid]===e ? null : e);
         document.getElementById(`pick-${id}`).classList.add("hidden");
      }
   });
