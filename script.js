@@ -3,7 +3,7 @@ import {
   getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, onValue, update, set, serverTimestamp, get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { 
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut 
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, sendPasswordResetEmail 
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 /* ---------------- Config ---------------- */
@@ -27,11 +27,17 @@ const auth = getAuth(app);
 const authScreen = document.getElementById("auth-screen");
 const loginForm = document.getElementById("loginForm");
 const signupForm = document.getElementById("signupForm");
+const resetForm = document.getElementById("resetForm");
+
 const authError = document.getElementById("authError");
 const showSignup = document.getElementById("showSignup");
 const showLogin = document.getElementById("showLogin");
+const forgotPassBtn = document.getElementById("forgotPassBtn");
+const cancelReset = document.getElementById("cancelReset");
+
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
+const resetBtn = document.getElementById("resetBtn");
 
 // Chat
 const chatScreen = document.getElementById("chat-screen");
@@ -48,7 +54,7 @@ const replyContextBar = document.getElementById("reply-context-bar");
 const pinnedMessageBar = document.getElementById("pinned-message-bar");
 
 /* ---------------- State ---------------- */
-let currentUser = null; // { uid, email, username }
+let currentUser = null; 
 let readyForSound = false;
 let typingTimeout = null;
 let activeReply = null; 
@@ -58,18 +64,27 @@ const AVAILABLE_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
 /* ---------------- Auth Logic ---------------- */
 
-// 1. Monitor Auth State (Auto Login)
+// 1. Monitor Auth State
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // User is signed in, fetch profile
+    // SECURITY CHECK: Is email verified?
+    if (!user.emailVerified) {
+      authError.innerHTML = `Please verify your email to continue.<br><button id="resendBtn" style="margin-top:5px;padding:4px 8px;">Resend Link</button>`;
+      document.getElementById("resendBtn").onclick = () => {
+         sendEmailVerification(user).then(() => alert("Verification link resent!"));
+      };
+      // We do NOT let them in.
+      return; 
+    }
+
+    // User is verified, load profile
     try {
       const snapshot = await get(ref(db, `users/${user.uid}`));
       if (snapshot.exists()) {
         currentUser = { uid: user.uid, email: user.email, username: snapshot.val().username };
         startApp();
       } else {
-        // Fallback: If Auth exists but DB doesn't (rare error), let them recreate
-        authError.textContent = "Profile not found. Please Sign Up again.";
+        authError.textContent = "Profile error. Please contact admin.";
         signOut(auth);
       }
     } catch (e) {
@@ -77,7 +92,7 @@ onAuthStateChanged(auth, async (user) => {
       authError.textContent = "Connection failed.";
     }
   } else {
-    // User is logged out
+    // Logged out
     currentUser = null;
     chatScreen.classList.add("hidden");
     authScreen.classList.remove("hidden");
@@ -86,10 +101,12 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // 2. Switch Views
-showSignup.onclick = () => { loginForm.classList.add("hidden"); signupForm.classList.remove("hidden"); authError.textContent = ""; };
-showLogin.onclick = () => { signupForm.classList.add("hidden"); loginForm.classList.remove("hidden"); authError.textContent = ""; };
+showSignup.onclick = () => { loginForm.classList.add("hidden"); signupForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent = ""; };
+showLogin.onclick = () => { signupForm.classList.add("hidden"); loginForm.classList.remove("hidden"); resetForm.classList.add("hidden"); authError.textContent = ""; };
+forgotPassBtn.onclick = () => { loginForm.classList.add("hidden"); resetForm.classList.remove("hidden"); authError.textContent = ""; };
+cancelReset.onclick = () => { resetForm.classList.add("hidden"); loginForm.classList.remove("hidden"); authError.textContent = ""; };
 
-// 3. Sign Up (Claim Username)
+// 3. Sign Up (With Verification)
 signupForm.onsubmit = async (e) => {
   e.preventDefault();
   authError.textContent = "Checking availability...";
@@ -99,14 +116,9 @@ signupForm.onsubmit = async (e) => {
   const email = document.getElementById("signupEmail").value.trim();
   const pass = document.getElementById("signupPass").value;
 
-  if (name.length < 3) { 
-    authError.textContent = "Username must be 3+ chars."; 
-    signupBtn.disabled = false; 
-    return; 
-  }
+  if (name.length < 3) { authError.textContent = "Username must be 3+ chars."; signupBtn.disabled = false; return; }
 
   try {
-    // Unique Check: Look in 'usernames' node
     const nameCheck = await get(ref(db, `usernames/${name}`));
     if (nameCheck.exists()) {
       alert(`Username '${name}' is already taken!`);
@@ -115,18 +127,30 @@ signupForm.onsubmit = async (e) => {
       return;
     }
 
-    // Create Auth
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = cred.user.uid;
 
-    // Save Profile & Claim Username
+    // Save Profile
     await set(ref(db, `users/${uid}`), { username: name, email: email, joined: serverTimestamp() });
     await set(ref(db, `usernames/${name}`), uid);
 
-    // Success - onAuthStateChanged will trigger startApp automatically
+    // SEND VERIFICATION EMAIL
+    await sendEmailVerification(cred.user);
+    
+    alert(`Account created! We sent a verification link to ${email}. Please check your inbox (and spam) to activate your account.`);
+    authError.textContent = "Check your email inbox to verify account.";
+    
+    // Auto sign-out so they can't chat yet
+    await signOut(auth);
+    
+    // Return to login
+    signupForm.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+    signupBtn.disabled = false;
+
   } catch (err) {
     console.error(err);
-    alert("Sign Up Error: " + err.message); // POPUP ERROR
+    alert("Sign Up Error: " + err.message);
     authError.textContent = "Error: " + err.message;
     signupBtn.disabled = false;
   }
@@ -143,18 +167,33 @@ loginForm.onsubmit = async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged handles the rest (checking verification)
+    loginBtn.disabled = false;
   } catch (err) {
     console.error(err);
-    alert("Login Error: " + err.message); // POPUP ERROR
     authError.textContent = "Invalid email or password.";
     loginBtn.disabled = false;
   }
 };
 
-// 5. Log Out
-logoutBtn.onclick = () => {
-  if(confirm("Log out?")) signOut(auth);
+// 5. Reset Password
+resetForm.onsubmit = async (e) => {
+  e.preventDefault();
+  resetBtn.disabled = true;
+  const email = document.getElementById("resetEmail").value;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset link sent to " + email);
+    resetForm.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+  resetBtn.disabled = false;
 };
+
+// 6. Log Out
+logoutBtn.onclick = () => { if(confirm("Log out?")) signOut(auth); };
 
 /* ---------------- App Start ---------------- */
 async function startApp() {
@@ -162,11 +201,9 @@ async function startApp() {
   chatScreen.classList.remove("hidden");
   authError.textContent = "";
   
-  // Set Online Presence
   const presenceNode = ref(db, `presence/${currentUser.uid}`);
   await set(presenceNode, { name: currentUser.username, online: true, lastSeen: serverTimestamp() });
   
-  // Clean up on disconnect
   window.addEventListener("beforeunload", async () => {
     await update(presenceNode, { online: false, lastSeen: serverTimestamp() });
   });
@@ -191,7 +228,6 @@ inputForm.onsubmit = async (e) => {
 
 async function doSend(text, forwardedData = null) {
   if (!currentUser) return;
-
   const payload = {
     sender: currentUser.username,
     senderId: currentUser.uid,
@@ -203,9 +239,7 @@ async function doSend(text, forwardedData = null) {
     replyTo: activeReply || null,
     forwarded: forwardedData ? { from: forwardedData.sender } : null
   };
-
   try { await push(ref(db, "messages"), payload); } catch(e) { console.error(e); }
-  
   messageInput.value = "";
   cancelReply();
   set(ref(db, `typing/${currentUser.uid}`), false);
@@ -230,7 +264,6 @@ function startListeners() {
   onChildChanged(messagesRef, (snap) => renderMessage(snap.key, snap.val(), true));
   onChildRemoved(messagesRef, (snap) => document.getElementById(snap.key)?.remove());
 
-  // Typing
   messageInput.oninput = () => {
     set(ref(db, `typing/${currentUser.uid}`), currentUser.username);
     clearTimeout(typingTimeout);
@@ -243,13 +276,11 @@ function startListeners() {
     typingIndicator.textContent = typers.length ? `${typers[0]} is typing...` : "";
   });
 
-  // Presence Count
   onValue(ref(db, "presence"), (snap) => {
     const count = Object.values(snap.val() || {}).filter(u => u.online).length;
     onlineStatus.textContent = count > 0 ? `${count} Online` : "Offline";
   });
   
-  // Pinned Msg
   onValue(ref(db, "pinnedMessage"), (snap) => {
      const pinned = snap.val();
      if(pinned && pinned.msgId) {
@@ -261,7 +292,6 @@ function startListeners() {
      }
   });
 
-  // Scroll
   messagesDiv.onscroll = () => {
     userIsScrolledUp = (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight > 100);
     if(!userIsScrolledUp) { newMessagesCount=0; newMessagesButton.classList.add("hidden"); }
@@ -270,9 +300,7 @@ function startListeners() {
 }
 
 /* ---------------- Render Helpers ---------------- */
-function linkify(text) {
-  return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-}
+function linkify(text) { return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>'); }
 function truncate(s, l) { return s.length > l ? s.substring(0, l) + "..." : s; }
 function escapeHtml(s) { return s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;") : ""; }
 function shortTime(ts) { return ts ? new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ""; }
@@ -295,7 +323,6 @@ function renderMessage(id, m, changed=false) {
     return;
   }
 
-  // Icons Menu
   const actionsHtml = `
     <div class="msg-actions">
       <button class="act" data-a="reply" title="Reply"><i class="fa-solid fa-reply"></i></button>
@@ -308,7 +335,6 @@ function renderMessage(id, m, changed=false) {
       ` : ''}
     </div>`;
 
-  // Reactions
   let reactHtml = '';
   if(m.reactions) {
     const counts = {};
@@ -340,7 +366,6 @@ function renderMessage(id, m, changed=false) {
     </div>
   `;
 
-  // Attach Events
   el.querySelectorAll('.act').forEach(btn => {
      btn.onclick = () => {
         const action = btn.dataset.a;
@@ -367,7 +392,6 @@ function renderMessage(id, m, changed=false) {
 
 function cancelReply() { activeReply=null; replyContextBar.classList.add("hidden"); }
 
-// Theme
 themeToggle.onclick = () => {
    const dark = document.body.getAttribute("data-theme")==="dark";
    document.body.setAttribute("data-theme", dark ? "" : "dark");
