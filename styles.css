@@ -113,3 +113,4 @@ html, body { height: 100%; margin: 0; font-family: 'Inter', system-ui, sans-seri
 .typing-indicator { font-size: 0.8rem; color: var(--muted); font-style: italic; padding: 4px 14px; height: 24px; }
 .reply-context-bar { background: var(--input-bg); padding: 8px 14px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text); }
 .reply-context-bar .cancel-reply-btn { background: none; border: none; color: var(--muted); cursor: pointer; }
+
