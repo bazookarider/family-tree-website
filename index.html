@@ -48,11 +48,15 @@
 
     <section id="chat-screen" class="chat-screen hidden">
       <header id="topBar" class="top-bar">
+        <button id="backToGlobalBtn" class="icon-btn hidden" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
+        
         <div class="header-left">
-          <h1>CYOU</h1>
+          <h1 id="chatTitle">CYOU Global</h1>
           <div id="onlineStatus" class="online-status">Connecting...</div>
         </div>
+        
         <div class="header-right">
+           <button id="usersBtn" class="icon-btn" title="Contacts"><i class="fa-solid fa-users"></i></button>
            <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
            <button id="logoutBtn" class="icon-btn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
@@ -76,6 +80,18 @@
           <button id="sendBtn" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
         </form>
       </main>
+
+      <div id="usersModal" class="users-modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Start Chat</h3>
+            <button id="closeUsersBtn"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div id="usersList" class="users-list">
+            </div>
+        </div>
+      </div>
+
     </section>
 
   </div>
