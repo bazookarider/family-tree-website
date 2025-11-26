@@ -13,7 +13,7 @@
 </head>
 <body>
 
-    <div id="system-status" style="display:none; background:#333; color:white; text-align:center; padding:5px; font-size:0.7rem;">Initializing...</div>
+    <div id="system-status" style="background:red; color:white; text-align:center; padding:5px; font-weight:bold;">Loading Scripts...</div>
 
     <div id="auth-screen">
         <div class="login-container">
@@ -21,194 +21,148 @@
             <p class="subtitle">The Truth Network</p>
             
             <div id="loginForm">
-                <div class="input-group">
-                    <input type="email" id="loginEmail" placeholder="Email">
-                    <input type="password" id="loginPass" placeholder="Password">
-                </div>
-                <button id="loginBtn" type="button" class="primary-btn">Log In</button>
-                <div style="display:flex; justify-content:space-between; margin-top:10px;">
-                    <button id="showSignup" type="button" class="anon-btn">Create Account</button>
-                    <button id="showForgot" type="button" class="anon-btn" style="color:#555;">Forgot Password?</button>
-                </div>
+                <input type="email" id="loginEmail" class="simple-input" placeholder="Email">
+                <input type="password" id="loginPass" class="simple-input" placeholder="Password">
+                <button id="loginBtn" class="primary-btn">Log In</button>
+                <button id="showSignup" class="anon-btn">Create Account</button>
+                <button id="showForgot" class="anon-btn" style="color:#666; font-size:0.8rem;">Forgot Password?</button>
             </div>
 
             <div id="signupForm" class="hidden">
-                <input type="text" id="signupName" placeholder="Username (Unique)">
-                <input type="email" id="signupEmail" placeholder="Email">
-                <input type="password" id="signupPass" placeholder="Password (6+ chars)">
-                <button id="signupBtn" type="button" class="primary-btn">Sign Up</button>
-                <button id="showLogin" type="button" class="anon-btn">Back to Login</button>
+                <input type="text" id="signupName" class="simple-input" placeholder="Username">
+                <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
+                <input type="password" id="signupPass" class="simple-input" placeholder="Password (6+ chars)">
+                <button id="signupBtn" class="primary-btn">Sign Up</button>
+                <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
-
+            
             <div id="forgotForm" class="hidden">
                 <h3>Reset Password</h3>
-                <input type="email" id="forgotEmail" class="simple-input" placeholder="Your Email">
-                <div class="action-row-spread">
-                    <button id="cancelForgot" type="button" class="outline-btn flex-btn">Cancel</button>
-                    <button id="resetPassBtn" type="button" class="primary-btn flex-btn">Send Link</button>
-                </div>
+                <input type="email" id="forgotEmail" class="simple-input" placeholder="Email">
+                <button id="resetPassBtn" class="primary-btn">Send Link</button>
+                <button id="cancelForgot" class="anon-btn">Cancel</button>
             </div>
-            <div id="authError" class="error-msg"></div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden">
-        <div id="verifyBanner" class="hidden" style="background:#ff9800; color:white; padding:10px; text-align:center; font-size:0.8rem;">
-            Verify email to chat. <button id="resendVerify" style="border:none;background:white;color:#ff9800;border-radius:4px;margin-left:5px;">Resend</button>
-        </div>
-
+        <div id="verifyBanner" class="hidden" style="background:orange; padding:5px; text-align:center;">Verify Email to Chat!</div>
+        
         <div id="tab-home" class="tab-content">
-            <header class="top-bar">
-                <h2>Cyou Home</h2>
-                <button id="refreshFeedBtn" class="icon-header-btn"><i class="fa-solid fa-rotate-right"></i></button>
-            </header>
-            <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's happening?"></textarea>
-                <div class="post-actions-bar">
-                    <button id="postBtn" class="primary-btn small-btn">Post</button>
-                </div>
+            <div class="top-bar"><h2>Cyou Home</h2> <i class="fa-solid fa-rotate" id="refreshFeedBtn"></i></div>
+            <div style="padding:15px; background:white;">
+                <textarea id="newPostText" class="simple-input" style="height:60px;" placeholder="What's happening?"></textarea>
+                <button id="postBtn" class="primary-btn" style="width:auto; float:right;">Post</button>
+                <div style="clear:both;"></div>
             </div>
-            <div id="feedList" class="scroll-content bg-gray"></div>
+            <div id="feedList" class="scroll-content"></div>
         </div>
 
         <div id="tab-discover" class="tab-content hidden">
-            <header class="top-bar search-header">
-                <div class="search-bar-container">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="userSearchInput" placeholder="Search Users">
-                </div>
-            </header>
-            <div class="scroll-content bg-gray">
-                <div class="section-header">Suggested Users</div>
-                <div id="usersList" class="clean-list"></div>
-            </div>
+            <div class="top-bar"><input type="text" id="userSearchInput" class="simple-input" style="margin:0;" placeholder="Search Users..."></div>
+            <div id="usersList" class="scroll-content"></div>
         </div>
 
         <div id="tab-chats" class="tab-content hidden">
-            <header class="top-bar">
-                <h2>Chats</h2>
-            </header>
-            <div id="activeChatsList" class="scroll-content clean-list"></div>
+            <div class="top-bar"><h2>Chats</h2></div>
+            <div id="activeChatsList" class="scroll-content"></div>
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
-            <header class="top-bar">
-                <h2>My Profile</h2>
-            </header>
-            <div class="scroll-content profile-wrapper bg-gray">
-                <div class="profile-header-card">
-                    <img id="myAvatar" src="" class="avatar-xl">
-                    <h2 id="myName" class="profile-name-large">Loading...</h2>
-                    <div id="myCategoryDisplay" class="category-pill">Member</div>
-                    <div id="myBio" class="bio-text">...</div>
-                    <div class="stats-row">
-                        <div class="stat-box" id="myFollowersBox"><b id="myFollowersCount">0</b><span>Followers</span></div>
-                        <div class="stat-box" id="myFollowingBox"><b id="myFollowingCount">0</b><span>Following</span></div>
-                    </div>
-                    <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
+            <div class="top-bar"><h2>Profile</h2></div>
+            <div class="scroll-content" style="background:white; text-align:center; padding:20px;">
+                <img id="myAvatar" class="avatar-large" style="width:80px; height:80px; margin:auto;">
+                <h2 id="myName">...</h2>
+                <p id="myBio" style="color:#666;">...</p>
+                <div style="display:flex; justify-content:center; gap:30px; margin:20px 0;">
+                    <div id="myFollowersBox"><b><span id="myFollowersCount">0</span></b><br>Followers</div>
+                    <div id="myFollowingBox"><b><span id="myFollowingCount">0</span></b><br>Following</div>
                 </div>
-                <div class="section-header">My Posts</div>
-                <div id="myPostsList" class="clean-list"></div>
+                <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
+                <div id="myPostsList" style="margin-top:20px; text-align:left;"></div>
                 <button id="logoutBtn" class="logout-text-btn">Log Out</button>
             </div>
         </div>
 
-        <nav class="bottom-nav">
+        <div class="bottom-nav">
             <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
             <button class="nav-btn" onclick="switchTab('discover')"><i class="fa-solid fa-magnifying-glass"></i></button>
-            <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-regular fa-comment-dots"></i></button>
-            <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-regular fa-user"></i></button>
-        </nav>
+            <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-solid fa-comment-dots"></i></button>
+            <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-solid fa-user"></i></button>
+        </div>
     </div>
 
-    <div id="userProfileModal" class="modal hidden bottom-sheet">
+    <div id="userProfileModal" class="modal hidden">
         <div class="modal-content bottom-sheet-content">
-            <header class="modal-header">
-                 <button class="close-btn-icon" id="closeProfileModal"><i class="fa-solid fa-xmark"></i></button>
-            </header>
-            <div class="profile-header-card no-border">
-                <img id="viewAvatar" src="" class="avatar-xl">
-                <h2 id="viewName" class="profile-name-large">Name</h2>
-                <div id="viewCategory" class="category-pill">Member</div>
-                <div id="viewBio" class="bio-text"></div>
-                <div class="stats-row">
-                    <div class="stat-box"><b id="viewFollowers">0</b><span>Followers</span></div>
-                    <div class="stat-box"><b id="viewFollowing">0</b><span>Following</span></div>
+            <div style="padding:20px; text-align:center;">
+                <button id="closeProfileModal" style="float:right; border:none; background:none; font-size:1.5rem;">&times;</button>
+                <img id="viewAvatar" class="avatar-large" style="width:80px; height:80px; margin:auto;">
+                <h2 id="viewName">User</h2>
+                <p id="viewBio">...</p>
+                <div style="display:flex; justify-content:center; gap:20px; margin:20px 0;">
+                    <button id="followBtn" class="primary-btn">Follow</button>
+                    <button id="messageBtn" class="outline-btn" disabled>Locked 🔒</button>
                 </div>
-                <div class="action-row-spread">
-                    <button id="followBtn" class="primary-btn flex-btn">Follow</button>
-                    <button id="messageBtn" class="outline-btn flex-btn" disabled>Locked 🔒</button>
+                <div style="display:flex; justify-content:space-around; margin-top:15px;">
+                    <div><b id="viewFollowers">0</b> Followers</div>
+                    <div><b id="viewFollowing">0</b> Following</div>
                 </div>
-                <p id="mutualWarning" class="mutual-warn">Follow each other to chat.</p>
             </div>
         </div>
     </div>
 
-    <div id="editProfileModal" class="modal hidden">
-        <div class="modal-content center-modal">
+    <div id="editProfileModal" class="modal center-modal hidden">
+        <div class="modal-content">
             <h3>Edit Profile</h3>
-            <div class="edit-field">
-                <label>Avatar Style</label>
-                <select id="editAvatarStyle" class="simple-input">
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="identicon">Abstract</option>
-                </select>
-            </div>
-            <div class="edit-field">
-                <label>Username</label>
-                <input type="text" id="editUsername" class="simple-input">
-            </div>
-            <div class="edit-field">
-                <label>Category</label>
-                <input type="text" id="editCategory" class="simple-input">
-            </div>
-            <div class="edit-field">
-                <label>Bio</label>
-                <textarea id="editBio" maxlength="160"></textarea>
-            </div>
-            <div class="action-row-spread">
-                 <button id="cancelEditBtn" class="outline-btn flex-btn">Cancel</button>
-                 <button id="saveProfileBtn" class="primary-btn flex-btn">Save</button>
-            </div>
+            <input type="text" id="editUsername" class="simple-input" placeholder="Username">
+            <input type="text" id="editCategory" class="simple-input" placeholder="Category (e.g. Creator)">
+            <input type="text" id="editBio" class="simple-input" placeholder="Bio">
+            <select id="editAvatarStyle" class="simple-input">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="identicon">Abstract</option>
+            </select>
+            <button id="saveProfileBtn" class="primary-btn">Save</button>
+            <button id="cancelEditBtn" class="anon-btn">Cancel</button>
         </div>
     </div>
 
     <div id="followListModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <header class="modal-header">
-                <h3 id="followListTitle">Users</h3>
-                <button class="close-btn-icon" id="closeFollowList"><i class="fa-solid fa-xmark"></i></button>
+            <header class="modal-header" style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                <h3 id="followListTitle" style="margin:0;">Users</h3>
+                <button id="closeFollowList" style="border:none; background:none; font-size:1.2rem;">&times;</button>
             </header>
-            <div id="followListContent" class="scroll-content clean-list" style="max-height:60vh;"></div>
+            <div id="followListContent" class="scroll-content" style="max-height:60vh;"></div>
         </div>
     </div>
 
     <div id="commentModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <header class="modal-header">
-                <h3>Comments</h3>
-                <button class="close-btn-icon" id="closeCommentModal"><i class="fa-solid fa-xmark"></i></button>
+            <header class="modal-header" style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                <h3 style="margin:0;">Comments</h3>
+                <button id="closeCommentModal" style="border:none; background:none; font-size:1.2rem;">&times;</button>
             </header>
             <div id="commentsList" class="scroll-content" style="max-height: 300px; padding:15px;"></div>
             <div class="chat-input-bar">
-                <input type="text" id="commentInput" placeholder="Add a comment...">
-                <button id="sendCommentBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                <input type="text" id="commentInput" placeholder="Add a comment..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:20px;">
+                <button id="sendCommentBtn" class="primary-btn" style="width:auto; padding:5px 15px;">Send</button>
             </div>
         </div>
     </div>
 
-    <div id="chat-room" class="screen hidden">
-        <header class="top-bar chat-room-header">
-            <button id="backToAppBtn" class="icon-header-btn"><i class="fa-solid fa-arrow-left"></i></button>
-            <span id="chatTitle" style="flex:1; text-align:center; font-weight:700;">Chat</span>
-            <div style="width:32px;"></div>
-        </header>
-        <div id="messages" class="messages-area"></div>
-        <form id="inputForm" class="chat-input-bar">
-            <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
-            <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
-        </form>
+    <div id="chat-room" class="hidden" style="background:#e5ddd5; z-index:3000; position:fixed; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column;">
+        <div class="chat-header" style="background:#006677; color:white; padding:15px; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-arrow-left" id="backToAppBtn" style="font-size:1.2rem;"></i>
+            <span id="chatTitle" style="font-weight:bold; font-size:1.2rem;">Chat</span>
+        </div>
+        <div id="messages" class="messages-area" style="flex:1; overflow-y:auto; padding:15px;"></div>
+        <div class="chat-input-bar" style="background:white; padding:10px; display:flex; gap:10px;">
+            <form id="inputForm" style="display:flex; width:100%; gap:10px;">
+                <input type="text" id="messageInput" class="simple-input" style="margin:0; border-radius:20px; flex:1;" placeholder="Message...">
+                <button type="submit" id="sendMessageBtn" class="primary-btn" style="width:50px; border-radius:50%;"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
     </div>
 
     <script src="script.js"></script>
