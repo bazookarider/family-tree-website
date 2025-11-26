@@ -100,3 +100,4 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .message { max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 1rem; line-height: 1.4; word-wrap: break-word; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1);}
 .message.you { align-self: flex-end; background: #dcf8c6; color: black; border-top-right-radius: 0; }
 .message.them { align-self: flex-start; background: white; color: black; border-top-left-radius: 0; }
+
