@@ -1,314 +1,98 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
-    authDomain: "cyou-db8f0.firebaseapp.com",
-    projectId: "cyou-db8f0",
-    storageBucket: "cyou-db8f0.firebasestorage.app",
-    messagingSenderId: "873569975141",
-    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
-    measurementId: "G-T66B50HFJ8",
-    databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com/"
-};
-
-let db, auth, currentUser = null;
-let currentChatId = null;
-let replyToMsg = null;
-
-window.onload = function() {
-    try {
-        if(typeof firebase === 'undefined') throw new Error("Blocked");
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        auth = firebase.auth();
-        initApp();
-    } catch(e) { alert("Error: " + e.message); }
-};
-
-function initApp() {
-    // PRESENCE SYSTEM
-    const connectedRef = db.ref(".info/connected");
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            const snap = await db.ref(`users/${user.uid}`).get();
-            currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
-            
-            // ONLINE STATUS
-            connectedRef.on("value", (snap) => {
-                if (snap.val() === true) {
-                    const con = db.ref(`users/${user.uid}/presence`);
-                    con.onDisconnect().set({state: 'offline', lastChanged: firebase.database.ServerValue.TIMESTAMP});
-                    con.set({state: 'online', lastChanged: firebase.database.ServerValue.TIMESTAMP});
-                }
-            });
-
-            document.getElementById("auth-screen").classList.add("hidden");
-            document.getElementById("app-screen").classList.remove("hidden");
-            switchTab('home');
-        } else {
-            document.getElementById("app-screen").classList.add("hidden");
-            document.getElementById("auth-screen").classList.remove("hidden");
-        }
-    });
-
-    // BUTTONS
-    document.getElementById("loginBtn").onclick = async () => {
-        try { await auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value); }
-        catch(e) { alert(e.message); }
-    };
-    document.getElementById("signupBtn").onclick = async () => {
-        const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
-        const email = document.getElementById("signupEmail").value;
-        const pass = document.getElementById("signupPass").value;
-        const gender = document.getElementById("signupGender").value;
-        try {
-            const check = await db.ref(`usernames/${name}`).get();
-            if(check.exists()) throw new Error("Username taken");
-            const cred = await auth.createUserWithEmailAndPassword(email, pass);
-            await db.ref(`users/${cred.user.uid}`).set({ username: name, email, gender, category: "Member", joined: Date.now() });
-            await db.ref(`usernames/${name}`).set(cred.user.uid);
-        } catch(e) { alert(e.message); }
-    };
-    document.getElementById("logoutBtn").onclick = () => {
-        db.ref(`users/${currentUser.uid}/presence`).set({state: 'offline', lastChanged: firebase.database.ServerValue.TIMESTAMP});
-        auth.signOut();
-    }
-
-    // POSTING (With Hashtags & Delete)
-    document.getElementById("postBtn").onclick = async () => {
-        const txt = document.getElementById("newPostText").value.trim();
-        if(txt) {
-            await db.ref('posts').push({ uid: currentUser.uid, username: currentUser.username, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
-            document.getElementById("newPostText").value = "";
-            loadFeed();
-        }
-    };
-    document.getElementById("refreshFeedBtn").onclick = loadFeed;
-
-    // PROFILE EDIT
-    document.getElementById("openEditProfileBtn").onclick = () => {
-        document.getElementById("editProfileModal").classList.remove("hidden");
-        document.getElementById("editUsername").value = currentUser.username;
-        document.getElementById("editCategory").value = currentUser.category || "";
-        document.getElementById("editBio").value = currentUser.bio || "";
-        document.getElementById("editGender").value = currentUser.gender || "male";
-    };
-    document.getElementById("saveProfileBtn").onclick = async () => {
-        const name = document.getElementById("editUsername").value.trim();
-        const updates = {
-            bio: document.getElementById("editBio").value,
-            category: document.getElementById("editCategory").value,
-            gender: document.getElementById("editGender").value,
-            username: name
-        };
-        if(name !== currentUser.username) {
-             const check = await db.ref(`usernames/${name}`).get();
-             if(check.exists()) return alert("Username taken");
-             await db.ref(`usernames/${name}`).set(currentUser.uid);
-             await db.ref(`usernames/${currentUser.username}`).remove();
-        }
-        await db.ref(`users/${currentUser.uid}`).update(updates);
-        document.getElementById("editProfileModal").classList.add("hidden");
-        loadProfile();
-    };
-    document.getElementById("cancelEditBtn").onclick = () => document.getElementById("editProfileModal").classList.add("hidden");
-
-    // CHAT INPUT & REPLY
-    document.getElementById("inputForm").onsubmit = (e) => {
-        e.preventDefault();
-        const txt = document.getElementById("messageInput").value.trim();
-        if(txt && currentChatId) {
-            const payload = {
-                senderId: currentUser.uid, 
-                text: txt, 
-                time: firebase.database.ServerValue.TIMESTAMP,
-                status: 'sent'
-            };
-            if(replyToMsg) { payload.replyTo = replyToMsg; cancelReply(); }
-            db.ref(`private_chats/${currentChatId}`).push(payload);
-            document.getElementById("messageInput").value = "";
-        }
-    };
-    document.getElementById("cancelReplyBtn").onclick = cancelReply;
-    document.getElementById("backToAppBtn").onclick = () => { 
-        document.getElementById("chat-room").classList.add("hidden"); 
-        currentChatId = null; 
-    };
-    
-    // NAV
-    window.switchTab = (t) => {
-        document.querySelectorAll('.tab-content').forEach(e=>e.classList.add('hidden'));
-        document.getElementById(`tab-${t}`).classList.remove('hidden');
-        if(t=='home') loadFeed();
-        if(t=='discover') loadAllUsers();
-        if(t=='chats') loadChats();
-        if(t=='profile') loadProfile();
-    };
+:root {
+    --primary: #006677;
+    --primary-dark: #004c59;
+    --bg-app: #ffffff;
+    --bg-gray: #f7f9fa;
+    --text-dark: #0f1419;
+    --text-gray: #536471;
+    --border: #eff3f4;
+    --blue-tick: #34b7f1;
 }
 
-// HELPERS
-function getAvatar(u, gender) {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&gender=${gender||'male'}`;
-}
-function formatTime(ts) {
-    if(!ts) return "";
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-}
-function parseText(txt) {
-    // Convert hashtags to clickable spans (logic for clicking handled by bubbling or simple alerts for now)
-    return txt.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>');
-}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-app); color: var(--text-dark); height: 100vh; overflow: hidden; }
+.hidden { display: none !important; }
+.bg-gray { background-color: var(--bg-gray); }
+.verified-badge { color: var(--blue-tick); margin-left: 4px; }
+.category-pill { background: #e0f7fa; color: var(--primary); font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; display: inline-block; font-weight: bold;}
 
-// CHAT LOGIC
-function startChat(uid, name) {
-    document.getElementById("userProfileModal").classList.add("hidden");
-    document.getElementById("chat-room").classList.remove("hidden");
-    document.getElementById("chatTitle").innerText = name;
-    
-    // PRESENCE LISTENER
-    db.ref(`users/${uid}/presence`).on('value', snap => {
-        const p = snap.val();
-        const statusDiv = document.getElementById("chatStatus");
-        if(p && p.state === 'online') statusDiv.innerText = "Online";
-        else if(p && p.lastChanged) statusDiv.innerText = "Last seen " + new Date(p.lastChanged).toLocaleTimeString();
-        else statusDiv.innerText = "Offline";
-    });
+/* --- BUTTONS & INPUTS --- */
+.primary-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 25px; width: 100%; font-weight: bold; font-size: 1rem; cursor: pointer; }
+.outline-btn { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 8px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+.outline-btn:disabled { border-color: #ccc; color: #ccc; }
+.anon-btn { background: none; border: none; color: var(--primary); font-weight: bold; margin-top: 10px; cursor: pointer; }
+.simple-input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 10px; font-size: 1rem; outline:none; }
+.simple-input:focus { border-color: var(--primary); }
+.icon-btn { background: none; border: none; color: white; font-size: 1.2rem; padding: 10px; }
+.small-btn { width: auto; padding: 8px 20px; font-size: 0.9rem; }
 
-    currentChatId = [currentUser.uid, uid].sort().join("_");
-    
-    // LOAD MESSAGES
-    db.ref(`private_chats/${currentChatId}`).on('value', snap => {
-        const div = document.getElementById("messages"); div.innerHTML="";
-        if(snap.exists()) {
-            snap.forEach(c => {
-                const m = c.val();
-                const isMine = m.senderId === currentUser.uid;
-                const msgDiv = document.createElement("div");
-                msgDiv.className = "message " + (isMine ? "you" : "them");
-                
-                // READ RECEIPT LOGIC
-                let ticks = "";
-                if(isMine) {
-                    if(m.status === 'read') ticks = '<i class="fa-solid fa-check-double ticks read"></i>';
-                    else if(m.status === 'delivered') ticks = '<i class="fa-solid fa-check-double ticks"></i>';
-                    else ticks = '<i class="fa-solid fa-check ticks"></i>';
-                } else {
-                    // If I am viewing it, mark as read
-                    if(m.status !== 'read') db.ref(`private_chats/${currentChatId}/${c.key}`).update({status: 'read'});
-                }
+/* --- LAYOUT --- */
+#auth-screen, #app-screen { height: 100%; display: flex; flex-direction: column; }
+.login-container { width: 90%; max-width: 400px; text-align: center; margin: auto; }
+.brand-title { color: var(--primary); font-size: 2.5rem; margin: 0; }
+.auth-links { display: flex; justify-content: space-between; }
 
-                if(m.deleted) {
-                    msgDiv.innerHTML = `<div class="msg-deleted"><i class="fa-solid fa-ban"></i> This message was deleted</div>`;
-                } else {
-                    const replyHtml = m.replyTo ? `<div class="reply-quote"><b>${m.replyTo.sender}</b>: ${m.replyTo.text}</div>` : '';
-                    msgDiv.innerHTML = `${replyHtml} ${parseText(m.text)} 
-                        <div class="msg-meta">${formatTime(m.time)} ${ticks}</div>`;
-                    
-                    // EVENTS (Delete/Reply)
-                    msgDiv.onclick = () => {
-                        if(confirm("Options: OK to Reply, Cancel to Delete (if yours)")) {
-                            replyToMsg = { id: c.key, text: m.text, sender: isMine ? "You" : name };
-                            document.getElementById("replyContext").classList.remove("hidden");
-                            document.getElementById("replyingToName").innerText = replyToMsg.sender;
-                            document.getElementById("replyingToText").innerText = replyToMsg.text;
-                        } else if(isMine) {
-                            if(confirm("Delete for everyone?")) db.ref(`private_chats/${currentChatId}/${c.key}`).update({deleted:true});
-                        }
-                    };
-                }
-                div.appendChild(msgDiv);
-            });
-        }
-        div.scrollTop = div.scrollHeight;
-    });
-}
+.top-bar { height: 60px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-weight: bold; font-size: 1.1rem; }
+.top-bar h2 { margin: 0; }
+.scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; }
+.bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+.nav-btn { background: none; border: none; font-size: 1.5rem; color: #ccc; padding: 10px; }
+.nav-btn.active { color: var(--primary); }
 
-function cancelReply() {
-    replyToMsg = null;
-    document.getElementById("replyContext").classList.add("hidden");
-}
+/* --- FEED --- */
+.create-post-box { background: white; padding: 15px; border-bottom: 1px solid #eee; }
+.create-post-box textarea { width: 100%; border: none; resize: none; outline: none; height: 60px; font-family: inherit; }
+.post-actions-bar { text-align: right; }
+.post { background: white; padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px; }
+.avatar-xl { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; }
+.post-header { font-weight: bold; margin-bottom: 5px; }
+.hashtag { color: var(--primary); font-weight: bold; }
+.post-actions { display: flex; gap: 20px; margin-top: 10px; color: #666; }
+.like-btn.liked { color: #e0245e; }
 
-// FEED LOGIC
-function loadFeed() {
-    const list = document.getElementById("feedList");
-    db.ref('posts').limitToLast(50).get().then(async snap => {
-        list.innerHTML = "";
-        if(!snap.exists()) return;
-        const posts=[]; snap.forEach(c=>posts.unshift({key:c.key, ...c.val()}));
-        posts.forEach(p => {
-            const d = document.createElement("div"); d.className = "post";
-            const delBtn = (p.uid === currentUser.uid) ? `<span style="color:red; cursor:pointer; margin-left:auto;" onclick="deletePost('${p.key}')"><i class="fa-solid fa-trash"></i></span>` : '';
-            d.innerHTML = `<img src="${getAvatar(p.username, 'male')}" class="avatar-xl"><div style="flex:1">
-                <div class="post-header">${p.username} ${delBtn}</div>
-                <div>${parseText(p.text)}</div>
-            </div>`;
-            list.appendChild(d);
-        });
-    });
-}
-window.deletePost = (pid) => { if(confirm("Delete post?")) db.ref(`posts/${pid}`).remove().then(loadFeed); };
+/* --- SEARCH & LISTS --- */
+.search-bar-wrapper { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; width: 100%; }
+.search-bar-wrapper input { background: transparent; border: none; color: white; margin-left: 10px; width: 100%; outline: none; }
+.search-bar-wrapper input::placeholder { color: rgba(255,255,255,0.7); }
+.user-item, .chat-item { background: white; padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer;}
 
-// USERS & PROFILE
-async function loadAllUsers() {
-    const snap = await db.ref("users").get(); 
-    const list = document.getElementById("usersList"); list.innerHTML="";
-    snap.forEach(c => { 
-        if(c.key !== currentUser.uid) {
-            const u = c.val();
-            const d = document.createElement("div"); d.className = "user-item";
-            d.innerHTML = `<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl"><div><b>${u.username}</b><br>${u.category}</div><button class="outline-btn small-btn" style="margin-left:auto;">View</button>`;
-            d.onclick = () => openUser(c.key, u);
-            list.appendChild(d);
-        }
-    });
-}
+/* --- PROFILE --- */
+.profile-header-card { background: white; padding: 30px 20px; text-align: center; border-bottom: 1px solid #eee; }
+.avatar-xl.large { width: 90px; height: 90px; margin: 0 auto 10px; }
+.stats-row { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
+.stat-box { cursor: pointer; }
+.logout-text-btn { color: red; width: 100%; padding: 20px; border: none; background: white; margin-top: 20px; font-weight: bold; }
 
-async function openUser(uid, u) {
-    document.getElementById("userProfileModal").classList.remove("hidden");
-    document.getElementById("viewName").innerText = u.username;
-    document.getElementById("viewCategory").innerText = u.category;
-    document.getElementById("viewBio").innerText = u.bio || "";
-    document.getElementById("viewAvatar").src = getAvatar(u.username, u.gender);
-    
-    const amI = (await db.ref(`followers/${uid}/${currentUser.uid}`).get()).exists();
-    const isHe = (await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists();
-    const fBtn = document.getElementById("followBtn");
-    const mBtn = document.getElementById("messageBtn");
-    
-    fBtn.innerText = amI ? "Unfollow" : "Follow";
-    fBtn.onclick = async () => {
-        if(amI) { await db.ref(`followers/${uid}/${currentUser.uid}`).remove(); await db.ref(`following/${currentUser.uid}/${uid}`).remove(); }
-        else { await db.ref(`followers/${uid}/${currentUser.uid}`).set(true); await db.ref(`following/${currentUser.uid}/${uid}`).set(true); }
-        document.getElementById("userProfileModal").classList.add("hidden");
-    };
-    
-    if(amI && isHe) { mBtn.disabled=false; mBtn.innerText="Chat"; mBtn.onclick=()=>startChat(uid, u.username); document.getElementById("mutualWarning").style.display="none";}
-    else { mBtn.disabled=true; mBtn.innerText="Locked"; document.getElementById("mutualWarning").style.display="block";}
-    
-    document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
-}
+/* --- CHAT ROOM (WhatsApp Style) --- */
+#chat-room { background: #e5ddd5; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.chat-room-header { background: var(--primary); color: white; height: 60px; display: flex; align-items: center; padding: 0 10px; gap: 10px; }
+.chat-info { flex: 1; }
+.chat-info #chatStatus { font-size: 0.8rem; opacity: 0.8; }
+.messages-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
+.chat-input-bar { background: white; padding: 8px; display: flex; gap: 10px; align-items: center; }
+.chat-input-bar input { flex: 1; padding: 10px 15px; background: white; border: none; border-radius: 25px; outline: none; font-size: 1rem; }
+.send-btn { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-async function loadProfile() {
-    const u = (await db.ref(`users/${currentUser.uid}`).get()).val();
-    document.getElementById("myName").innerText = u.username;
-    document.getElementById("myCategoryDisplay").innerText = u.category;
-    document.getElementById("myBio").innerText = u.bio || "";
-    document.getElementById("myAvatar").src = getAvatar(u.username, u.gender);
-    const f1 = await db.ref(`followers/${currentUser.uid}`).get(); document.getElementById("myFollowersCount").innerText = f1.exists()?f1.numChildren():0;
-    const f2 = await db.ref(`following/${currentUser.uid}`).get(); document.getElementById("myFollowingCount").innerText = f2.exists()?f2.numChildren():0;
-}
+.message { max-width: 75%; padding: 8px 10px; border-radius: 8px; font-size: 1rem; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; }
+/* YOUR MESSAGE: TEAL BG, WHITE TEXT */
+.message.you { align-self: flex-end; background: var(--primary); color: white; border-top-right-radius: 0; }
+/* THEIR MESSAGE: WHITE BG, BLACK TEXT */
+.message.them { align-self: flex-start; background: white; color: black; border-top-left-radius: 0; }
 
-function loadChats() {
-    const list = document.getElementById("activeChatsList"); list.innerHTML="";
-    db.ref(`following/${currentUser.uid}`).get().then(async snap => {
-        if(!snap.exists()) return;
-        Object.keys(snap.val()).forEach(async uid => {
-            if((await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists()) {
-                const u = (await db.ref(`users/${uid}`).get()).val();
-                const d = document.createElement("div"); d.className="chat-item";
-                d.innerHTML=`<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl"><div><b>${u.username}</b></div>`;
-                d.onclick = () => startChat(uid, u.username);
-                list.appendChild(d);
-            }
-        });
-    });
-}
+.msg-meta { font-size: 0.65rem; align-self: flex-end; margin-top: 3px; display: flex; gap: 3px; opacity: 0.8; }
+.ticks { font-size: 0.7rem; }
+.ticks.read { color: #34b7f1; } /* Blue Ticks inside Teal bubble might need adjustment, stick to light blue */
+.message.you .ticks.read { color: #81d4fa; } /* Light Blue for visibility on Teal */
+
+#replyContext { background: rgba(255,255,255,0.9); padding: 5px 10px; border-left: 5px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
+.reply-quote { background: rgba(0,0,0,0.1); padding: 3px 5px; border-left: 3px solid rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 3px; border-radius: 4px; }
+.message.them .reply-quote { border-left-color: var(--primary); }
+
+/* --- MODALS --- */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; justify-content: center; align-items: center; }
+.bottom-sheet { align-items: flex-end; }
+.bottom-sheet-content { background: white; width: 100%; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; padding: 20px; }
+.center-modal .modal-content { background: white; width: 90%; max-width: 350px; border-radius: 15px; padding: 20px; }
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
+.close-modal { background: none; border: none; font-size: 1.5rem; }
+.action-row { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
