@@ -1,8 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, get, update, remove, serverTimestamp, query, limitToLast, orderByChild } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
-// --- CONFIGURATION ---
+ // --- FIREBASE SETUP (Compat Mode) ---
 const firebaseConfig = {
   apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
   authDomain: "cyou-db8f0.firebaseapp.com",
@@ -14,67 +10,112 @@ const firebaseConfig = {
   databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com/"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
 
 // --- STATE ---
 let currentUser = null;
 let currentChatId = null;
 let allUsersCache = [];
 
-// --- AUTH & INIT ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const snap = await get(ref(db, `users/${user.uid}`));
-        currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
-        document.getElementById("auth-screen").classList.add("hidden");
-        document.getElementById("app-screen").classList.remove("hidden");
-        switchTab('home');
-    } else {
-        currentUser = null;
-        document.getElementById("app-screen").classList.add("hidden");
-        document.getElementById("auth-screen").classList.remove("hidden");
-    }
-});
+// --- MAIN LISTENER (Waits for HTML to load) ---
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // AUTH LISTENER
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const snap = await db.ref(`users/${user.uid}`).get();
+            currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
+            document.getElementById("auth-screen").classList.add("hidden");
+            document.getElementById("app-screen").classList.remove("hidden");
+            switchTab('home');
+        } else {
+            currentUser = null;
+            document.getElementById("app-screen").classList.add("hidden");
+            document.getElementById("auth-screen").classList.remove("hidden");
+        }
+    });
 
-// Auth UI Handlers
-document.getElementById("showSignup").onclick = () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); };
-document.getElementById("showLogin").onclick = () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); };
-document.getElementById("logoutBtn").onclick = () => signOut(auth);
+    // --- BUTTONS: AUTH ---
+    document.getElementById("showSignup").onclick = () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); };
+    document.getElementById("showLogin").onclick = () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); };
+    
+    document.getElementById("signupBtn").onclick = async () => {
+        const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
+        const email = document.getElementById("signupEmail").value;
+        const pass = document.getElementById("signupPass").value;
+        if (!name || !email || !pass) return alert("Fill all fields");
+        try {
+            const nameCheck = await db.ref(`usernames/${name}`).get();
+            if (nameCheck.exists()) throw new Error("Username taken.");
+            const cred = await auth.createUserWithEmailAndPassword(email, pass);
+            await db.ref(`users/${cred.user.uid}`).set({
+                username: name, email, bio: "New member", isVerified: false, joined: firebase.database.ServerValue.TIMESTAMP
+            });
+            await db.ref(`usernames/${name}`).set(cred.user.uid);
+        } catch (e) { alert(e.message); }
+    };
 
-document.getElementById("signupBtn").onclick = async () => {
-    const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
-    const email = document.getElementById("signupEmail").value;
-    const pass = document.getElementById("signupPass").value;
-    if (!name || !email || !pass) return alert("Fill all fields");
-    try {
-        const nameCheck = await get(ref(db, `usernames/${name}`));
-        if (nameCheck.exists()) throw new Error("Username taken.");
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        await set(ref(db, `users/${cred.user.uid}`), {
-            username: name, email, bio: "New member", isVerified: false, joined: serverTimestamp()
+    document.getElementById("loginBtn").onclick = async () => {
+        try { await auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value); }
+        catch (e) { alert("Login failed: " + e.message); }
+    };
+
+    document.getElementById("logoutBtn").onclick = () => auth.signOut();
+
+    // --- BUTTONS: FEED ---
+    document.getElementById("refreshFeedBtn").onclick = loadFeed;
+    document.getElementById("postBtn").onclick = async () => {
+        const text = document.getElementById("newPostText").value.trim();
+        if(!text) return;
+        await db.ref('posts').push({
+            uid: currentUser.uid, username: currentUser.username,
+            text, time: firebase.database.ServerValue.TIMESTAMP, isVerified: currentUser.isVerified || false
         });
-        await set(ref(db, `usernames/${name}`), cred.user.uid);
-    } catch (e) { alert(e.message); }
-};
+        document.getElementById("newPostText").value = "";
+        loadFeed();
+    };
 
-document.getElementById("loginBtn").onclick = async () => {
-    try { await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value, document.getElementById("loginPass").value); }
-    catch (e) { alert("Login failed: " + e.message); }
-};
+    // --- BUTTONS: SEARCH ---
+    document.getElementById("userSearchInput").oninput = (e) => {
+        const term = e.target.value.toLowerCase();
+        renderUserList(allUsersCache.filter(u => u.username.toLowerCase().includes(term)));
+    };
+
+    // --- BUTTONS: PROFILE ---
+    const editModal = document.getElementById("editProfileModal");
+    document.getElementById("openEditProfileBtn").onclick = () => {
+        document.getElementById("editBio").value = document.getElementById("myBio").innerText;
+        editModal.classList.remove("hidden");
+    };
+    document.getElementById("cancelEditBtn").onclick = () => editModal.classList.add("hidden");
+    document.getElementById("saveProfileBtn").onclick = async () => {
+        await db.ref(`users/${currentUser.uid}`).update({ bio: document.getElementById("editBio").value });
+        editModal.classList.add("hidden"); loadMyProfile();
+    };
+
+    // --- CHAT UI ---
+    document.getElementById("backToAppBtn").onclick = () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId = null; };
+    document.getElementById("inputForm").onsubmit = (e) => {
+        e.preventDefault(); const txt = document.getElementById("messageInput").value.trim();
+        if(txt && currentChatId) db.ref(`private_chats/${currentChatId}`).push({ senderId: currentUser.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
+        document.getElementById("messageInput").value = "";
+    };
+});
 
 // --- NAVIGATION ---
 window.switchTab = (tabName) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`tab-${tabName}`).classList.remove('hidden');
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    const map = { 'home':0, 'discover':1, 'chats':2, 'profile':3 };
-    document.querySelectorAll('.nav-btn')[map[tabName]].classList.add('active');
-    // Icons change to solid when active (optional polish)
-    document.querySelectorAll('.nav-btn i').forEach(i => i.classList.replace('fa-solid', 'fa-regular'));
-    document.querySelector(`.nav-btn.active i`).classList.replace('fa-regular', 'fa-solid');
-
+    
+    // Manual mapping for active icon
+    const btns = document.querySelectorAll('.nav-btn');
+    if(tabName=='home') btns[0].classList.add('active');
+    if(tabName=='discover') btns[1].classList.add('active');
+    if(tabName=='chats') btns[2].classList.add('active');
+    if(tabName=='profile') btns[3].classList.add('active');
 
     if(tabName === 'home') loadFeed();
     if(tabName === 'discover') loadAllUsers();
@@ -82,26 +123,15 @@ window.switchTab = (tabName) => {
     if(tabName === 'profile') loadMyProfile();
 }
 
-// --- HOME FEED ---
-document.getElementById("refreshFeedBtn").onclick = loadFeed;
-document.getElementById("postBtn").onclick = async () => {
-    const text = document.getElementById("newPostText").value.trim();
-    if(!text) return;
-    await push(ref(db, 'posts'), {
-        uid: currentUser.uid, username: currentUser.username,
-        text, time: serverTimestamp(), isVerified: currentUser.isVerified || false
-    });
-    document.getElementById("newPostText").value = "";
-    loadFeed();
-};
-
+// --- FEED LOGIC (With Likes) ---
 function loadFeed() {
     const list = document.getElementById("feedList");
-    get(query(ref(db, 'posts'), limitToLast(50))).then(async (snap) => {
+    db.ref('posts').limitToLast(50).get().then(async (snap) => {
         if (!snap.exists()) { list.innerHTML = "<div style='padding:20px;text-align:center;color:#999'>No posts yet.</div>"; return; }
         list.innerHTML = "";
-        const posts = []; snap.forEach(c => posts.unshift(c.val()));
-        const following = (await get(ref(db, `following/${currentUser.uid}`))).val() || {};
+        const posts = []; snap.forEach(c => posts.unshift({key: c.key, ...c.val()}));
+        const following = (await db.ref(`following/${currentUser.uid}`).get()).val() || {};
+        
         posts.forEach(p => {
             if (p.uid === currentUser.uid || following[p.uid]) renderPost(p, list);
         });
@@ -111,7 +141,12 @@ function loadFeed() {
 function renderPost(p, container) {
     const div = document.createElement("div"); div.className = "post";
     const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${p.username}&backgroundColor=006677`;
-    const timeStr = p.time ? new Date(p.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'just now';
+    const timeStr = p.time ? new Date(p.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'now';
+    
+    // Check if I liked it
+    const isLiked = p.likes && p.likes[currentUser.uid];
+    const likeCount = p.likes ? Object.keys(p.likes).length : 0;
+
     div.innerHTML = `
         <img src="${avatar}" class="avatar-large">
         <div class="post-content">
@@ -121,25 +156,30 @@ function renderPost(p, container) {
             </div>
             <div class="post-text">${p.text}</div>
              <div class="post-actions">
-                <span><i class="fa-regular fa-heart"></i></span>
-                <span><i class="fa-regular fa-comment"></i></span>
-                <span><i class="fa-solid fa-share-nodes"></i></span>
+                <span class="like-btn ${isLiked ? 'liked' : ''}" data-key="${p.key}">
+                    <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i> ${likeCount || ''}
+                </span>
+                <span onclick="alert('Comments coming soon!')"><i class="fa-regular fa-comment"></i></span>
             </div>
         </div>`;
+    
+    // Add Like Handler
+    div.querySelector('.like-btn').onclick = async function() {
+        const postRef = db.ref(`posts/${p.key}/likes/${currentUser.uid}`);
+        if(isLiked) await postRef.remove();
+        else await postRef.set(true);
+        loadFeed(); // Refresh to show new count
+    };
+
     container.appendChild(div);
 }
 
-// --- DISCOVER USERS ---
+// --- USER LOGIC ---
 async function loadAllUsers() {
-    const snap = await get(ref(db, "users")); allUsersCache = [];
+    const snap = await db.ref("users").get(); allUsersCache = [];
     snap.forEach(c => { if(c.key !== currentUser.uid) allUsersCache.push({uid: c.key, ...c.val()}); });
     renderUserList(allUsersCache);
 }
-
-document.getElementById("userSearchInput").oninput = (e) => {
-    const term = e.target.value.toLowerCase();
-    renderUserList(allUsersCache.filter(u => u.username.toLowerCase().includes(term)));
-};
 
 function renderUserList(users) {
     const list = document.getElementById("usersList"); list.innerHTML = "";
@@ -158,53 +198,60 @@ function renderUserList(users) {
     });
 }
 
-// --- USER PROFILE MODAL ---
+// --- PROFILE MODAL & FOLLOW ---
 const userModal = document.getElementById("userProfileModal");
 const followBtn = document.getElementById("followBtn");
 const msgBtn = document.getElementById("messageBtn");
-let viewingUid = null;
 
 async function openUserProfile(targetUid) {
-    viewingUid = targetUid; userModal.classList.remove("hidden");
-    const snap = await get(ref(db, `users/${targetUid}`)); const u = snap.val();
+    userModal.classList.remove("hidden");
+    const snap = await db.ref(`users/${targetUid}`).get(); const u = snap.val();
     document.getElementById("viewName").innerHTML = `${u.username} ${u.isVerified ? '<i class="fa-solid fa-circle-check verified-badge"></i>' : ''}`;
     document.getElementById("viewBio").textContent = u.bio || "No bio.";
     document.getElementById("viewAvatar").src = `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}&backgroundColor=006677`;
-    const f1 = await get(ref(db, `followers/${targetUid}`)); document.getElementById("viewFollowers").textContent = f1.size;
-    const f2 = await get(ref(db, `following/${targetUid}`)); document.getElementById("viewFollowing").textContent = f2.size;
+    
+    // Stats
+    const f1 = await db.ref(`followers/${targetUid}`).get(); document.getElementById("viewFollowers").textContent = f1.exists() ? f1.numChildren() : 0;
+    const f2 = await db.ref(`following/${targetUid}`).get(); document.getElementById("viewFollowing").textContent = f2.exists() ? f2.numChildren() : 0;
+    
     checkFollowStatus(targetUid);
+    document.getElementById("closeProfileModal").onclick = () => userModal.classList.add("hidden");
 }
 
-document.getElementById("closeProfileModal").onclick = () => userModal.classList.add("hidden");
-
 async function checkFollowStatus(targetUid) {
-    const amIFollowing = (await get(ref(db, `followers/${targetUid}/${currentUser.uid}`))).exists();
-    const isHeFollowing = (await get(ref(db, `followers/${currentUser.uid}/${targetUid}`))).exists();
+    const amIFollowing = (await db.ref(`followers/${targetUid}/${currentUser.uid}`).get()).exists();
+    const isHeFollowing = (await db.ref(`followers/${currentUser.uid}/${targetUid}`).get()).exists();
     
     followBtn.textContent = amIFollowing ? "Following" : "Follow";
     followBtn.classList.toggle("primary-btn", !amIFollowing);
     followBtn.classList.toggle("outline-btn", amIFollowing);
 
     followBtn.onclick = async () => {
-        if(amIFollowing) { await remove(ref(db, `followers/${targetUid}/${currentUser.uid}`)); await remove(ref(db, `following/${currentUser.uid}/${targetUid}`)); }
-        else { await set(ref(db, `followers/${targetUid}/${currentUser.uid}`), true); await set(ref(db, `following/${currentUser.uid}/${targetUid}`), true); }
-        openUserProfile(targetUid); // Refresh
+        if(amIFollowing) { 
+            await db.ref(`followers/${targetUid}/${currentUser.uid}`).remove(); 
+            await db.ref(`following/${currentUser.uid}/${targetUid}`).remove(); 
+        } else { 
+            await db.ref(`followers/${targetUid}/${currentUser.uid}`).set(true); 
+            await db.ref(`following/${currentUser.uid}/${targetUid}`).set(true); 
+        }
+        openUserProfile(targetUid); // Refresh UI
     };
 
     msgBtn.disabled = !(amIFollowing && isHeFollowing);
     document.getElementById("mutualWarning").style.display = (amIFollowing && isHeFollowing) ? "none" : "block";
-    if(!msgBtn.disabled) msgBtn.onclick = () => startChat(targetUid, document.getElementById("viewName").innerText);
+    msgBtn.onclick = () => startChat(targetUid, document.getElementById("viewName").innerText);
 }
 
-// --- CHATS ---
+// --- ACTIVE CHATS ---
 function loadActiveChats() {
     const list = document.getElementById("activeChatsList"); list.innerHTML = "<div class='loader'>Loading...</div>";
-    get(ref(db, `following/${currentUser.uid}`)).then(async (snap) => {
+    db.ref(`following/${currentUser.uid}`).get().then(async (snap) => {
         if(!snap.exists()) { list.innerHTML = "<div style='padding:20px;text-align:center;color:#999'>Follow people to start chatting.</div>"; return; }
         list.innerHTML = "";
-        for(const uid of Object.keys(snap.val())) {
-            if((await get(ref(db, `followers/${currentUser.uid}/${uid}`))).exists()) {
-                const u = (await get(ref(db, `users/${uid}`))).val();
+        const uids = Object.keys(snap.val());
+        for(const uid of uids) {
+            if((await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists()) {
+                const u = (await db.ref(`users/${uid}`).get()).val();
                 const div = document.createElement("div"); div.className = "chat-item";
                 div.innerHTML = `
                  <img src="https://api.dicebear.com/7.x/initials/svg?seed=${u.username}&backgroundColor=006677" class="avatar-large">
@@ -222,7 +269,7 @@ function startChat(uid, name) {
     userModal.classList.add("hidden"); chatRoom.classList.remove("hidden");
     document.getElementById("chatTitle").textContent = name;
     currentChatId = [currentUser.uid, uid].sort().join("_");
-    onValue(ref(db, `private_chats/${currentChatId}`), (snap) => {
+    db.ref(`private_chats/${currentChatId}`).on('value', (snap) => {
         msgDiv.innerHTML = "";
         if(snap.exists()) snap.forEach(c => {
             const m = c.val(); const d = document.createElement("div");
@@ -232,29 +279,14 @@ function startChat(uid, name) {
         msgDiv.scrollTop = msgDiv.scrollHeight;
     });
 }
-document.getElementById("backToAppBtn").onclick = () => { chatRoom.classList.add("hidden"); currentChatId = null; };
-document.getElementById("inputForm").onsubmit = (e) => {
-    e.preventDefault(); const txt = document.getElementById("messageInput").value.trim();
-    if(txt && currentChatId) push(ref(db, `private_chats/${currentChatId}`), { senderId: currentUser.uid, text: txt, time: serverTimestamp() });
-    document.getElementById("messageInput").value = "";
-};
 
-// --- MY PROFILE ---
-const editModal = document.getElementById("editProfileModal");
+// --- MY PROFILE LOAD ---
 async function loadMyProfile() {
-    const u = (await get(ref(db, `users/${currentUser.uid}`))).val();
+    const u = (await db.ref(`users/${currentUser.uid}`).get()).val();
     document.getElementById("myName").innerHTML = `${u.username} ${u.isVerified ? '<i class="fa-solid fa-circle-check verified-badge"></i>' : ''}`;
-    document.getElementById("myBio").textContent = u.bio || "No bio yet.";
+    document.getElementById("myBio").innerText = u.bio || "No bio yet.";
     document.getElementById("myAvatar").src = `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}&backgroundColor=006677`;
-    document.getElementById("myFollowersCount").textContent = (await get(ref(db, `followers/${currentUser.uid}`))).size;
-    document.getElementById("myFollowingCount").textContent = (await get(ref(db, `following/${currentUser.uid}`))).size;
+    
+    const f1 = await db.ref(`followers/${currentUser.uid}`).get(); document.getElementById("myFollowersCount").textContent = f1.exists() ? f1.numChildren() : 0;
+    const f2 = await db.ref(`following/${currentUser.uid}`).get(); document.getElementById("myFollowingCount").textContent = f2.exists() ? f2.numChildren() : 0;
 }
-document.getElementById("editProfileBtn").onclick = () => {
-    document.getElementById("editBio").value = document.getElementById("myBio").textContent;
-    editModal.classList.remove("hidden");
-}
-document.getElementById("cancelEditBtn").onclick = () => editModal.classList.add("hidden");
-document.getElementById("saveProfileBtn").onclick = async () => {
-    await update(ref(db, `users/${currentUser.uid}`), { bio: document.getElementById("editBio").value });
-    editModal.classList.add("hidden"); loadMyProfile();
-};
