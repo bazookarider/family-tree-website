@@ -1,114 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>CYOU Chat</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyou - The Truth Network</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="chat-container">
-    
-    <section id="auth-screen" class="auth-screen">
-      <div class="logo-area">
-        <i class="fa-solid fa-shield-halved fa-3x" style="color:var(--accent);"></i>
-        <h2>Welcome to CYOU</h2>
-        <p>Verified & Secure Chat</p>
-      </div>
 
-      <form id="loginForm" class="auth-form">
-        <input type="email" id="loginEmail" placeholder="Email Address" required />
-        <input type="password" id="loginPass" placeholder="Password" required />
-        <button type="submit" id="loginBtn">Log In</button>
-        <div class="links-row">
-           <span id="forgotPassBtn">Forgot Password?</span>
-           <span id="showSignup">Create Account</span>
-        </div>
-      </form>
-
-      <form id="signupForm" class="auth-form hidden">
-        <input type="text" id="signupName" placeholder="Choose Username" required />
-        <input type="email" id="signupEmail" placeholder="Email Address" required />
-        <input type="password" id="signupPass" placeholder="Password (6+ chars)" required />
-        <button type="submit" id="signupBtn">Sign Up & Verify</button>
-        <div class="switch-link">Have an account? <span id="showLogin">Log In</span></div>
-      </form>
-
-      <form id="resetForm" class="auth-form hidden">
-        <h3>Reset Password</h3>
-        <p style="font-size:0.8rem; color:var(--muted); text-align:center">Enter your email to receive a reset link.</p>
-        <input type="email" id="resetEmail" placeholder="Your Email" required />
-        <button type="submit" id="resetBtn">Send Reset Link</button>
-        <div class="switch-link"><span id="cancelReset">Back to Login</span></div>
-      </form>
-
-      <div id="authError" class="hint"></div>
-    </section>
-
-    <section id="chat-screen" class="chat-screen hidden">
-      <header id="topBar" class="top-bar">
-        <button id="backToGlobalBtn" class="icon-btn hidden" style="margin-right:10px;"><i class="fa-solid fa-arrow-left"></i></button>
-        
-        <div class="header-left">
-          <h1 id="chatTitle">CYOU Global</h1>
-          <div id="onlineStatus" class="online-status">Connecting...</div>
-        </div>
-        
-        <div class="header-right">
-           <button id="usersBtn" class="icon-btn" title="Contacts"><i class="fa-solid fa-users"></i></button>
-           <button id="themeToggle" class="icon-btn"><i class="fa-solid fa-moon"></i></button>
-           <button id="logoutBtn" class="icon-btn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
-        </div>
-      </header>
-      
-      <div id="pinned-message-bar" class="pinned-message-bar hidden"></div>
-
-      <main class="main">
-        <div id="messages" class="messages" aria-live="polite"></div>
-
-        <button id="new-messages-button" class="new-messages-button hidden">
-          New Messages <i class="fa-solid fa-arrow-down"></i>
-        </button>
-
-        <div id="typingIndicator" class="typing-indicator"></div>
-        <div id="reply-context-bar" class="reply-context-bar hidden"></div>
-
-        <form id="inputForm" class="input-form" autocomplete="off">
-          <input id="messageInput" type="text" placeholder="Type a message..." />
-          <button id="sendBtn" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
-        </form>
-      </main>
-
-      <div id="usersModal" class="users-modal hidden">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Online Users</h3>
-            <button id="closeUsersBtn"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-          <div id="usersList" class="users-list"></div>
-        </div>
-      </div>
-
-      <div id="requestModal" class="users-modal hidden" style="z-index:60;">
-        <div class="modal-content" style="height:auto; padding-bottom:30px;">
-          <div class="modal-header">
-            <h3>Chat Request</h3>
-          </div>
-          <div style="padding:20px; text-align:center;">
-            <p id="requestText" style="font-size:1.1rem; margin-bottom:20px;">User wants to chat</p>
-            <div style="display:flex; gap:10px; justify-content:center;">
-              <button id="acceptReqBtn" style="background:#00cc44; color:white; padding:10px 20px; border:none; border-radius:8px; font-weight:bold;">Accept</button>
-              <button id="declineReqBtn" style="background:#cc0000; color:white; padding:10px 20px; border:none; border-radius:8px; font-weight:bold;">Decline</button>
+    <div id="auth-screen">
+        <div class="login-container">
+            <h1>Cyou 💬</h1>
+            <p class="subtitle">The Truth Network</p>
+            
+            <div id="loginForm">
+                <div class="input-group">
+                    <input type="email" id="loginEmail" placeholder="Email Address">
+                    <input type="password" id="loginPass" placeholder="Password">
+                </div>
+                <button id="loginBtn" class="primary-btn">Log In</button>
+                <button id="showSignup" class="anon-btn">Create New Account</button>
+                <div id="authError" class="error-msg"></div>
             </div>
-          </div>
+
+            <div id="signupForm" class="hidden">
+                <p>Join the community.</p>
+                <input type="text" id="signupName" placeholder="Username (Unique)">
+                <input type="email" id="signupEmail" placeholder="Email">
+                <input type="password" id="signupPass" placeholder="Password (6+ chars)">
+                <button id="signupBtn" class="secondary-btn">Sign Up</button>
+                <button id="showLogin" class="anon-btn">Back to Login</button>
+            </div>
         </div>
-      </div>
+    </div>
 
-    </section>
-  </div>
-  <audio id="receiveSound" preload="auto" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+    <div id="app-screen" class="hidden">
+        
+        <div id="tab-home" class="tab-content">
+            <header class="top-bar">
+                <h2>Home 🏠</h2>
+                <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate-right"></i></button>
+            </header>
+            
+            <div class="create-post-box">
+                <textarea id="newPostText" placeholder="Speak your truth..."></textarea>
+                <button id="postBtn" class="primary-btn small">Post</button>
+            </div>
 
-  <script type="module" src="script.js"></script>
+            <div id="feedList" class="scroll-content">
+                <div class="loader">Loading feed...</div>
+            </div>
+        </div>
+
+        <div id="tab-discover" class="tab-content hidden">
+            <header class="top-bar">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="userSearchInput" placeholder="Find people...">
+                </div>
+            </header>
+            <div id="usersList" class="scroll-content">
+                </div>
+        </div>
+
+        <div id="tab-chats" class="tab-content hidden">
+            <header class="top-bar">
+                <h2>Messages 💬</h2>
+            </header>
+            <div id="activeChatsList" class="scroll-content">
+                <div style="text-align:center; padding:20px; color:#999;">
+                    Start a chat from a user's profile.<br>
+                    (You must both follow each other!)
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="tab-content hidden">
+            <div class="scroll-content profile-wrapper">
+                <div class="profile-header-card">
+                    <img id="myAvatar" src="" class="avatar-large">
+                    <h2 id="myName">Loading... <i id="myBadge" class="fa-solid fa-circle-check verified-badge hidden"></i></h2>
+                    <span id="myCategory" class="category-pill">Member</span>
+                    
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <b id="myFollowersCount">0</b>
+                            <span>Followers</span>
+                        </div>
+                        <div class="stat-box">
+                            <b id="myFollowingCount">0</b>
+                            <span>Following</span>
+                        </div>
+                    </div>
+
+                    <div id="myBio" class="bio-text">No bio yet.</div>
+                    
+                    <button id="editProfileBtn" class="secondary-btn small-btn" style="margin-top:10px;">Edit Profile</button>
+                    
+                    <div id="myContactBox" class="contact-box hidden">
+                        <h4>Contact Me</h4>
+                        <p id="myContactText"></p>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="logout-btn">Log Out</button>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-btn active" onclick="switchTab('home')">
+                <i class="fa-solid fa-house"></i>
+            </button>
+            <button class="nav-btn" onclick="switchTab('discover')">
+                <i class="fa-solid fa-users"></i>
+            </button>
+            <button class="nav-btn" onclick="switchTab('chats')">
+                <i class="fa-solid fa-comment-dots"></i>
+            </button>
+            <button class="nav-btn" onclick="switchTab('profile')">
+                <i class="fa-solid fa-user"></i>
+            </button>
+        </nav>
+    </div>
+
+    <div id="userProfileModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" id="closeProfileModal">&times;</span>
+            
+            <img id="viewAvatar" src="" class="avatar-large">
+            <h2 id="viewName">Name <i id="viewBadge" class="fa-solid fa-circle-check verified-badge hidden"></i></h2>
+            <span id="viewCategory" class="category-pill">Member</span>
+
+            <div class="stats-row">
+                <div class="stat-box"><b id="viewFollowers">0</b><span>Followers</span></div>
+                <div class="stat-box"><b id="viewFollowing">0</b><span>Following</span></div>
+            </div>
+
+            <div id="viewBio" class="bio-text"></div>
+
+            <div class="action-buttons">
+                <button id="followBtn" class="primary-btn">Follow</button>
+                <button id="messageBtn" class="secondary-btn" disabled>Message 🔒</button>
+            </div>
+            <p id="mutualWarning" style="font-size:0.7rem; color:red; margin-top:5px; display:none;">You must follow each other to chat.</p>
+
+            <button id="viewContactBtn" class="anon-btn small-btn">Show Contact Info</button>
+            <div id="viewContactBox" class="contact-box hidden"></div>
+        </div>
+    </div>
+
+    <div id="editProfileModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Profile</h3>
+            <label>Category (e.g. Digital Creator)</label>
+            <input type="text" id="editCategory" maxlength="20">
+            
+            <label>Bio (Short description)</label>
+            <textarea id="editBio" maxlength="100"></textarea>
+            
+            <label>Contact Info (Email/Phone for others to see)</label>
+            <input type="text" id="editContact" placeholder="Only visible if you click 'Show'">
+            
+            <div class="action-buttons">
+                <button id="saveProfileBtn" class="primary-btn">Save</button>
+                <button id="cancelEditBtn" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-room" class="screen hidden">
+        <header class="chat-header">
+            <button id="backToAppBtn"><i class="fa-solid fa-arrow-left"></i></button>
+            <span id="chatTitle">Chat</span>
+        </header>
+        <div id="messages" class="messages-area"></div>
+        <form id="inputForm" class="chat-input-area">
+            <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+            <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
