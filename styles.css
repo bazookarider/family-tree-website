@@ -1,4 +1,4 @@
-:root {
+ :root {
     --primary: #006677; 
     --primary-dark: #004c59;
     --twitter-blue: #1da1f2;
@@ -20,6 +20,7 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 
 /* BUTTONS */
 .primary-btn { background-color: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 9999px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+.primary-btn:disabled { opacity: 0.7; cursor: wait; }
 .outline-btn { background: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 10px 24px; border-radius: 9999px; font-weight: 700; cursor: pointer; }
 .outline-btn:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
 .anon-btn, .logout-text-btn { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 10px; }
@@ -36,6 +37,7 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .subtitle { color: var(--text-gray); font-size: 1.1rem; margin-bottom: 20px; }
 .input-group input, #signupForm input, #forgotForm input { width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border-light); border-radius: 12px; font-size: 1rem; outline: none; }
 .simple-input { width: 100%; padding: 10px; border: 2px solid var(--border-light); border-radius: 8px; margin-bottom: 10px; font-size: 1rem; background: white;}
+.error-msg { color: #e0245e; margin-top: 10px; font-size: 0.9rem; }
 
 .top-bar { height: 56px; background: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-light); font-weight: 700; font-size: 1.2rem; }
 .scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; }
@@ -91,8 +93,8 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .action-row-spread { display: flex; gap: 12px; width: 100%; max-width: 350px; }
 .mutual-warn { color: #e0245e; font-size: 0.8rem; margin-top: 10px; background: #ffebee; padding: 5px 10px; border-radius: 10px; }
 
-/* INTERESTING CHAT ROOM (Restored) */
-#chat-room { background: #e5ddd5; z-index: 3000; } /* WhatsApp-ish background */
+/* INTERESTING CHAT ROOM */
+#chat-room { background: #e5ddd5; z-index: 3000; }
 .chat-room-header { background: #006677; color: white; border: none; }
 .icon-header-btn { color: white; }
 .messages-area { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
