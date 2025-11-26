@@ -6,10 +6,14 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-    <div id="system-status" style="display:none; position:fixed; top:0; left:0; width:100%; background:red; color:white; text-align:center; padding:10px; z-index:9999; font-weight:bold;"></div>
+    <div id="system-status" style="display:none; background:#333; color:white; text-align:center; padding:5px; font-size:0.7rem;">Initializing...</div>
 
     <div id="auth-screen">
         <div class="login-container">
@@ -44,11 +48,11 @@
                     <button id="resetPassBtn" type="button" class="primary-btn flex-btn">Send Link</button>
                 </div>
             </div>
+            <div id="authError" class="error-msg"></div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden">
-        
         <div id="verifyBanner" class="hidden" style="background:#ff9800; color:white; padding:10px; text-align:center; font-size:0.8rem;">
             Verify email to chat. <button id="resendVerify" style="border:none;background:white;color:#ff9800;border-radius:4px;margin-left:5px;">Resend</button>
         </div>
@@ -207,9 +211,6 @@
         </form>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
