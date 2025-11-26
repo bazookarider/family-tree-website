@@ -6,6 +6,10 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -25,7 +29,7 @@
             </div>
 
             <div id="signupForm" class="hidden">
-                <input type="text" id="signupName" placeholder="Username">
+                <input type="text" id="signupName" placeholder="Username (No spaces)">
                 <input type="email" id="signupEmail" placeholder="Email">
                 <input type="password" id="signupPass" placeholder="Password (6+ chars)">
                 <button id="signupBtn" class="primary-btn">Sign Up</button>
@@ -45,12 +49,12 @@
             <div class="create-post-box">
                 <textarea id="newPostText" placeholder="What's happening?"></textarea>
                 <div class="post-actions-bar">
-                    <span style="flex:1"></span> <button id="postBtn" class="primary-btn small-btn">Post</button>
+                    <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
             </div>
 
             <div id="feedList" class="scroll-content bg-gray">
-                <div class="loader">Loading tweets...</div>
+                <div class="loader">Loading feed...</div>
             </div>
         </div>
 
@@ -62,15 +66,8 @@
                 </div>
             </header>
             <div class="scroll-content bg-gray">
-                <div class="section-header">Trending</div>
-                <div class="trending-tags">
-                    <span class="tag">#Kano</span>
-                    <span class="tag">#TechNG</span>
-                    <span class="tag">#RealTalk</span>
-                </div>
                 <div class="section-header">Suggested Users</div>
-                <div id="usersList" class="clean-list">
-                    </div>
+                <div id="usersList" class="clean-list"></div>
             </div>
         </div>
 
@@ -78,8 +75,7 @@
             <header class="top-bar">
                 <h2>Cyou Chats</h2>
             </header>
-            <div id="activeChatsList" class="scroll-content clean-list">
-                </div>
+            <div id="activeChatsList" class="scroll-content clean-list"></div>
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
@@ -89,61 +85,44 @@
             <div class="scroll-content profile-wrapper bg-gray">
                 <div class="profile-header-card">
                     <img id="myAvatar" src="" class="avatar-xl">
-                    <h2 id="myName" class="profile-name-large">Loading... <i id="myBadge" class="fa-solid fa-circle-check verified-badge hidden"></i></h2>
-                    
-                    <div id="myBio" class="bio-text">No bio yet.</div>
+                    <h2 id="myName" class="profile-name-large">Loading...</h2>
+                    <div id="myBio" class="bio-text">...</div>
                     
                     <div class="stats-row">
                         <div class="stat-box"><b id="myFollowersCount">0</b><span>Followers</span></div>
                         <div class="stat-box"><b id="myFollowingCount">0</b><span>Following</span></div>
                     </div>
 
-                    <button id="editProfileBtn" class="outline-btn">Edit Profile</button>
+                    <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
-
-                <div class="section-header">My Posts</div>
-                <div id="myPostsList" class="clean-list">
-                   <div style="padding:20px; text-align:center; color:#999;">Your posts will appear here.</div>
-                </div>
-                 <button id="logoutBtn" class="logout-text-btn">Log Out</button>
+                <button id="logoutBtn" class="logout-text-btn">Log Out</button>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-btn active" onclick="switchTab('home')">
-                <i class="fa-solid fa-house"></i>
-            </button>
-            <button class="nav-btn" onclick="switchTab('discover')">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-            <button class="nav-btn" onclick="switchTab('chats')">
-                <i class="fa-regular fa-comment-dots"></i> </button>
-            <button class="nav-btn" onclick="switchTab('profile')">
-                <i class="fa-regular fa-user"></i>
-            </button>
+            <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
+            <button class="nav-btn" onclick="switchTab('discover')"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-regular fa-comment-dots"></i></button>
+            <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-regular fa-user"></i></button>
         </nav>
     </div>
 
     <div id="userProfileModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <div class="modal-drag-handle"></div>
             <header class="modal-header">
                  <button class="close-btn-icon" id="closeProfileModal"><i class="fa-solid fa-xmark"></i></button>
             </header>
-           
             <div class="profile-header-card no-border">
                 <img id="viewAvatar" src="" class="avatar-xl">
-                <h2 id="viewName" class="profile-name-large">Name <i id="viewBadge" class="fa-solid fa-circle-check verified-badge hidden"></i></h2>
+                <h2 id="viewName" class="profile-name-large">Name</h2>
                 <div id="viewBio" class="bio-text"></div>
-                
                 <div class="stats-row">
                     <div class="stat-box"><b id="viewFollowers">0</b><span>Followers</span></div>
                     <div class="stat-box"><b id="viewFollowing">0</b><span>Following</span></div>
                 </div>
-
                 <div class="action-row-spread">
                     <button id="followBtn" class="primary-btn flex-btn">Follow</button>
-                    <button id="messageBtn" class="outline-btn flex-btn" disabled><i class="fa-regular fa-envelope"></i> Message</button>
+                    <button id="messageBtn" class="outline-btn flex-btn" disabled>Message</button>
                 </div>
                 <p id="mutualWarning" class="mutual-warn">Must follow each other to chat.</p>
             </div>
@@ -155,11 +134,11 @@
             <h3>Edit Profile</h3>
             <div class="edit-field">
                 <label>Bio</label>
-                <textarea id="editBio" maxlength="160" placeholder="Tell the world about yourself..."></textarea>
+                <textarea id="editBio" maxlength="160" placeholder="About you..."></textarea>
             </div>
-            <div class="action-row-spread" style="margin-top:20px;">
+            <div class="action-row-spread">
                  <button id="cancelEditBtn" class="outline-btn flex-btn">Cancel</button>
-                <button id="saveProfileBtn" class="primary-btn flex-btn">Save</button>
+                 <button id="saveProfileBtn" class="primary-btn flex-btn">Save</button>
             </div>
         </div>
     </div>
@@ -168,14 +147,15 @@
         <header class="top-bar chat-room-header">
             <button id="backToAppBtn" class="icon-header-btn"><i class="fa-solid fa-arrow-left"></i></button>
             <span id="chatTitle" style="flex:1; text-align:center; font-weight:700;">Chat</span>
-            <div style="width:32px;"></div> </header>
+            <div style="width:32px;"></div>
+        </header>
         <div id="messages" class="messages-area bg-gray"></div>
         <form id="inputForm" class="chat-input-bar">
-            <input type="text" id="messageInput" placeholder="Start a message..." autocomplete="off">
+            <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
             <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </form>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
