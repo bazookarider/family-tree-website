@@ -6,7 +6,7 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+    
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -17,7 +17,6 @@
         <div class="login-container">
             <h1 class="brand-title">Cyou</h1>
             <p class="subtitle">The Truth Network</p>
-            
             <div id="loginForm">
                 <div class="input-group">
                     <input type="email" id="loginEmail" placeholder="Email">
@@ -29,7 +28,6 @@
                     <button id="showForgot" class="anon-btn" style="color:#555;">Forgot Password?</button>
                 </div>
             </div>
-
             <div id="signupForm" class="hidden">
                 <input type="text" id="signupName" placeholder="Username (Unique)">
                 <input type="email" id="signupEmail" placeholder="Email">
@@ -37,25 +35,21 @@
                 <button id="signupBtn" class="primary-btn">Sign Up</button>
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
-
             <div id="forgotForm" class="hidden">
                 <h3>Reset Password</h3>
-                <p style="font-size:0.9rem; color:#666; margin-bottom:10px;">Enter your email to receive a reset link.</p>
                 <input type="email" id="forgotEmail" class="simple-input" placeholder="Your Email">
                 <div class="action-row-spread">
                     <button id="cancelForgot" class="outline-btn flex-btn">Cancel</button>
                     <button id="resetPassBtn" class="primary-btn flex-btn">Send</button>
                 </div>
             </div>
-            
             <div id="authError" class="error-msg"></div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden">
-        
         <div id="verifyBanner" class="hidden" style="background:#ff9800; color:white; padding:10px; text-align:center; font-size:0.8rem;">
-            Please verify your email to chat. <button id="resendVerify" style="padding:2px 8px; border:none; background:white; color:#ff9800; border-radius:4px; margin-left:10px;">Resend Link</button>
+            Verify email to chat. <button id="resendVerify" style="border:none;background:white;color:#ff9800;border-radius:4px;margin-left:5px;">Resend</button>
         </div>
 
         <div id="tab-home" class="tab-content">
@@ -63,17 +57,13 @@
                 <h2>Cyou Home</h2>
                 <button id="refreshFeedBtn" class="icon-header-btn"><i class="fa-solid fa-rotate-right"></i></button>
             </header>
-            
             <div class="create-post-box">
                 <textarea id="newPostText" placeholder="What's happening?"></textarea>
                 <div class="post-actions-bar">
                     <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
             </div>
-
-            <div id="feedList" class="scroll-content bg-gray">
-                <div class="loader">Loading feed...</div>
-            </div>
+            <div id="feedList" class="scroll-content bg-gray"></div>
         </div>
 
         <div id="tab-discover" class="tab-content hidden">
@@ -84,10 +74,6 @@
                 </div>
             </header>
             <div class="scroll-content bg-gray">
-                <div class="section-header">Trending</div>
-                <div class="trending-tags">
-                    <span class="tag">#Kano</span> <span class="tag">#TechNG</span> <span class="tag">#Truth</span>
-                </div>
                 <div class="section-header">Suggested Users</div>
                 <div id="usersList" class="clean-list"></div>
             </div>
@@ -95,14 +81,14 @@
 
         <div id="tab-chats" class="tab-content hidden">
             <header class="top-bar">
-                <h2>Cyou Chats</h2>
+                <h2>Chats</h2>
             </header>
             <div id="activeChatsList" class="scroll-content clean-list"></div>
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
             <header class="top-bar">
-                <h2>Cyou Profile</h2>
+                <h2>My Profile</h2>
             </header>
             <div class="scroll-content profile-wrapper bg-gray">
                 <div class="profile-header-card">
@@ -110,14 +96,14 @@
                     <h2 id="myName" class="profile-name-large">Loading...</h2>
                     <div id="myCategoryDisplay" class="category-pill">Member</div>
                     <div id="myBio" class="bio-text">...</div>
-                    
                     <div class="stats-row">
-                        <div class="stat-box"><b id="myFollowersCount">0</b><span>Followers</span></div>
-                        <div class="stat-box"><b id="myFollowingCount">0</b><span>Following</span></div>
+                        <div class="stat-box" id="myFollowersBox"><b id="myFollowersCount">0</b><span>Followers</span></div>
+                        <div class="stat-box" id="myFollowingBox"><b id="myFollowingCount">0</b><span>Following</span></div>
                     </div>
-
                     <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
+                <div class="section-header">My Posts</div>
+                <div id="myPostsList" class="clean-list"></div>
                 <button id="logoutBtn" class="logout-text-btn">Log Out</button>
             </div>
         </div>
@@ -146,9 +132,9 @@
                 </div>
                 <div class="action-row-spread">
                     <button id="followBtn" class="primary-btn flex-btn">Follow</button>
-                    <button id="messageBtn" class="outline-btn flex-btn" disabled>Message</button>
+                    <button id="messageBtn" class="outline-btn flex-btn" disabled>Locked 🔒</button>
                 </div>
-                <p id="mutualWarning" class="mutual-warn">Must follow each other to chat.</p>
+                <p id="mutualWarning" class="mutual-warn">Follow each other to chat.</p>
             </div>
         </div>
     </div>
@@ -157,21 +143,39 @@
         <div class="modal-content center-modal">
             <h3>Edit Profile</h3>
             <div class="edit-field">
-                <label>Username (Unique)</label>
+                <label>Avatar Style</label>
+                <select id="editAvatarStyle" class="simple-input">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="identicon">Abstract</option>
+                </select>
+            </div>
+            <div class="edit-field">
+                <label>Username</label>
                 <input type="text" id="editUsername" class="simple-input">
             </div>
             <div class="edit-field">
-                <label>Category (e.g. Creator)</label>
+                <label>Category</label>
                 <input type="text" id="editCategory" class="simple-input">
             </div>
             <div class="edit-field">
                 <label>Bio</label>
-                <textarea id="editBio" maxlength="160" placeholder="About you..."></textarea>
+                <textarea id="editBio" maxlength="160"></textarea>
             </div>
             <div class="action-row-spread">
                  <button id="cancelEditBtn" class="outline-btn flex-btn">Cancel</button>
                  <button id="saveProfileBtn" class="primary-btn flex-btn">Save</button>
             </div>
+        </div>
+    </div>
+
+    <div id="followListModal" class="modal hidden bottom-sheet">
+        <div class="modal-content bottom-sheet-content">
+            <header class="modal-header">
+                <h3 id="followListTitle">Users</h3>
+                <button class="close-btn-icon" id="closeFollowList"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div id="followListContent" class="scroll-content clean-list" style="max-height:60vh;"></div>
         </div>
     </div>
 
@@ -195,7 +199,7 @@
             <span id="chatTitle" style="flex:1; text-align:center; font-weight:700;">Chat</span>
             <div style="width:32px;"></div>
         </header>
-        <div id="messages" class="messages-area bg-gray"></div>
+        <div id="messages" class="messages-area"></div>
         <form id="inputForm" class="chat-input-bar">
             <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
             <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
