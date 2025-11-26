@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -17,39 +17,44 @@
         <div class="login-container">
             <h1 class="brand-title">Cyou</h1>
             <p class="subtitle">The Truth Network</p>
+            
             <div id="loginForm">
                 <div class="input-group">
                     <input type="email" id="loginEmail" placeholder="Email">
                     <input type="password" id="loginPass" placeholder="Password">
                 </div>
-                <button id="loginBtn" class="primary-btn">Log In</button>
+                <button id="loginBtn" type="button" class="primary-btn">Log In</button>
                 <div style="display:flex; justify-content:space-between; margin-top:10px;">
-                    <button id="showSignup" class="anon-btn">Create Account</button>
-                    <button id="showForgot" class="anon-btn" style="color:#555;">Forgot Password?</button>
+                    <button id="showSignup" type="button" class="anon-btn">Create Account</button>
+                    <button id="showForgot" type="button" class="anon-btn" style="color:#555;">Forgot Password?</button>
                 </div>
             </div>
+
             <div id="signupForm" class="hidden">
                 <input type="text" id="signupName" placeholder="Username (Unique)">
                 <input type="email" id="signupEmail" placeholder="Email">
                 <input type="password" id="signupPass" placeholder="Password (6+ chars)">
-                <button id="signupBtn" class="primary-btn">Sign Up</button>
-                <button id="showLogin" class="anon-btn">Back to Login</button>
+                <button id="signupBtn" type="button" class="primary-btn">Sign Up</button>
+                <button id="showLogin" type="button" class="anon-btn">Back to Login</button>
             </div>
+
             <div id="forgotForm" class="hidden">
                 <h3>Reset Password</h3>
                 <input type="email" id="forgotEmail" class="simple-input" placeholder="Your Email">
                 <div class="action-row-spread">
-                    <button id="cancelForgot" class="outline-btn flex-btn">Cancel</button>
-                    <button id="resetPassBtn" class="primary-btn flex-btn">Send</button>
+                    <button id="cancelForgot" type="button" class="outline-btn flex-btn">Cancel</button>
+                    <button id="resetPassBtn" type="button" class="primary-btn flex-btn">Send Link</button>
                 </div>
             </div>
+            
             <div id="authError" class="error-msg"></div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden">
+        
         <div id="verifyBanner" class="hidden" style="background:#ff9800; color:white; padding:10px; text-align:center; font-size:0.8rem;">
-            Verify email to chat. <button id="resendVerify" style="border:none;background:white;color:#ff9800;border-radius:4px;margin-left:5px;">Resend</button>
+            Please verify your email to chat. <button id="resendVerify" type="button" style="border:none;background:white;color:#ff9800;border-radius:4px;margin-left:5px;">Resend</button>
         </div>
 
         <div id="tab-home" class="tab-content">
@@ -60,7 +65,7 @@
             <div class="create-post-box">
                 <textarea id="newPostText" placeholder="What's happening?"></textarea>
                 <div class="post-actions-bar">
-                    <button id="postBtn" class="primary-btn small-btn">Post</button>
+                    <button id="postBtn" type="button" class="primary-btn small-btn">Post</button>
                 </div>
             </div>
             <div id="feedList" class="scroll-content bg-gray"></div>
