@@ -1,4 +1,4 @@
- :root {
+:root {
     --primary: #006677; 
     --primary-dark: #004c59;
     --twitter-blue: #1da1f2;
@@ -9,7 +9,6 @@
     --border-light: #eff3f4;
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app); color: var(--text-dark); height: 100vh; overflow: hidden; }
 
@@ -41,12 +40,11 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 
 .top-bar { height: 56px; background: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-light); font-weight: 700; font-size: 1.2rem; }
 .scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; }
-
 .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: 5px; }
 .nav-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-gray); padding: 10px 20px; }
 .nav-btn.active { color: var(--primary); }
 
-/* FEED */
+/* FEED & ITEMS */
 .create-post-box { background: white; padding: 16px; border-bottom: 1px solid var(--border-light); }
 .create-post-box textarea { width: 100%; border: none; resize: none; outline: none; font-family: var(--font-stack); font-size: 1.1rem; height: 60px; }
 .post-actions-bar { display: flex; justify-content: flex-end; margin-top: 10px; }
@@ -61,7 +59,7 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .like-btn.liked { color: #e0245e; }
 .like-btn, .comment-btn { cursor: pointer; }
 
-/* LISTS */
+/* LISTS & MODALS */
 .search-header { padding: 8px 16px; }
 .search-bar-container { background: var(--border-light); border-radius: 9999px; display: flex; align-items: center; padding: 8px 16px; width: 100%; }
 .search-bar-container input { border: none; background: transparent; outline: none; margin-left: 10px; font-size: 1rem; flex: 1; }
@@ -72,7 +70,6 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .user-bio-list { color: var(--text-gray); font-size: 0.9rem; }
 .comment-pinned { background: #e0f7fa; border-left: 4px solid var(--primary); }
 
-/* PROFILE */
 .profile-header-card { background: white; padding: 25px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid var(--border-light); }
 .avatar-xl { width: 90px; height: 90px; border-radius: 50%; margin-bottom: 12px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); background: #eee; }
 .profile-name-large { font-size: 1.4rem; margin-bottom: 8px; }
@@ -81,7 +78,6 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .stat-box { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
 .stat-box b { font-size: 1.2rem; }
 
-/* MODALS */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; display: flex; justify-content: center; }
 .bottom-sheet { align-items: flex-end; }
 .bottom-sheet-content { background: white; width: 100%; border-radius: 20px 20px 0 0; padding-bottom: 20px; max-height: 90vh; overflow-y: auto; }
@@ -93,7 +89,7 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .action-row-spread { display: flex; gap: 12px; width: 100%; max-width: 350px; }
 .mutual-warn { color: #e0245e; font-size: 0.8rem; margin-top: 10px; background: #ffebee; padding: 5px 10px; border-radius: 10px; }
 
-/* INTERESTING CHAT ROOM */
+/* CHAT ROOM */
 #chat-room { background: #e5ddd5; z-index: 3000; }
 .chat-room-header { background: #006677; color: white; border: none; }
 .icon-header-btn { color: white; }
@@ -101,7 +97,6 @@ body { margin: 0; font-family: var(--font-stack); background-color: var(--bg-app
 .chat-input-bar { background: white; padding: 10px; border-top: 1px solid #ccc; display: flex; gap: 10px; align-items: center;}
 .chat-input-bar input { flex: 1; padding: 12px 20px; background: #f0f0f0; border-radius: 25px; border: none; outline: none; font-size: 1rem;}
 .send-btn { background: #006677; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
 .message { max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 1rem; line-height: 1.4; word-wrap: break-word; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1);}
 .message.you { align-self: flex-end; background: #dcf8c6; color: black; border-top-right-radius: 0; }
 .message.them { align-self: flex-start; background: white; color: black; border-top-left-radius: 0; }
