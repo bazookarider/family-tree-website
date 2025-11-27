@@ -9,7 +9,7 @@ const firebaseConfig = {
     databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com/"
 };
 
-let GEMINI_KEY = "AIzaSyD6XxzJPUP-6wh9yYh1T_NU0nvgjmGwFgA";
+const GEMINI_KEY = "AIzaSyD6XxzJPUP-6wh9yYh1T_NU0nvgjmGwFgA";
 let db, auth, currentUser = null;
 let currentChatId = null;
 let replyToMsg = null;
@@ -17,7 +17,7 @@ let publicReplyToMsg = null;
 let selectedMsg = null; 
 let aiSelectedImage = null;
 
-// Safe binding helper to prevent NULL errors
+// SAFE BIND HELPER - PREVENTS CRASHES
 function safeBind(id, event, fn) {
     const el = document.getElementById(id);
     if(el) el[event] = fn;
@@ -65,8 +65,10 @@ function initApp() {
         reader.onload = (e) => {
             aiSelectedImage = e.target.result.split(',')[1];
             let p = document.getElementById("aiImagePreview");
-            p.classList.remove("hidden");
-            p.innerHTML=`<img src="${e.target.result}"><i class="fa-solid fa-xmark" onclick="clearAi()"></i>`;
+            if(p) {
+                p.classList.remove("hidden");
+                p.innerHTML=`<img src="${e.target.result}"><i class="fa-solid fa-xmark" onclick="clearAi()"></i>`;
+            }
         };
         reader.readAsDataURL(file);
     });
@@ -88,8 +90,7 @@ function initApp() {
         try {
             let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
             let payload = { 
-                contents: [{ parts: [{ text: txt }] }],
-                safetySettings: [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" } ]
+                contents: [{ parts: [{ text: txt }] }]
             };
             if(aiSelectedImage) {
                 payload.contents[0].parts.push({ inline_data: { mime_type: "image/jpeg", data: aiSelectedImage } });
@@ -97,20 +98,23 @@ function initApp() {
             
             const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
             const data = await res.json();
-            document.getElementById(loadId).remove();
+            
+            const loadEl = document.getElementById(loadId);
+            if(loadEl) loadEl.remove();
             
             if(data.candidates && data.candidates[0].content) {
                 addMessage("aiChatList", data.candidates[0].content.parts[0].text, "them", true);
             } else {
-                addMessage("aiChatList", "AI Error: No content returned.", "them");
+                addMessage("aiChatList", "AI Error: No content.", "them");
             }
         } catch(e) { 
-            if(document.getElementById(loadId)) document.getElementById(loadId).remove();
+            const loadEl = document.getElementById(loadId);
+            if(loadEl) loadEl.remove();
             addMessage("aiChatList", "Conn Error: " + e.message, "them"); 
         }
     });
 
-    // PUBLIC CHAT INPUT
+    // CHAT INPUTS
     safeBind("publicInputForm", "onsubmit", (e) => {
         e.preventDefault();
         const txt = document.getElementById("publicMessageInput").value.trim();
@@ -123,7 +127,6 @@ function initApp() {
     });
     safeBind("cancelPublicReplyBtn", "onclick", cancelPublicReply);
 
-    // PRIVATE CHAT INPUT
     safeBind("inputForm", "onsubmit", (e) => {
         e.preventDefault();
         const txt = document.getElementById("messageInput").value.trim();
@@ -135,7 +138,7 @@ function initApp() {
         }
     });
     
-    // AUTH BINDINGS
+    // AUTH & NAV
     safeBind("loginBtn", "onclick", () => auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).catch(e=>alert(e.message)));
     safeBind("signupBtn", "onclick", async () => {
         const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
@@ -154,19 +157,18 @@ function initApp() {
     safeBind("showSignup", "onclick", () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); });
     safeBind("showLogin", "onclick", () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); });
 
-    // NAV
     safeBind("backToAppBtn", "onclick", () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId=null; });
     safeBind("cancelReplyBtn", "onclick", cancelReply);
     safeBind("userSearchInput", "oninput", (e) => searchUsers(e.target.value));
     safeBind("closeProfileModal", "onclick", () => document.getElementById("userProfileModal").classList.add("hidden"));
     safeBind("closeMsgOptions", "onclick", () => document.getElementById("msgOptionsModal").classList.add("hidden"));
     
-    // Edit Profile
     safeBind("openEditProfileBtn", "onclick", () => {
         document.getElementById("editProfileModal").classList.remove("hidden");
         document.getElementById("editUsername").value = currentUser.username;
         document.getElementById("editBio").value = currentUser.bio || "";
         document.getElementById("editCategory").value = currentUser.category || "";
+        document.getElementById("editGender").value = currentUser.gender || "male";
     });
     safeBind("saveProfileBtn", "onclick", async () => {
         await db.ref(`users/${currentUser.uid}`).update({
@@ -180,7 +182,7 @@ function initApp() {
     });
     safeBind("cancelEditBtn", "onclick", () => document.getElementById("editProfileModal").classList.add("hidden"));
 
-    // OPTIONS ACTIONS
+    // OPTIONS
     safeBind("optReply", "onclick", () => {
         const replyObj = { text: selectedMsg.text, sender: selectedMsg.senderName, id: selectedMsg.key };
         if(selectedMsg.chatId === "public_chat") {
@@ -196,6 +198,17 @@ function initApp() {
             document.getElementById("replyingToText").innerText = replyObj.text;
             document.getElementById("messageInput").focus();
         }
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    });
+    
+    safeBind("optCopy", "onclick", () => {
+        navigator.clipboard.writeText(selectedMsg.text);
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    });
+
+    safeBind("optEdit", "onclick", () => {
+        const newT = prompt("Edit:", selectedMsg.text);
+        if(newT) db.ref(`${selectedMsg.chatId}/${selectedMsg.key}`).update({text:newT});
         document.getElementById("msgOptionsModal").classList.add("hidden");
     });
     
@@ -232,7 +245,7 @@ function addMessage(listId, text, type, isHtml=false, id=null, meta=null, replyT
             document.getElementById("msgOptionsModal").classList.remove("hidden");
             const isMine = type === 'you';
             document.getElementById("optDelete").style.display = isMine ? "block" : "none";
-            document.getElementById("optEdit").style.display = "none"; // Disable edit for simplicity
+            document.getElementById("optEdit").style.display = isMine ? "block" : "none";
         };
     }
 
@@ -241,7 +254,6 @@ function addMessage(listId, text, type, isHtml=false, id=null, meta=null, replyT
     if(isHtml && window.Prism) Prism.highlightAllUnder(div);
 }
 
-// PUBLIC CHAT
 function initPublicChat() {
     const list = document.getElementById("publicChatList"); list.innerHTML = "";
     db.ref("public_chat").limitToLast(100).on("child_added", snap => {
@@ -252,7 +264,6 @@ function initPublicChat() {
     });
 }
 
-// NAVIGATION
 window.switchTab = (t) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`tab-${t}`).classList.remove('hidden');
@@ -265,13 +276,16 @@ window.switchTab = (t) => {
     if(t=='profile') loadProfile();
 };
 
+function loadRecommended() {
+    const list = document.getElementById("recommendedList"); list.innerHTML = "Loading...";
+    db.ref('users').limitToLast(5).get().then(snap => {
+        list.innerHTML = "";
+        snap.forEach(c => { if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list); });
+    });
+}
 function searchUsers(term) {
     const list = document.getElementById("usersList"); list.innerHTML = ""; if(!term) return;
     db.ref('users').get().then(snap => { snap.forEach(c => { const u = c.val(); if(u.username.toLowerCase().includes(term.toLowerCase()) && c.key !== currentUser.uid) renderUserItem(c.key, u, list); }); });
-}
-function loadRecommended() {
-    const list = document.getElementById("recommendedList"); list.innerHTML = "Loading...";
-    db.ref('users').limitToLast(5).get().then(snap => { list.innerHTML = ""; snap.forEach(c => { if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list); }); });
 }
 function renderUserItem(uid, u, container) {
     const d = document.createElement("div"); d.className = "user-item";
@@ -283,8 +297,7 @@ async function openUser(uid, u) {
     document.getElementById("userProfileModal").classList.remove("hidden");
     document.getElementById("viewName").innerText = u.username; document.getElementById("viewCategory").innerText = u.category;
     document.getElementById("viewBio").innerText = u.bio; document.getElementById("viewAvatar").src = getAvatar(u.username, u.gender);
-    const amI = (await db.ref(`followers/${uid}/${currentUser.uid}`).get()).exists();
-    const isHe = (await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists();
+    const amI = (await db.ref(`followers/${uid}/${currentUser.uid}`).get()).exists(); const isHe = (await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists();
     const fBtn = document.getElementById("followBtn"); fBtn.innerText = amI ? "Unfollow" : "Follow";
     fBtn.onclick = async () => { if(amI) { await db.ref(`followers/${uid}/${currentUser.uid}`).remove(); await db.ref(`following/${currentUser.uid}/${uid}`).remove(); } else { await db.ref(`followers/${uid}/${currentUser.uid}`).set(true); await db.ref(`following/${currentUser.uid}/${uid}`).set(true); } document.getElementById("userProfileModal").classList.add("hidden"); };
     const mBtn = document.getElementById("messageBtn"); if(amI && isHe) { mBtn.disabled = false; mBtn.innerText = "Message"; mBtn.onclick = () => startChat(uid, u.username); } else { mBtn.disabled = true; mBtn.innerText = "Locked 🔒"; }
@@ -302,7 +315,7 @@ function startChat(uid, name) {
     });
     currentChatId = [currentUser.uid, uid].sort().join("_");
     const list = document.getElementById("messages"); list.innerHTML = "";
-    db.ref(`private_chats/${currentChatId}`).limitToLast(50).on('child_added', snap => {
+    db.ref(`private_chats/${currentChatId}`).limitToLast(100).on('child_added', snap => {
         const m = snap.val(); const isMine = m.senderId === currentUser.uid;
         if(!isMine && m.status !== 'read') db.ref(`private_chats/${currentChatId}/${snap.key}`).update({status:'read'});
         let ticks = isMine ? (m.status === 'read' ? '<i class="fa-solid fa-check-double ticks read"></i>' : '<i class="fa-solid fa-check ticks"></i>') : '';
@@ -322,6 +335,11 @@ async function loadProfile() {
     document.getElementById("myAvatar").src = getAvatar(u.username, u.gender);
     const f1 = await db.ref(`followers/${currentUser.uid}`).get(); document.getElementById("myFollowersCount").innerText = f1.exists()?f1.numChildren():0;
     const f2 = await db.ref(`following/${currentUser.uid}`).get(); document.getElementById("myFollowingCount").innerText = f2.exists()?f2.numChildren():0;
+    
+    const list = document.getElementById("myPostsList"); list.innerHTML="";
+    // For now showing public chat history as "posts" is tricky since we moved to chat.
+    // Displaying simple text saying "Active in Public Chat"
+    list.innerHTML = "<div style='padding:20px; color:#666'>Participating in Global Chat.</div>";
 }
 function loadActiveChats() {
     const list = document.getElementById("activeChatsList"); list.innerHTML="";
