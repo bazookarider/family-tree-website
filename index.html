@@ -23,6 +23,7 @@
         <div class="login-container">
             <h1 class="brand-title">Cyou</h1>
             <p class="subtitle">The Truth Network</p>
+            
             <div id="loginForm">
                 <input type="email" id="loginEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="loginPass" class="simple-input" placeholder="Password">
@@ -32,18 +33,15 @@
                     <button id="showForgot" class="anon-btn">Forgot Password?</button>
                 </div>
             </div>
+
             <div id="signupForm" class="hidden">
                 <input type="text" id="signupName" class="simple-input" placeholder="Username">
                 <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="signupPass" class="simple-input" placeholder="Password">
-                <label style="display:block;margin-top:10px;text-align:left">Gender:</label>
-                <select id="signupGender" class="simple-input">
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                </select>
                 <button id="signupBtn" class="primary-btn">Sign Up</button>
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
+            
             <div id="forgotForm" class="hidden">
                 <input type="email" id="forgotEmail" class="simple-input" placeholder="Email">
                 <button id="resetPassBtn" class="primary-btn">Send Link</button>
@@ -60,7 +58,7 @@
                 <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate"></i></button>
             </header>
             <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's happening? #Hashtags..."></textarea>
+                <textarea id="newPostText" placeholder="What's happening?"></textarea>
                 <div class="post-actions-bar">
                     <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
@@ -69,16 +67,20 @@
         </div>
 
         <div id="tab-ai" class="tab-content hidden">
-            <header class="top-bar" style="background:#2d3436;">
+            <header class="top-bar">
                 <h2>AI Studio 🤖</h2>
+                <button id="aiSettingsBtn" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
             </header>
-            <div id="aiChatList" class="scroll-content" style="background:#1e1e1e; padding:15px; padding-bottom:80px;">
-                <div class="ai-message ai">Hello! I am Cyou Assistant, created by Legend. How can I help you code or create today?</div>
+            <div id="aiChatList" class="messages-area bg-gray" style="padding-bottom:80px;">
+                <div class="message them">Hello. I am Cyou Assistant. How can I help?</div>
             </div>
-            <div class="chat-input-bar" style="background:#2d3436; position:absolute; bottom:60px; width:100%;">
-                <input type="text" id="aiInput" placeholder="Ask AI code or generate image..." style="background:#444; color:white; border:none;">
-                <button id="sendAiBtn" class="send-btn" style="background:#00b894;"><i class="fa-solid fa-paper-plane"></i></button>
+            <div class="chat-input-bar ai-bar">
+                <input type="file" id="aiImageInput" accept="image/*" hidden>
+                <button id="aiImageBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-paperclip"></i></button>
+                <input type="text" id="aiInput" placeholder="Ask AI..." style="flex:1;">
+                <button id="sendAiBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
+            <div id="aiImagePreview" class="hidden"></div>
         </div>
 
         <div id="tab-discover" class="tab-content hidden">
@@ -89,9 +91,6 @@
                 </div>
             </header>
             <div class="scroll-content bg-gray">
-                <div class="section-header">Top Creators 🏆</div>
-                <div id="recommendedList" class="clean-list"></div>
-                <div class="section-header">All Users</div>
                 <div id="usersList" class="clean-list"></div>
             </div>
         </div>
@@ -105,7 +104,7 @@
             <header class="top-bar"><h2>Profile</h2> <button id="logoutBtn" class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button></header>
             <div class="scroll-content profile-wrapper bg-gray">
                 <div class="profile-header-card">
-                    <img id="myAvatar" src="" class="avatar-xl">
+                    <img id="myAvatar" class="avatar-xxl">
                     <h2 id="myName">...</h2>
                     <div id="myCategoryDisplay" class="category-pill">Member</div>
                     <p id="myBio" class="bio-text">...</p>
@@ -139,10 +138,10 @@
         </header>
         <div id="messages" class="messages-area"></div>
         <div id="replyContext" class="hidden">
-            <div class="reply-bar"></div>
+            <div class="reply-line"></div>
             <div style="flex:1; font-size:0.8rem;">
-                <b id="replyingToName" style="color:#006677;">Name</b>
-                <div id="replyingToText" style="color:#666; overflow:hidden; height:18px;">Text</div>
+                <b id="replyingToName">Name</b>
+                <div id="replyingToText">Text</div>
             </div>
             <button id="cancelReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
         </div>
@@ -152,21 +151,20 @@
         </form>
     </div>
 
-    <div id="msgOptionsModal" class="modal hidden bottom-sheet">
-        <div class="modal-content bottom-sheet-content">
-            <div class="modal-header">Options <span class="close-modal" id="closeMsgOptions">&times;</span></div>
-            <button class="opt-btn" id="optReply"><i class="fa-solid fa-reply"></i> Reply</button>
-            <button class="opt-btn" id="optCopy"><i class="fa-solid fa-copy"></i> Copy</button>
-            <button class="opt-btn" id="optEdit"><i class="fa-solid fa-pen"></i> Edit</button>
-            <button class="opt-btn delete" id="optDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+    <div id="aiKeyModal" class="modal hidden center-modal">
+        <div class="modal-content">
+            <h3>AI API Key</h3>
+            <input type="text" id="geminiKeyInput" class="simple-input" placeholder="Paste Key Here">
+            <button id="saveAiKeyBtn" class="primary-btn">Save</button>
+            <button onclick="document.getElementById('aiKeyModal').classList.add('hidden')" class="anon-btn">Close</button>
         </div>
     </div>
 
     <div id="userProfileModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <span class="close-modal" id="closeProfileModal">&times;</span>
+            <button id="closeProfileModal" class="close-modal">&times;</button>
             <div class="profile-header-card no-border">
-                <img id="viewAvatar" src="" class="avatar-xl">
+                <img id="viewAvatar" class="avatar-xxl">
                 <h2 id="viewName">Name</h2>
                 <div id="viewCategory" class="category-pill">Member</div>
                 <div id="viewBio" class="bio-text"></div>
@@ -188,11 +186,6 @@
             <input type="text" id="editUsername" class="simple-input" placeholder="Username">
             <input type="text" id="editCategory" class="simple-input" placeholder="Category">
             <textarea id="editBio" class="simple-input" placeholder="Bio"></textarea>
-            <label>Gender</label>
-            <select id="editGender" class="simple-input">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
             <div class="action-row">
                  <button id="cancelEditBtn" class="outline-btn">Cancel</button>
                  <button id="saveProfileBtn" class="primary-btn">Save</button>
@@ -200,19 +193,9 @@
         </div>
     </div>
 
-    <div id="followListModal" class="modal hidden bottom-sheet">
-        <div class="modal-content bottom-sheet-content">
-            <div class="modal-header">Users <span class="close-modal" id="closeFollowList">&times;</span></div>
-            <div id="followListContent" class="scroll-content clean-list" style="max-height:60vh;"></div>
-        </div>
-    </div>
-
     <div id="commentModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <div class="modal-header">
-                <h3>Comments</h3>
-                <button id="closeCommentModal" class="close-modal">&times;</button>
-            </div>
+            <div class="modal-header"><h3>Comments</h3><button id="closeCommentModal" class="close-modal">&times;</button></div>
             <div id="commentsList" class="scroll-content" style="max-height: 300px;"></div>
             <div class="chat-input-bar">
                 <input type="text" id="commentInput" placeholder="Add a comment...">
