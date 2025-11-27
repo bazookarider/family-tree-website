@@ -53,18 +53,11 @@
     <div id="app-screen" class="hidden">
         
         <div id="tab-home" class="tab-content">
-            <header class="top-bar">
-                <h2>Public Chat 🌍</h2>
-            </header>
-            <div id="publicChatList" class="messages-area bg-gray" style="padding-bottom:130px;"></div>
-            
+            <header class="top-bar"><h2>Public Chat 🌍</h2></header>
+            <div id="publicChatList" class="messages-area bg-gray" style="padding-bottom:80px;"></div>
             <div class="chat-input-wrapper">
                 <div id="publicReplyContext" class="hidden reply-context-bar">
-                    <div class="reply-bar"></div>
-                    <div style="flex:1; font-size:0.8rem;">
-                        <b id="publicReplyingToName" style="color:#006677;">Name</b>
-                        <div id="publicReplyingToText" style="color:#666; height:18px; overflow:hidden;">Text</div>
-                    </div>
+                    <div style="flex:1; font-size:0.8rem;">Replying...</div>
                     <button id="cancelPublicReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <form id="publicInputForm" class="chat-input-bar">
@@ -75,14 +68,10 @@
         </div>
 
         <div id="tab-ai" class="tab-content hidden">
-            <header class="top-bar">
-                <h2>AI Studio 🤖</h2>
-                <button id="aiSettingsBtn" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
-            </header>
-            <div id="aiChatList" class="messages-area bg-gray" style="padding-bottom:130px;">
+            <header class="top-bar"><h2>AI Studio 🤖</h2></header>
+            <div id="aiChatList" class="messages-area bg-gray" style="padding-bottom:80px;">
                 <div class="message them">Hello. I am Cyou Assistant.</div>
             </div>
-            
             <div class="chat-input-wrapper">
                 <div id="aiImagePreview" class="hidden selected-image-preview"></div>
                 <div class="chat-input-bar">
@@ -122,13 +111,17 @@
                     <h2 id="myName">...</h2>
                     <div id="myCategoryDisplay" class="category-pill">Member</div>
                     <p id="myBio" class="bio-text">...</p>
+                    <div class="stats-row">
+                        <div class="stat-box"><b id="myFollowersCount">0</b><span>Followers</span></div>
+                        <div class="stat-box"><b id="myFollowingCount">0</b><span>Following</span></div>
+                    </div>
                     <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-earth-africa"></i></button>
+            <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-comments"></i></button>
             <button class="nav-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i></button>
             <button class="nav-btn" onclick="switchTab('discover')"><i class="fa-solid fa-magnifying-glass"></i></button>
             <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-regular fa-comment-dots"></i></button>
@@ -144,30 +137,16 @@
                 <div id="chatStatus">Offline</div>
             </div>
         </header>
-        <div id="messages" class="messages-area bg-gray" style="padding-bottom:70px;"></div>
-        
+        <div id="messages" class="messages-area bg-gray" style="padding-bottom:80px;"></div>
         <div class="chat-input-wrapper">
             <div id="replyContext" class="hidden reply-context-bar">
-                <div class="reply-bar"></div>
-                <div style="flex:1; font-size:0.8rem;">
-                    <b id="replyingToName">Name</b>
-                    <div id="replyingToText" style="overflow:hidden; height:18px;">Text</div>
-                </div>
+                <div style="flex:1; font-size:0.8rem;">Replying...</div>
                 <button id="cancelReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="inputForm" class="chat-input-bar">
                 <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
                 <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
-        </div>
-    </div>
-
-    <div id="aiKeyModal" class="modal hidden center-modal">
-        <div class="modal-content">
-            <h3>AI Key</h3>
-            <input type="text" id="geminiKeyInput" class="simple-input" placeholder="Paste Key Here">
-            <button id="saveAiKeyBtn" class="primary-btn">Save</button>
-            <button onclick="document.getElementById('aiKeyModal').classList.add('hidden')" class="anon-btn">Close</button>
         </div>
     </div>
 
