@@ -12,9 +12,7 @@ const firebaseConfig = {
 let db, auth, currentUser = null;
 let currentChatId = null;
 let replyToMsg = null;
-let typingTimeout = null;
-let selectedMsgId = null;
-let selectedMsgText = null;
+let selectedMsg = null; // For edit/delete context
 
 window.onload = function() {
     try {
@@ -26,7 +24,7 @@ window.onload = function() {
 };
 
 function initApp() {
-    // PRESENCE & AUTH
+    // PRESENCE
     const connectedRef = db.ref(".info/connected");
     auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -48,11 +46,12 @@ function initApp() {
         }
     });
 
-    // AUTH BUTTONS
+    // AUTH
     document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).catch(e=>alert(e.message));
     document.getElementById("signupBtn").onclick = async () => {
         const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
-        const email = document.getElementById("signupEmail").value; const pass = document.getElementById("signupPass").value;
+        const email = document.getElementById("signupEmail").value;
+        const pass = document.getElementById("signupPass").value;
         const gender = document.getElementById("signupGender").value;
         try {
             const chk = await db.ref(`usernames/${name}`).get();
@@ -76,61 +75,25 @@ function initApp() {
     };
     document.getElementById("refreshFeedBtn").onclick = loadFeed;
 
-    // CHAT INPUT & TYPING
-    const msgInput = document.getElementById("messageInput");
-    msgInput.oninput = () => {
-        if(currentChatId) {
-            db.ref(`typing/${currentChatId}/${currentUser.uid}`).set(true);
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => db.ref(`typing/${currentChatId}/${currentUser.uid}`).remove(), 2000);
-        }
-    };
+    // CHAT INPUT
     document.getElementById("inputForm").onsubmit = (e) => {
         e.preventDefault();
-        const txt = msgInput.value.trim();
+        const txt = document.getElementById("messageInput").value.trim();
         if(txt && currentChatId) {
             const payload = { senderId: currentUser.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP, status: 'sent' };
             if(replyToMsg) { payload.replyTo = replyToMsg; cancelReply(); }
             db.ref(`private_chats/${currentChatId}`).push(payload);
-            msgInput.value = "";
-            db.ref(`typing/${currentChatId}/${currentUser.uid}`).remove();
+            document.getElementById("messageInput").value = "";
         }
     };
     document.getElementById("backToAppBtn").onclick = () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId=null; };
     document.getElementById("cancelReplyBtn").onclick = cancelReply;
 
-    // MESSAGE MENU ACTIONS
-    document.getElementById("closeMsgOptions").onclick = () => document.getElementById("msgOptionsModal").classList.add("hidden");
-    
-    document.getElementById("optReply").onclick = () => {
-        replyToMsg = { text: selectedMsgText, sender: "Replying..." }; 
-        document.getElementById("replyContext").classList.remove("hidden");
-        document.getElementById("replyingToName").innerText = "Replying to message";
-        document.getElementById("replyingToText").innerText = selectedMsgText;
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-        document.getElementById("messageInput").focus();
-    };
-    
-    document.getElementById("optForward").onclick = () => {
-        navigator.clipboard.writeText(selectedMsgText);
-        alert("Message copied! Paste to forward.");
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-    
-    document.getElementById("optEdit").onclick = () => {
-        const newText = prompt("Edit message:", selectedMsgText);
-        if(newText) db.ref(`private_chats/${currentChatId}/${selectedMsgId}`).update({text: newText});
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-    
-    document.getElementById("optDelete").onclick = () => {
-        if(confirm("Delete for everyone?")) db.ref(`private_chats/${currentChatId}/${selectedMsgId}`).update({deleted:true, text:""});
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-
-    // MODALS
-    document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
+    // MODALS & NAV
     document.getElementById("userSearchInput").oninput = (e) => searchUsers(e.target.value);
+    document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
+    document.getElementById("closeCommentModal").onclick = () => document.getElementById("commentModal").classList.add("hidden");
+    document.getElementById("closeMsgOptions").onclick = () => document.getElementById("msgOptionsModal").classList.add("hidden");
     document.getElementById("openEditProfileBtn").onclick = () => {
         document.getElementById("editProfileModal").classList.remove("hidden");
         document.getElementById("editUsername").value = currentUser.username;
@@ -148,6 +111,38 @@ function initApp() {
         loadProfile();
     };
     document.getElementById("cancelEditBtn").onclick = () => document.getElementById("editProfileModal").classList.add("hidden");
+
+    // COMMENT SEND
+    document.getElementById("sendCommentBtn").onclick = async () => {
+        const t = document.getElementById("commentInput").value.trim();
+        if(t && activePostIdForComments) {
+            await db.ref(`posts/${activePostIdForComments}/comments`).push({uid:currentUser.uid, username:currentUser.username, text:t});
+            document.getElementById("commentInput").value="";
+            loadComments(activePostIdForComments);
+        }
+    };
+
+    // MSG OPTIONS
+    document.getElementById("optReply").onclick = () => {
+        replyToMsg = { text: selectedMsg.text, sender: "Reply" }; 
+        document.getElementById("replyContext").classList.remove("hidden");
+        document.getElementById("replyingToName").innerText = "Replying...";
+        document.getElementById("replyingToText").innerText = selectedMsg.text;
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    };
+    document.getElementById("optCopy").onclick = () => {
+        navigator.clipboard.writeText(selectedMsg.text);
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    };
+    document.getElementById("optEdit").onclick = () => {
+        const newT = prompt("Edit:", selectedMsg.text);
+        if(newT) db.ref(`private_chats/${currentChatId}/${selectedMsg.key}`).update({text:newT});
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    };
+    document.getElementById("optDelete").onclick = () => {
+        if(confirm("Delete for everyone?")) db.ref(`private_chats/${currentChatId}/${selectedMsg.key}`).update({deleted:true, text:""});
+        document.getElementById("msgOptionsModal").classList.add("hidden");
+    };
 }
 
 // HELPERS
@@ -167,7 +162,7 @@ window.switchTab = (t) => {
     if(t=='profile') loadProfile();
 };
 
-// POSTS
+// FEED
 function loadFeed() {
     const list = document.getElementById("feedList"); list.innerHTML = "";
     db.ref('posts').limitToLast(50).get().then(async snap => {
@@ -175,23 +170,53 @@ function loadFeed() {
         const posts = []; snap.forEach(c => posts.unshift({key:c.key, ...c.val()}));
         posts.forEach(p => {
             const d = document.createElement("div"); d.className = "post";
-            const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-pen action-btn" onclick="editPost('${p.key}', '${p.text}')"></i> <i class="fa-solid fa-trash action-btn" onclick="deletePost('${p.key}')"></i>` : '';
+            const isLiked = p.likes && p.likes[currentUser.uid];
+            const likes = p.likes ? Object.keys(p.likes).length : 0;
+            const comms = p.comments ? Object.keys(p.comments).length : 0;
+            const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-trash" onclick="deletePost('${p.key}')"></i>` : '';
+            
             d.innerHTML = `
-                <img src="${getAvatar(p.username)}" class="avatar-xl">
+                <img src="${getAvatar(p.username, 'male')}" class="avatar-xl">
                 <div class="post-content">
-                    <div class="post-header"><span>${p.username}</span> <div style="display:flex; gap:10px;">${delBtn}</div></div>
+                    <div class="post-header"><span>${p.username}</span> ${delBtn}</div>
                     <div class="post-text">${parseText(p.text)}</div>
-                    <div class="post-actions"><span class="post-time">${timeAgo(p.time)}</span></div>
+                    <div class="post-actions">
+                        <div class="action-btn ${isLiked?'liked':''}" onclick="toggleLike('${p.key}', ${isLiked})">
+                            <i class="${isLiked?'fa-solid':'fa-regular'} fa-heart"></i> ${likes||''}
+                        </div>
+                        <div class="action-btn" onclick="openComments('${p.key}')">
+                            <i class="fa-regular fa-comment"></i> ${comms||''}
+                        </div>
+                        <span class="post-time">${timeAgo(p.time)}</span>
+                    </div>
                 </div>`;
             list.appendChild(d);
         });
     });
 }
-window.deletePost = (pid) => { if(confirm("Delete post?")) db.ref(`posts/${pid}`).remove().then(loadFeed); };
-window.editPost = (pid, oldTxt) => { 
-    const newTxt = prompt("Edit post:", oldTxt); 
-    if(newTxt) db.ref(`posts/${pid}`).update({text:newTxt}).then(loadFeed); 
+window.deletePost = (pid) => { if(confirm("Delete?")) db.ref(`posts/${pid}`).remove().then(loadFeed); };
+window.toggleLike = async (pid, isLiked) => {
+    if(isLiked) await db.ref(`posts/${pid}/likes/${currentUser.uid}`).remove();
+    else await db.ref(`posts/${pid}/likes/${currentUser.uid}`).set(true);
+    loadFeed();
 };
+window.openComments = (pid) => {
+    activePostIdForComments = pid;
+    document.getElementById("commentModal").classList.remove("hidden");
+    loadComments(pid);
+};
+function loadComments(pid) {
+    const list = document.getElementById("commentsList"); list.innerHTML="Loading...";
+    db.ref(`posts/${pid}/comments`).get().then(snap => {
+        list.innerHTML="";
+        if(!snap.exists()) { list.innerHTML="No comments."; return; }
+        snap.forEach(c => {
+            const d = document.createElement("div"); d.className="comment-item";
+            d.innerHTML = `<b>${c.val().username}:</b> ${c.val().text}`;
+            list.appendChild(d);
+        });
+    });
+}
 
 // SEARCH
 function searchUsers(term) {
@@ -236,15 +261,15 @@ function startChat(uid, name) {
     document.getElementById("chat-room").classList.remove("hidden");
     document.getElementById("chatTitle").innerText = name;
     
-    // Status & Typing Listener
-    db.ref(`users/${uid}/presence`).on('value', s => document.getElementById("chatStatus").innerText = (s.val() && s.val().state === 'online') ? "Online" : "Offline");
-    currentChatId = [currentUser.uid, uid].sort().join("_");
-    
-    db.ref(`typing/${currentChatId}/${uid}`).on('value', s => {
-        if(s.val()) document.getElementById("chatStatus").innerText = "Typing...";
-        else db.ref(`users/${uid}/presence`).once('value', ps => document.getElementById("chatStatus").innerText = (ps.val() && ps.val().state === 'online') ? "Online" : "Offline");
+    // Last Seen Logic
+    db.ref(`users/${uid}/presence`).on('value', snap => {
+        const s = snap.val();
+        if(s && s.state === 'online') document.getElementById("chatStatus").innerText = "Online";
+        else if(s && s.lastChanged) document.getElementById("chatStatus").innerText = "Last seen " + timeAgo(s.lastChanged);
+        else document.getElementById("chatStatus").innerText = "Offline";
     });
 
+    currentChatId = [currentUser.uid, uid].sort().join("_");
     db.ref(`private_chats/${currentChatId}`).on('value', snap => {
         const div = document.getElementById("messages"); div.innerHTML = "";
         if(snap.exists()) {
@@ -253,6 +278,7 @@ function startChat(uid, name) {
                 const isMine = m.senderId === currentUser.uid;
                 const d = document.createElement("div");
                 d.className = "message " + (isMine ? "you" : "them");
+                
                 let ticks = '<i class="fa-solid fa-check"></i>';
                 if(isMine) {
                     if(m.status === 'read') ticks = '<i class="fa-solid fa-check-double ticks read"></i>';
@@ -264,10 +290,9 @@ function startChat(uid, name) {
                     const replyHtml = m.replyTo ? `<div class="reply-quote"><b>${m.replyTo.sender}</b><br>${m.replyTo.text}</div>` : '';
                     d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${timeAgo(m.time)} ${isMine?ticks:''}</div>`;
                     d.onclick = () => {
-                        selectedMsgId = c.key; selectedMsgText = m.text;
+                        selectedMsg = {key: c.key, text: m.text};
                         const modal = document.getElementById("msgOptionsModal");
                         modal.classList.remove("hidden");
-                        // Show/Hide Delete/Edit based on ownership
                         document.getElementById("optDelete").style.display = isMine ? "block" : "none";
                         document.getElementById("optEdit").style.display = isMine ? "block" : "none";
                     };
@@ -295,11 +320,14 @@ async function loadProfile() {
             list.appendChild(d);
         });
     });
+    const f1 = await db.ref(`followers/${currentUser.uid}`).get(); document.getElementById("myFollowersCount").innerText = f1.exists()?f1.numChildren():0;
+    const f2 = await db.ref(`following/${currentUser.uid}`).get(); document.getElementById("myFollowingCount").innerText = f2.exists()?f2.numChildren():0;
 }
+
 function loadActiveChats() {
     const list = document.getElementById("activeChatsList"); list.innerHTML="";
     db.ref(`following/${currentUser.uid}`).get().then(async snap => {
-        if(!snap.exists()) return;
+        if(!snap.exists()) { list.innerHTML="<div style='padding:20px;text-align:center'>No friends</div>"; return; }
         Object.keys(snap.val()).forEach(async uid => {
             if((await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists()) {
                 const u = (await db.ref(`users/${uid}`).get()).val();
