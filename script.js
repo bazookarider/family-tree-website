@@ -12,7 +12,7 @@ const firebaseConfig = {
 let db, auth, currentUser = null;
 let currentChatId = null;
 let replyToMsg = null;
-let selectedMsg = null; // For edit/delete context
+let selectedMsg = null; 
 
 window.onload = function() {
     try {
@@ -20,16 +20,17 @@ window.onload = function() {
         db = firebase.database();
         auth = firebase.auth();
         initApp();
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { console.error("FB Error", e); }
 };
 
 function initApp() {
-    // PRESENCE
     const connectedRef = db.ref(".info/connected");
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const snap = await db.ref(`users/${user.uid}`).get();
             currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
+            
+            // Presence
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
                     const con = db.ref(`users/${user.uid}/presence`);
@@ -37,147 +38,174 @@ function initApp() {
                     con.set({state: 'online', lastChanged: firebase.database.ServerValue.TIMESTAMP});
                 }
             });
-            document.getElementById("auth-screen").classList.add("hidden");
-            document.getElementById("app-screen").classList.remove("hidden");
+
+            if(document.getElementById("auth-screen")) document.getElementById("auth-screen").classList.add("hidden");
+            if(document.getElementById("app-screen")) document.getElementById("app-screen").classList.remove("hidden");
             switchTab('home');
         } else {
-            document.getElementById("app-screen").classList.add("hidden");
-            document.getElementById("auth-screen").classList.remove("hidden");
+            if(document.getElementById("app-screen")) document.getElementById("app-screen").classList.add("hidden");
+            if(document.getElementById("auth-screen")) document.getElementById("auth-screen").classList.remove("hidden");
         }
     });
 
-    // AUTH
-    document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).catch(e=>alert(e.message));
-    document.getElementById("signupBtn").onclick = async () => {
-        const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
-        const email = document.getElementById("signupEmail").value;
-        const pass = document.getElementById("signupPass").value;
-        const gender = document.getElementById("signupGender").value;
-        try {
-            const chk = await db.ref(`usernames/${name}`).get();
-            if(chk.exists()) throw new Error("Username taken");
-            const cred = await auth.createUserWithEmailAndPassword(email, pass);
-            await db.ref(`users/${cred.user.uid}`).set({username: name, email, gender, category: "Member", joined: Date.now()});
-            await db.ref(`usernames/${name}`).set(cred.user.uid);
-        } catch(e) { alert(e.message); }
-    };
-    document.getElementById("logoutBtn").onclick = () => auth.signOut();
-    document.getElementById("showSignup").onclick = () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); };
-    document.getElementById("showLogin").onclick = () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); };
-
-    // POSTS
-    document.getElementById("postBtn").onclick = async () => {
-        const txt = document.getElementById("newPostText").value.trim();
-        if(!txt) return;
-        await db.ref('posts').push({ uid: currentUser.uid, username: currentUser.username, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
-        document.getElementById("newPostText").value = "";
-        loadFeed();
-    };
-    document.getElementById("refreshFeedBtn").onclick = loadFeed;
-
-    // CHAT INPUT
-    document.getElementById("inputForm").onsubmit = (e) => {
+    // BINDINGS
+    bindClick("loginBtn", () => auth.signInWithEmailAndPassword(getVal("loginEmail"), getVal("loginPass")).catch(e=>alert(e.message)));
+    bindClick("signupBtn", handleSignup);
+    bindClick("logoutBtn", () => auth.signOut());
+    bindClick("showSignup", () => { hide("loginForm"); show("signupForm"); });
+    bindClick("showLogin", () => { hide("signupForm"); show("loginForm"); });
+    
+    bindClick("postBtn", handlePost);
+    bindClick("refreshFeedBtn", loadFeed);
+    
+    // Chat Inputs
+    const inputForm = document.getElementById("inputForm");
+    if(inputForm) inputForm.onsubmit = (e) => {
         e.preventDefault();
-        const txt = document.getElementById("messageInput").value.trim();
-        if(txt && currentChatId) {
-            const payload = { senderId: currentUser.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP, status: 'sent' };
-            if(replyToMsg) { payload.replyTo = replyToMsg; cancelReply(); }
-            db.ref(`private_chats/${currentChatId}`).push(payload);
-            document.getElementById("messageInput").value = "";
-        }
+        handleChatSend();
     };
-    document.getElementById("backToAppBtn").onclick = () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId=null; };
-    document.getElementById("cancelReplyBtn").onclick = cancelReply;
+    bindClick("backToAppBtn", () => { hide("chat-room"); currentChatId=null; });
+    bindClick("cancelReplyBtn", cancelReply);
 
-    // MODALS & NAV
-    document.getElementById("userSearchInput").oninput = (e) => searchUsers(e.target.value);
-    document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
-    document.getElementById("closeCommentModal").onclick = () => document.getElementById("commentModal").classList.add("hidden");
-    document.getElementById("closeMsgOptions").onclick = () => document.getElementById("msgOptionsModal").classList.add("hidden");
-    document.getElementById("openEditProfileBtn").onclick = () => {
-        document.getElementById("editProfileModal").classList.remove("hidden");
-        document.getElementById("editUsername").value = currentUser.username;
-        document.getElementById("editBio").value = currentUser.bio || "";
-        document.getElementById("editCategory").value = currentUser.category || "";
-        document.getElementById("editGender").value = currentUser.gender || "male";
-    };
-    document.getElementById("saveProfileBtn").onclick = async () => {
-        const name = document.getElementById("editUsername").value.trim();
-        await db.ref(`users/${currentUser.uid}`).update({
-            username: name, bio: document.getElementById("editBio").value,
-            category: document.getElementById("editCategory").value, gender: document.getElementById("editGender").value
-        });
-        document.getElementById("editProfileModal").classList.add("hidden");
-        loadProfile();
-    };
-    document.getElementById("cancelEditBtn").onclick = () => document.getElementById("editProfileModal").classList.add("hidden");
+    // Search
+    const searchIn = document.getElementById("userSearchInput");
+    if(searchIn) searchIn.oninput = (e) => searchUsers(e.target.value);
 
-    // COMMENT SEND
-    document.getElementById("sendCommentBtn").onclick = async () => {
-        const t = document.getElementById("commentInput").value.trim();
-        if(t && activePostIdForComments) {
-            await db.ref(`posts/${activePostIdForComments}/comments`).push({uid:currentUser.uid, username:currentUser.username, text:t});
-            document.getElementById("commentInput").value="";
-            loadComments(activePostIdForComments);
-        }
-    };
-
-    // MSG OPTIONS
-    document.getElementById("optReply").onclick = () => {
-        replyToMsg = { text: selectedMsg.text, sender: "Reply" }; 
-        document.getElementById("replyContext").classList.remove("hidden");
-        document.getElementById("replyingToName").innerText = "Replying...";
+    // Modals
+    bindClick("closeProfileModal", () => hide("userProfileModal"));
+    bindClick("closeCommentModal", () => hide("commentModal"));
+    bindClick("closeMsgOptions", () => hide("msgOptionsModal"));
+    
+    bindClick("openEditProfileBtn", () => {
+        show("editProfileModal");
+        setVal("editUsername", currentUser.username);
+        setVal("editBio", currentUser.bio || "");
+        setVal("editCategory", currentUser.category || "");
+        setVal("editGender", currentUser.gender || "male");
+    });
+    
+    bindClick("saveProfileBtn", handleProfileSave);
+    bindClick("cancelEditBtn", () => hide("editProfileModal"));
+    
+    bindClick("sendCommentBtn", handleCommentSend);
+    
+    // Options Actions
+    bindClick("optReply", () => {
+        replyToMsg = { text: selectedMsg.text, sender: "Replying..." }; 
+        show("replyContext");
+        document.getElementById("replyingToName").innerText = "Replying";
         document.getElementById("replyingToText").innerText = selectedMsg.text;
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-    document.getElementById("optCopy").onclick = () => {
-        navigator.clipboard.writeText(selectedMsg.text);
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-    document.getElementById("optEdit").onclick = () => {
+        hide("msgOptionsModal");
+    });
+    bindClick("optEdit", () => {
         const newT = prompt("Edit:", selectedMsg.text);
         if(newT) db.ref(`private_chats/${currentChatId}/${selectedMsg.key}`).update({text:newT});
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
-    document.getElementById("optDelete").onclick = () => {
-        if(confirm("Delete for everyone?")) db.ref(`private_chats/${currentChatId}/${selectedMsg.key}`).update({deleted:true, text:""});
-        document.getElementById("msgOptionsModal").classList.add("hidden");
-    };
+        hide("msgOptionsModal");
+    });
+    bindClick("optDelete", () => {
+        if(confirm("Delete?")) db.ref(`private_chats/${currentChatId}/${selectedMsg.key}`).update({deleted:true, text:""});
+        hide("msgOptionsModal");
+    });
 }
 
-// HELPERS
+// --- HANDLERS ---
+async function handleSignup() {
+    const name = getVal("signupName").replace(/\s/g, "");
+    const email = getVal("signupEmail");
+    const pass = getVal("signupPass");
+    const gender = getVal("signupGender");
+    try {
+        const chk = await db.ref(`usernames/${name}`).get();
+        if(chk.exists()) throw new Error("Username taken");
+        const cred = await auth.createUserWithEmailAndPassword(email, pass);
+        await db.ref(`users/${cred.user.uid}`).set({username: name, email, gender, category: "Member", joined: Date.now()});
+        await db.ref(`usernames/${name}`).set(cred.user.uid);
+    } catch(e) { alert(e.message); }
+}
+
+async function handlePost() {
+    const txt = getVal("newPostText");
+    if(!txt) return;
+    await db.ref('posts').push({ uid: currentUser.uid, username: currentUser.username, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
+    setVal("newPostText", "");
+    loadFeed();
+}
+
+async function handleProfileSave() {
+    const name = getVal("editUsername");
+    await db.ref(`users/${currentUser.uid}`).update({
+        username: name, bio: getVal("editBio"), category: getVal("editCategory"), gender: getVal("editGender")
+    });
+    hide("editProfileModal");
+    loadProfile();
+}
+
+async function handleChatSend() {
+    const txt = getVal("messageInput");
+    if(txt && currentChatId) {
+        const payload = { senderId: currentUser.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP, status: 'sent' };
+        if(replyToMsg) { payload.replyTo = replyToMsg; cancelReply(); }
+        db.ref(`private_chats/${currentChatId}`).push(payload);
+        setVal("messageInput", "");
+    }
+}
+
+async function handleCommentSend() {
+    const t = getVal("commentInput");
+    if(t && selectedMsg) { // Reuse selectedMsg var for post ID in comments
+        await db.ref(`posts/${selectedMsg}/comments`).push({uid:currentUser.uid, username:currentUser.username, text:t});
+        setVal("commentInput", "");
+        loadComments(selectedMsg);
+    }
+}
+
+// --- UTILS ---
+function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+function setVal(id, v) { const el = document.getElementById(id); if(el) el.value = v; }
+function show(id) { const el = document.getElementById(id); if(el) el.classList.remove("hidden"); }
+function hide(id) { const el = document.getElementById(id); if(el) el.classList.add("hidden"); }
+function bindClick(id, fn) { const el = document.getElementById(id); if(el) el.onclick = fn; }
+
 function getAvatar(u, gender) { return `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&gender=${gender||'male'}`; }
 function timeAgo(ts) { if(!ts) return ''; return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 function parseText(t) { return t.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>'); }
 
-// NAV
+// --- NAVIGATION ---
 window.switchTab = (t) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`tab-${t}`).classList.remove('hidden');
+    show(`tab-${t}`);
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    const map={'home':0, 'discover':1, 'chats':2, 'profile':3};
-    document.querySelectorAll('.nav-btn')[map[t]].classList.add('active');
+    // Manual active mapping
+    const navs = document.querySelectorAll('.nav-btn');
+    if(t=='home' && navs[0]) navs[0].classList.add('active');
+    if(t=='discover' && navs[1]) navs[1].classList.add('active');
+    if(t=='chats' && navs[2]) navs[2].classList.add('active');
+    if(t=='profile' && navs[3]) navs[3].classList.add('active');
+    
     if(t=='home') loadFeed();
+    if(t=='discover') { loadRecommended(); searchUsers(""); }
     if(t=='chats') loadActiveChats();
     if(t=='profile') loadProfile();
 };
 
-// FEED
+// --- FEED ---
 function loadFeed() {
-    const list = document.getElementById("feedList"); list.innerHTML = "";
+    const list = document.getElementById("feedList");
+    if(!list) return;
+    list.innerHTML = "";
     db.ref('posts').limitToLast(50).get().then(async snap => {
-        if(!snap.exists()) { list.innerHTML = "<div style='text-align:center; padding:20px; color:#999'>No posts</div>"; return; }
+        if(!snap.exists()) { list.innerHTML = "<div style='padding:20px;text-align:center'>No posts</div>"; return; }
         const posts = []; snap.forEach(c => posts.unshift({key:c.key, ...c.val()}));
         posts.forEach(p => {
             const d = document.createElement("div"); d.className = "post";
             const isLiked = p.likes && p.likes[currentUser.uid];
             const likes = p.likes ? Object.keys(p.likes).length : 0;
             const comms = p.comments ? Object.keys(p.comments).length : 0;
-            const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-trash" onclick="deletePost('${p.key}')"></i>` : '';
+            const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-trash" onclick="deletePost('${p.key}')" style="margin-left:auto;color:#ccc"></i>` : '';
             
             d.innerHTML = `
-                <img src="${getAvatar(p.username, 'male')}" class="avatar-xl">
-                <div class="post-content">
+                <img src="${getAvatar(p.username)}" class="avatar-xl">
+                <div style="flex:1">
                     <div class="post-header"><span>${p.username}</span> ${delBtn}</div>
                     <div class="post-text">${parseText(p.text)}</div>
                     <div class="post-actions">
@@ -187,7 +215,7 @@ function loadFeed() {
                         <div class="action-btn" onclick="openComments('${p.key}')">
                             <i class="fa-regular fa-comment"></i> ${comms||''}
                         </div>
-                        <span class="post-time">${timeAgo(p.time)}</span>
+                        <span style="font-size:0.8rem; margin-left:auto;">${timeAgo(p.time)}</span>
                     </div>
                 </div>`;
             list.appendChild(d);
@@ -201,12 +229,14 @@ window.toggleLike = async (pid, isLiked) => {
     loadFeed();
 };
 window.openComments = (pid) => {
-    activePostIdForComments = pid;
-    document.getElementById("commentModal").classList.remove("hidden");
+    selectedMsg = pid; // Using selectedMsg global to store Post ID for comments
+    show("commentModal");
     loadComments(pid);
 };
 function loadComments(pid) {
-    const list = document.getElementById("commentsList"); list.innerHTML="Loading...";
+    const list = document.getElementById("commentsList");
+    if(!list) return;
+    list.innerHTML="Loading...";
     db.ref(`posts/${pid}/comments`).get().then(snap => {
         list.innerHTML="";
         if(!snap.exists()) { list.innerHTML="No comments."; return; }
@@ -218,50 +248,66 @@ function loadComments(pid) {
     });
 }
 
-// SEARCH
+// --- DISCOVER ---
+function loadRecommended() {
+    const list = document.getElementById("recommendedList");
+    if(!list) return;
+    list.innerHTML = "Loading...";
+    db.ref('users').limitToLast(5).get().then(snap => {
+        list.innerHTML = "";
+        snap.forEach(c => {
+            if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list);
+        });
+    });
+}
 function searchUsers(term) {
-    const list = document.getElementById("usersList"); list.innerHTML = "";
-    if(!term) return;
+    const list = document.getElementById("usersList");
+    if(!list) return;
+    list.innerHTML = "";
     db.ref('users').get().then(snap => {
         snap.forEach(c => {
             const u = c.val();
-            if(u.username.toLowerCase().includes(term.toLowerCase()) && c.key !== currentUser.uid) {
-                const d = document.createElement("div"); d.className = "user-item";
-                d.innerHTML = `<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl"><div style="flex:1"><b>${u.username}</b><br>${u.category}</div><button class="outline-btn small-btn">View</button>`;
-                d.onclick = () => openUser(c.key, u);
-                list.appendChild(d);
+            if((!term || u.username.toLowerCase().includes(term.toLowerCase())) && c.key !== currentUser.uid) {
+                renderUserItem(c.key, u, list);
             }
         });
     });
 }
+function renderUserItem(uid, u, container) {
+    const d = document.createElement("div"); d.className = "user-item";
+    d.innerHTML = `<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl"><div style="flex:1"><b>${u.username}</b><br>${u.category}</div><button class="outline-btn small-btn">View</button>`;
+    d.onclick = () => openUser(uid, u);
+    container.appendChild(d);
+}
 
 async function openUser(uid, u) {
-    document.getElementById("userProfileModal").classList.remove("hidden");
+    show("userProfileModal");
     document.getElementById("viewName").innerText = u.username;
     document.getElementById("viewCategory").innerText = u.category;
     document.getElementById("viewBio").innerText = u.bio;
     document.getElementById("viewAvatar").src = getAvatar(u.username, u.gender);
+    
     const amI = (await db.ref(`followers/${uid}/${currentUser.uid}`).get()).exists();
     const isHe = (await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists();
+    
     const fBtn = document.getElementById("followBtn");
     fBtn.innerText = amI ? "Unfollow" : "Follow";
     fBtn.onclick = async () => {
         if(amI) { await db.ref(`followers/${uid}/${currentUser.uid}`).remove(); await db.ref(`following/${currentUser.uid}/${uid}`).remove(); }
         else { await db.ref(`followers/${uid}/${currentUser.uid}`).set(true); await db.ref(`following/${currentUser.uid}/${uid}`).set(true); }
-        document.getElementById("userProfileModal").classList.add("hidden");
+        hide("userProfileModal");
     };
     const mBtn = document.getElementById("messageBtn");
-    if(amI && isHe) { mBtn.disabled = false; mBtn.innerText = "Message"; mBtn.onclick = () => startChat(uid, u.username); }
-    else { mBtn.disabled = true; mBtn.innerText = "Locked 🔒"; }
+    if(amI && isHe) { mBtn.disabled=false; mBtn.innerText="Message"; mBtn.onclick=()=>startChat(uid, u.username); }
+    else { mBtn.disabled=true; mBtn.innerText="Locked 🔒"; }
 }
 
-// CHAT
+// --- CHAT ---
 function startChat(uid, name) {
-    document.getElementById("userProfileModal").classList.add("hidden");
-    document.getElementById("chat-room").classList.remove("hidden");
+    hide("userProfileModal");
+    show("chat-room");
     document.getElementById("chatTitle").innerText = name;
     
-    // Last Seen Logic
     db.ref(`users/${uid}/presence`).on('value', snap => {
         const s = snap.val();
         if(s && s.state === 'online') document.getElementById("chatStatus").innerText = "Online";
@@ -271,14 +317,15 @@ function startChat(uid, name) {
 
     currentChatId = [currentUser.uid, uid].sort().join("_");
     db.ref(`private_chats/${currentChatId}`).on('value', snap => {
-        const div = document.getElementById("messages"); div.innerHTML = "";
+        const div = document.getElementById("messages"); 
+        if(!div) return;
+        div.innerHTML = "";
         if(snap.exists()) {
             snap.forEach(c => {
                 const m = c.val();
                 const isMine = m.senderId === currentUser.uid;
                 const d = document.createElement("div");
                 d.className = "message " + (isMine ? "you" : "them");
-                
                 let ticks = '<i class="fa-solid fa-check"></i>';
                 if(isMine) {
                     if(m.status === 'read') ticks = '<i class="fa-solid fa-check-double ticks read"></i>';
@@ -291,8 +338,7 @@ function startChat(uid, name) {
                     d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${timeAgo(m.time)} ${isMine?ticks:''}</div>`;
                     d.onclick = () => {
                         selectedMsg = {key: c.key, text: m.text};
-                        const modal = document.getElementById("msgOptionsModal");
-                        modal.classList.remove("hidden");
+                        show("msgOptionsModal");
                         document.getElementById("optDelete").style.display = isMine ? "block" : "none";
                         document.getElementById("optEdit").style.display = isMine ? "block" : "none";
                     };
@@ -303,8 +349,9 @@ function startChat(uid, name) {
         div.scrollTop = div.scrollHeight;
     });
 }
-function cancelReply() { replyToMsg=null; document.getElementById("replyContext").classList.add("hidden"); }
+function cancelReply() { replyToMsg=null; hide("replyContext"); }
 
+// --- PROFILE ---
 async function loadProfile() {
     const u = (await db.ref(`users/${currentUser.uid}`).get()).val();
     document.getElementById("myName").innerText = u.username;
@@ -316,7 +363,7 @@ async function loadProfile() {
         const posts=[]; snap.forEach(c=>posts.unshift({key:c.key, ...c.val()}));
         posts.forEach(p => {
             const d = document.createElement("div"); d.className = "post";
-            d.innerHTML = `<div>${p.text}</div> <i class="fa-solid fa-trash action-btn" onclick="deletePost('${p.key}')"></i>`;
+            d.innerHTML = `<div>${p.text}</div> <i class="fa-solid fa-trash" onclick="deletePost('${p.key}')" style="margin-left:auto;color:#ccc"></i>`;
             list.appendChild(d);
         });
     });
@@ -325,7 +372,9 @@ async function loadProfile() {
 }
 
 function loadActiveChats() {
-    const list = document.getElementById("activeChatsList"); list.innerHTML="";
+    const list = document.getElementById("activeChatsList"); 
+    if(!list) return;
+    list.innerHTML="";
     db.ref(`following/${currentUser.uid}`).get().then(async snap => {
         if(!snap.exists()) { list.innerHTML="<div style='padding:20px;text-align:center'>No friends</div>"; return; }
         Object.keys(snap.val()).forEach(async uid => {
