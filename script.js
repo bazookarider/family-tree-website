@@ -1,4 +1,4 @@
-const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
     authDomain: "cyou-db8f0.firebaseapp.com",
     projectId: "cyou-db8f0",
@@ -29,7 +29,6 @@ function initApp() {
             const snap = await db.ref(`users/${user.uid}`).get();
             currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
             
-            // Presence
             db.ref(".info/connected").on("value", (snap) => {
                 if (snap.val() === true) {
                     const con = db.ref(`users/${user.uid}/presence`);
@@ -47,7 +46,6 @@ function initApp() {
         }
     });
 
-    // BINDINGS
     document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).catch(e=>alert(e.message));
     document.getElementById("signupBtn").onclick = async () => {
         const name = document.getElementById("signupName").value.trim().replace(/\s/g, "");
@@ -66,17 +64,15 @@ function initApp() {
     document.getElementById("showSignup").onclick = () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); };
     document.getElementById("showLogin").onclick = () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); };
 
-    // POSTS
     document.getElementById("postBtn").onclick = async () => {
         const txt = document.getElementById("newPostText").value.trim();
         if(!txt) return;
         await db.ref('posts').push({ uid: currentUser.uid, username: currentUser.username, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
         document.getElementById("newPostText").value = "";
-        loadFeed(); // Refresh list
+        loadFeed();
     };
     document.getElementById("refreshFeedBtn").onclick = loadFeed;
 
-    // CHAT INPUT
     document.getElementById("inputForm").onsubmit = (e) => {
         e.preventDefault();
         const txt = document.getElementById("messageInput").value.trim();
@@ -90,7 +86,6 @@ function initApp() {
     document.getElementById("backToAppBtn").onclick = () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId=null; };
     document.getElementById("cancelReplyBtn").onclick = cancelReply;
 
-    // MODALS
     document.getElementById("userSearchInput").oninput = (e) => searchUsers(e.target.value);
     document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
     document.getElementById("closeCommentModal").onclick = () => document.getElementById("commentModal").classList.add("hidden");
@@ -113,17 +108,15 @@ function initApp() {
     };
     document.getElementById("cancelEditBtn").onclick = () => document.getElementById("editProfileModal").classList.add("hidden");
 
-    // COMMENT SEND
     document.getElementById("sendCommentBtn").onclick = async () => {
         const t = document.getElementById("commentInput").value.trim();
-        if(t && selectedMsg) { // Using selectedMsg as PostID
+        if(t && selectedMsg) {
             await db.ref(`posts/${selectedMsg}/comments`).push({uid:currentUser.uid, username:currentUser.username, text:t});
             document.getElementById("commentInput").value="";
             loadComments(selectedMsg);
         }
     };
 
-    // MSG OPTIONS
     document.getElementById("optReply").onclick = () => {
         replyToMsg = { text: selectedMsg.text, sender: "Replying..." }; 
         document.getElementById("replyContext").classList.remove("hidden");
@@ -142,12 +135,20 @@ function initApp() {
     };
 }
 
-// HELPERS
 function getAvatar(u, gender) { return `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&gender=${gender||'male'}`; }
 function timeAgo(ts) { if(!ts) return ''; return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+function formatChatDate(ts) {
+    if(!ts) return "";
+    const date = new Date(ts);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return "Today, " + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday, " + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    return date.toLocaleDateString() + ", " + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
 function parseText(t) { return t.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>'); }
 
-// NAV
 window.switchTab = (t) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`tab-${t}`).classList.remove('hidden');
@@ -160,7 +161,6 @@ window.switchTab = (t) => {
     if(t=='profile') loadProfile();
 };
 
-// FEED
 function loadFeed() {
     const list = document.getElementById("feedList"); list.innerHTML = "";
     db.ref('posts').limitToLast(50).get().then(async snap => {
@@ -172,14 +172,19 @@ function loadFeed() {
             const likes = p.likes ? Object.keys(p.likes).length : 0;
             const comms = p.comments ? Object.keys(p.comments).length : 0;
             const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-trash" onclick="deletePost('${p.key}')" style="margin-left:auto;color:#ccc"></i>` : '';
+            
             d.innerHTML = `
                 <img src="${getAvatar(p.username, 'male')}" class="avatar-xl">
                 <div class="post-content">
                     <div class="post-header"><span>${p.username}</span> ${delBtn}</div>
                     <div class="post-text">${parseText(p.text)}</div>
                     <div class="post-actions">
-                        <div class="action-btn ${isLiked?'liked':''}" onclick="toggleLike('${p.key}', ${isLiked})"><i class="${isLiked?'fa-solid':'fa-regular'} fa-heart"></i> ${likes||''}</div>
-                        <div class="action-btn" onclick="openComments('${p.key}')"><i class="fa-regular fa-comment"></i> ${comms||''}</div>
+                        <div class="action-btn ${isLiked?'liked':''}" onclick="toggleLike('${p.key}', ${isLiked})">
+                            <i class="${isLiked?'fa-solid':'fa-regular'} fa-heart"></i> ${likes||''}
+                        </div>
+                        <div class="action-btn" onclick="openComments('${p.key}')">
+                            <i class="fa-regular fa-comment"></i> ${comms||''}
+                        </div>
                         <span style="font-size:0.8rem; margin-left:auto;">${timeAgo(p.time)}</span>
                     </div>
                 </div>`;
@@ -211,38 +216,28 @@ function loadComments(pid) {
     });
 }
 
-// DISCOVER
 function loadRecommended() {
     const list = document.getElementById("recommendedList"); list.innerHTML = "Loading...";
-    db.ref('users').get().then(snap => { // Fetch all to sort (OK for prototype)
+    db.ref('users').limitToLast(5).get().then(snap => {
         list.innerHTML = "";
-        const users = [];
-        snap.forEach(c => { if(c.key!==currentUser.uid) users.push({id:c.key, ...c.val()}) });
-        // Sort by follower count (simulated) - In real app, store count in user profile
-        users.sort((a, b) => Math.random() - 0.5); // Shuffle for now as count isn't directly on user object easily
-        users.slice(0, 5).forEach(u => renderUserItem(u.id, u, list));
+        snap.forEach(c => {
+            if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list);
+        });
     });
 }
 function searchUsers(term) {
-    const list = document.getElementById("usersList");
-    const noRes = document.getElementById("noUserFound");
-    document.getElementById("discoverDefaultArea").classList.toggle("hidden", !!term);
-    document.getElementById("searchResultArea").innerHTML = ""; // clear prev
-    
-    if(!term) { noRes.classList.add("hidden"); return; }
-    
-    let found = false;
+    const list = document.getElementById("usersList"); list.innerHTML = "";
+    if(!term) return;
     db.ref('users').get().then(snap => {
-        const results = document.getElementById("searchResultArea");
-        results.innerHTML = "";
+        let found = false;
         snap.forEach(c => {
             const u = c.val();
             if(u.username.toLowerCase().includes(term.toLowerCase()) && c.key !== currentUser.uid) {
-                renderUserItem(c.key, u, results);
+                renderUserItem(c.key, u, list);
                 found = true;
             }
         });
-        if(!found) noRes.classList.remove("hidden"); else noRes.classList.add("hidden");
+        if(!found) list.innerHTML = "<div style='text-align:center; padding:10px; color:#999;'>User not found</div>";
     });
 }
 function renderUserItem(uid, u, container) {
@@ -272,7 +267,6 @@ async function openUser(uid, u) {
     else { mBtn.disabled = true; mBtn.innerText = "Locked 🔒"; }
 }
 
-// CHAT
 function startChat(uid, name) {
     document.getElementById("userProfileModal").classList.add("hidden");
     document.getElementById("chat-room").classList.remove("hidden");
@@ -280,7 +274,7 @@ function startChat(uid, name) {
     db.ref(`users/${uid}/presence`).on('value', snap => {
         const s = snap.val();
         if(s && s.state === 'online') document.getElementById("chatStatus").innerText = "Online";
-        else if(s && s.lastChanged) document.getElementById("chatStatus").innerText = "Last seen " + timeAgo(s.lastChanged);
+        else if(s && s.lastChanged) document.getElementById("chatStatus").innerText = "Last seen " + formatChatDate(s.lastChanged);
         else document.getElementById("chatStatus").innerText = "Offline";
     });
     currentChatId = [currentUser.uid, uid].sort().join("_");
@@ -300,7 +294,7 @@ function startChat(uid, name) {
                 if(m.deleted) d.innerHTML = `<i class="fa-solid fa-ban"></i> Deleted`;
                 else {
                     const replyHtml = m.replyTo ? `<div class="reply-quote"><b>${m.replyTo.sender}</b><br>${m.replyTo.text}</div>` : '';
-                    d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${timeAgo(m.time)} ${isMine?ticks:''}</div>`;
+                    d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${formatChatDate(m.time)} ${isMine?ticks:''}</div>`;
                     d.onclick = () => {
                         selectedMsg = {key: c.key, text: m.text};
                         document.getElementById("msgOptionsModal").classList.remove("hidden");
@@ -327,7 +321,7 @@ async function loadProfile() {
         const posts=[]; snap.forEach(c=>posts.unshift({key:c.key, ...c.val()}));
         posts.forEach(p => {
             const d = document.createElement("div"); d.className = "post";
-            d.innerHTML = `<div>${p.text}</div> <i class="fa-solid fa-trash action-btn" onclick="deletePost('${p.key}')"></i>`;
+            d.innerHTML = `<div>${p.text}</div> <i class="fa-solid fa-trash" onclick="deletePost('${p.key}')" style="margin-left:auto;color:#ccc"></i>`;
             list.appendChild(d);
         });
     });
@@ -342,15 +336,8 @@ function loadActiveChats() {
         Object.keys(snap.val()).forEach(async uid => {
             if((await db.ref(`followers/${currentUser.uid}/${uid}`).get()).exists()) {
                 const u = (await db.ref(`users/${uid}`).get()).val();
-                const lastMsgSnap = await db.ref(`private_chats/${[currentUser.uid, uid].sort().join("_")}`).limitToLast(1).get();
-                let preview = "Tap to chat";
-                if(lastMsgSnap.exists()) {
-                    const m = Object.values(lastMsgSnap.val())[0];
-                    preview = m.deleted ? "Deleted" : m.text;
-                }
                 const d = document.createElement("div"); d.className="chat-item";
-                d.innerHTML = `<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl">
-                               <div style="flex:1"><b>${u.username}</b><br><span style="font-size:0.8rem;color:#777;">${preview}</span></div>`;
+                d.innerHTML = `<img src="${getAvatar(u.username, u.gender)}" class="avatar-xl"><div><b>${u.username}</b><br>Tap to chat</div>`;
                 d.onclick = () => startChat(uid, u.username);
                 list.appendChild(d);
             }
