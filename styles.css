@@ -1,4 +1,4 @@
-:root {
+ :root {
     --primary: #006677;
     --primary-dark: #004c59;
     --bg-app: #ffffff;
@@ -24,22 +24,22 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .icon-btn { background: none; border: none; color: white; font-size: 1.2rem; padding: 10px; }
 .small-btn { width: auto; padding: 8px 20px; font-size: 0.9rem; }
 
-/* LAYOUT - SCROLL FIX */
+/* LAYOUT */
 #auth-screen, #app-screen { height: 100%; display: flex; flex-direction: column; }
 .login-container { width: 90%; max-width: 400px; text-align: center; margin: auto; }
 .brand-title { color: var(--primary); font-size: 2.5rem; margin: 0; }
 .auth-links { display: flex; justify-content: space-between; }
-.top-bar { height: 60px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
-.scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; -webkit-overflow-scrolling: touch; }
+.top-bar { height: 60px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-weight: bold; font-size: 1.1rem; }
+.scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; }
 .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
 .nav-btn { background: none; border: none; font-size: 1.5rem; color: #ccc; padding: 10px; }
 .nav-btn.active { color: var(--primary); }
 
 /* FEED */
-.create-post-box { background: white; padding: 15px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+.create-post-box { background: white; padding: 15px; border-bottom: 1px solid #eee; }
 .create-post-box textarea { width: 100%; border: none; resize: none; outline: none; height: 60px; font-family: inherit; }
 .post-actions-bar { text-align: right; }
-.post { background: white; padding: 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px; }
+.post { background: white; padding: 15px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; gap: 10px; }
 .avatar-xl { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; }
 .post-header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;}
 .hashtag { color: var(--primary); font-weight: bold; }
@@ -62,10 +62,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 
 /* CHAT ROOM */
 #chat-room { background: #e5ddd5; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
-.chat-room-header { background: var(--primary); color: white; height: 60px; display: flex; align-items: center; padding: 0 10px; gap: 10px; flex-shrink: 0; }
+.chat-room-header { background: var(--primary); color: white; height: 60px; display: flex; align-items: center; padding: 0 10px; gap: 10px; }
 .chat-info #chatStatus { font-size: 0.75rem; opacity: 0.9; }
 .messages-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-.chat-input-bar { background: white; padding: 8px; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.chat-input-bar { background: white; padding: 8px; display: flex; gap: 10px; align-items: center; }
 .chat-input-bar input { flex: 1; padding: 10px 15px; background: white; border: none; border-radius: 25px; outline: none; font-size: 1rem; }
 .send-btn { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; }
 
