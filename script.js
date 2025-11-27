@@ -9,6 +9,9 @@ const firebaseConfig = {
     databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com/"
 };
 
+// USER'S API KEY
+const GEMINI_KEY = "AIzaSyD6XxzJPUP-6wh9yYh1T_NU0nvgjmGwFgA";
+
 let db, auth, currentUser = null;
 let currentChatId = null;
 let replyToMsg = null;
@@ -28,7 +31,6 @@ function initApp() {
         if (user) {
             const snap = await db.ref(`users/${user.uid}`).get();
             currentUser = { uid: user.uid, email: user.email, ...(snap.val() || {}) };
-            
             db.ref(".info/connected").on("value", (snap) => {
                 if (snap.val() === true) {
                     const con = db.ref(`users/${user.uid}/presence`);
@@ -36,15 +38,50 @@ function initApp() {
                     con.set({state: 'online', lastChanged: firebase.database.ServerValue.TIMESTAMP});
                 }
             });
-
-            if(document.getElementById("auth-screen")) document.getElementById("auth-screen").classList.add("hidden");
-            if(document.getElementById("app-screen")) document.getElementById("app-screen").classList.remove("hidden");
+            document.getElementById("auth-screen").classList.add("hidden");
+            document.getElementById("app-screen").classList.remove("hidden");
             switchTab('home');
         } else {
-            if(document.getElementById("app-screen")) document.getElementById("app-screen").classList.add("hidden");
-            if(document.getElementById("auth-screen")) document.getElementById("auth-screen").classList.remove("hidden");
+            document.getElementById("app-screen").classList.add("hidden");
+            document.getElementById("auth-screen").classList.remove("hidden");
         }
     });
+
+    // AI LOGIC
+    document.getElementById("sendAiBtn").onclick = async () => {
+        const txt = document.getElementById("aiInput").value.trim();
+        if(!txt) return;
+        
+        // UI Update User
+        addAiMsg(txt, "user");
+        document.getElementById("aiInput").value = "";
+        
+        // Loading
+        const loadId = "load"+Date.now();
+        addAiMsg("Thinking...", "ai", loadId);
+        
+        try {
+            if(txt.toLowerCase().includes("generate image") || txt.toLowerCase().includes("create image")) {
+                const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(txt)}`;
+                document.getElementById(loadId).remove();
+                addAiMsg(`<img src="${imgUrl}" alt="Generated Image">`, "ai", null, true);
+            } else {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+                const sysPrompt = "You are Cyou Assistant, created by Abdulkarim Aliyu Muhd (Legend). You are helpful and a coding expert. ";
+                const response = await fetch(url, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt + txt }] }] })
+                });
+                const data = await response.json();
+                const aiText = data.candidates[0].content.parts[0].text;
+                document.getElementById(loadId).remove();
+                addAiMsg(aiText, "ai");
+            }
+        } catch(e) {
+            document.getElementById(loadId).remove();
+            addAiMsg("Error: " + e.message, "ai");
+        }
+    };
 
     // BINDINGS
     document.getElementById("loginBtn").onclick = () => auth.signInWithEmailAndPassword(document.getElementById("loginEmail").value, document.getElementById("loginPass").value).catch(e=>alert(e.message));
@@ -65,17 +102,15 @@ function initApp() {
     document.getElementById("showSignup").onclick = () => { document.getElementById("loginForm").classList.add("hidden"); document.getElementById("signupForm").classList.remove("hidden"); };
     document.getElementById("showLogin").onclick = () => { document.getElementById("signupForm").classList.add("hidden"); document.getElementById("loginForm").classList.remove("hidden"); };
 
-    // POSTS
     document.getElementById("postBtn").onclick = async () => {
         const txt = document.getElementById("newPostText").value.trim();
         if(!txt) return;
         await db.ref('posts').push({ uid: currentUser.uid, username: currentUser.username, text: txt, time: firebase.database.ServerValue.TIMESTAMP });
         document.getElementById("newPostText").value = "";
-        loadFeed(); // This will now auto-refresh
+        loadFeed();
     };
     document.getElementById("refreshFeedBtn").onclick = loadFeed;
 
-    // CHAT INPUT
     document.getElementById("inputForm").onsubmit = (e) => {
         e.preventDefault();
         const txt = document.getElementById("messageInput").value.trim();
@@ -89,7 +124,6 @@ function initApp() {
     document.getElementById("backToAppBtn").onclick = () => { document.getElementById("chat-room").classList.add("hidden"); currentChatId=null; };
     document.getElementById("cancelReplyBtn").onclick = cancelReply;
 
-    // MODALS
     document.getElementById("userSearchInput").oninput = (e) => searchUsers(e.target.value);
     document.getElementById("closeProfileModal").onclick = () => document.getElementById("userProfileModal").classList.add("hidden");
     document.getElementById("closeCommentModal").onclick = () => document.getElementById("commentModal").classList.add("hidden");
@@ -139,28 +173,30 @@ function initApp() {
     };
 }
 
-// HELPERS
-function getAvatar(u, gender) { return `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&gender=${gender||'male'}`; }
-
-function facebookTime(ts) {
-    if(!ts) return '';
-    const now = new Date();
-    const d = new Date(ts);
-    const diff = Math.floor((now - d) / 1000);
-    if(diff < 60) return "Just now";
-    if(diff < 3600) return Math.floor(diff/60) + " mins ago";
-    if(diff < 86400) return Math.floor(diff/3600) + " hrs ago";
-    if(d.getDate() === now.getDate() - 1) return "Yesterday at " + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    return d.toLocaleDateString() + " at " + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+function addAiMsg(text, type, id=null, isHtml=false) {
+    const list = document.getElementById("aiChatList");
+    const div = document.createElement("div");
+    div.className = `ai-message ${type}`;
+    if(id) div.id = id;
+    
+    if(isHtml) div.innerHTML = text;
+    else if(type === 'ai') div.innerHTML = marked.parse(text);
+    else div.innerText = text;
+    
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
+    if(type === 'ai') Prism.highlightAll();
 }
 
+function getAvatar(u, gender) { return `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}&gender=${gender||'male'}`; }
+function timeAgo(ts) { if(!ts) return ''; return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 function parseText(t) { return t.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>'); }
 
 window.switchTab = (t) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`tab-${t}`).classList.remove('hidden');
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    const map={'home':0, 'discover':1, 'chats':2, 'profile':3};
+    const map={'home':0, 'ai':1, 'discover':2, 'chats':3, 'profile':4};
     document.querySelectorAll('.nav-btn')[map[t]].classList.add('active');
     if(t=='home') loadFeed();
     if(t=='discover') { loadRecommended(); searchUsers(""); }
@@ -172,40 +208,17 @@ function loadFeed() {
     const list = document.getElementById("feedList"); list.innerHTML = "";
     db.ref('posts').limitToLast(50).get().then(async snap => {
         if(!snap.exists()) { list.innerHTML = "<div style='text-align:center; padding:20px; color:#999'>No posts</div>"; return; }
-        // This logic forces NEWEST to TOP
         const posts = []; snap.forEach(c => posts.unshift({key:c.key, ...c.val()}));
         posts.forEach(p => {
             const d = document.createElement("div"); d.className = "post";
-            const isLiked = p.likes && p.likes[currentUser.uid];
-            const likes = p.likes ? Object.keys(p.likes).length : 0;
-            const comms = p.comments ? Object.keys(p.comments).length : 0;
             const delBtn = (p.uid === currentUser.uid) ? `<i class="fa-solid fa-trash" onclick="deletePost('${p.key}')" style="margin-left:auto;color:#ccc"></i>` : '';
-            d.innerHTML = `
-                <img src="${getAvatar(p.username, 'male')}" class="avatar-xl">
-                <div class="post-content">
-                    <div class="post-header"><span>${p.username}</span> ${delBtn}</div>
-                    <div class="post-text">${parseText(p.text)}</div>
-                    <div class="post-actions">
-                        <div class="action-btn ${isLiked?'liked':''}" onclick="toggleLike('${p.key}', ${isLiked})"><i class="${isLiked?'fa-solid':'fa-regular'} fa-heart"></i> ${likes||''}</div>
-                        <div class="action-btn" onclick="openComments('${p.key}')"><i class="fa-regular fa-comment"></i> ${comms||''}</div>
-                        <span style="font-size:0.8rem; margin-left:auto;">${facebookTime(p.time)}</span>
-                    </div>
-                </div>`;
+            d.innerHTML = `<img src="${getAvatar(p.username, 'male')}" class="avatar-xl"><div style="flex:1"><div class="post-header"><span>${p.username}</span> ${delBtn}</div><div class="post-text">${parseText(p.text)}</div><div class="post-actions"><div class="action-btn" onclick="openComments('${p.key}')"><i class="fa-regular fa-comment"></i></div><span style="font-size:0.8rem; margin-left:auto;">${timeAgo(p.time)}</span></div></div>`;
             list.appendChild(d);
         });
     });
 }
 window.deletePost = (pid) => { if(confirm("Delete?")) db.ref(`posts/${pid}`).remove().then(loadFeed); };
-window.toggleLike = async (pid, isLiked) => {
-    if(isLiked) await db.ref(`posts/${pid}/likes/${currentUser.uid}`).remove();
-    else await db.ref(`posts/${pid}/likes/${currentUser.uid}`).set(true);
-    loadFeed();
-};
-window.openComments = (pid) => {
-    selectedMsg = pid;
-    document.getElementById("commentModal").classList.remove("hidden");
-    loadComments(pid);
-};
+window.openComments = (pid) => { selectedMsg = pid; document.getElementById("commentModal").classList.remove("hidden"); loadComments(pid); };
 function loadComments(pid) {
     const list = document.getElementById("commentsList"); list.innerHTML="Loading...";
     db.ref(`posts/${pid}/comments`).get().then(snap => {
@@ -223,24 +236,17 @@ function loadRecommended() {
     const list = document.getElementById("recommendedList"); list.innerHTML = "Loading...";
     db.ref('users').limitToLast(5).get().then(snap => {
         list.innerHTML = "";
-        snap.forEach(c => {
-            if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list);
-        });
+        snap.forEach(c => { if(c.key !== currentUser.uid) renderUserItem(c.key, c.val(), list); });
     });
 }
 function searchUsers(term) {
     const list = document.getElementById("usersList"); list.innerHTML = "";
     if(!term) return;
     db.ref('users').get().then(snap => {
-        let found = false;
         snap.forEach(c => {
             const u = c.val();
-            if(u.username.toLowerCase().includes(term.toLowerCase()) && c.key !== currentUser.uid) {
-                renderUserItem(c.key, u, list);
-                found = true;
-            }
+            if(u.username.toLowerCase().includes(term.toLowerCase()) && c.key !== currentUser.uid) renderUserItem(c.key, u, list);
         });
-        if(!found) list.innerHTML = "<div style='text-align:center; padding:10px; color:#999;'>User not found</div>";
     });
 }
 function renderUserItem(uid, u, container) {
@@ -277,7 +283,7 @@ function startChat(uid, name) {
     db.ref(`users/${uid}/presence`).on('value', snap => {
         const s = snap.val();
         if(s && s.state === 'online') document.getElementById("chatStatus").innerText = "Online";
-        else if(s && s.lastChanged) document.getElementById("chatStatus").innerText = "Last seen " + facebookTime(s.lastChanged);
+        else if(s && s.lastChanged) document.getElementById("chatStatus").innerText = "Last seen " + timeAgo(s.lastChanged);
         else document.getElementById("chatStatus").innerText = "Offline";
     });
     currentChatId = [currentUser.uid, uid].sort().join("_");
@@ -297,12 +303,10 @@ function startChat(uid, name) {
                 if(m.deleted) d.innerHTML = `<i class="fa-solid fa-ban"></i> Deleted`;
                 else {
                     const replyHtml = m.replyTo ? `<div class="reply-quote"><b>${m.replyTo.sender}</b><br>${m.replyTo.text}</div>` : '';
-                    d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${facebookTime(m.time)} ${isMine?ticks:''}</div>`;
+                    d.innerHTML = `${replyHtml} ${parseText(m.text)} <div class="msg-meta">${timeAgo(m.time)} ${isMine?ticks:''}</div>`;
                     d.onclick = () => {
                         selectedMsg = {key: c.key, text: m.text};
                         document.getElementById("msgOptionsModal").classList.remove("hidden");
-                        document.getElementById("optDelete").style.display = isMine ? "block" : "none";
-                        document.getElementById("optEdit").style.display = isMine ? "block" : "none";
                     };
                 }
                 div.appendChild(d);
