@@ -6,6 +6,13 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -29,7 +36,7 @@
                 <input type="text" id="signupName" class="simple-input" placeholder="Username">
                 <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="signupPass" class="simple-input" placeholder="Password">
-                <label style="display:block; margin-top:10px; text-align:left;">Gender:</label>
+                <label style="display:block;margin-top:10px;text-align:left">Gender:</label>
                 <select id="signupGender" class="simple-input">
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -38,7 +45,6 @@
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
             <div id="forgotForm" class="hidden">
-                <h3>Reset Password</h3>
                 <input type="email" id="forgotEmail" class="simple-input" placeholder="Email">
                 <button id="resetPassBtn" class="primary-btn">Send Link</button>
                 <button id="cancelForgot" class="anon-btn">Cancel</button>
@@ -47,18 +53,32 @@
     </div>
 
     <div id="app-screen" class="hidden">
+        
         <div id="tab-home" class="tab-content">
             <header class="top-bar">
                 <h2>Cyou Home</h2>
                 <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate"></i></button>
             </header>
             <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's on your mind?"></textarea>
+                <textarea id="newPostText" placeholder="What's happening? #Hashtags..."></textarea>
                 <div class="post-actions-bar">
                     <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
             </div>
             <div id="feedList" class="scroll-content bg-gray"></div>
+        </div>
+
+        <div id="tab-ai" class="tab-content hidden">
+            <header class="top-bar" style="background:#2d3436;">
+                <h2>AI Studio 🤖</h2>
+            </header>
+            <div id="aiChatList" class="scroll-content" style="background:#1e1e1e; padding:15px; padding-bottom:80px;">
+                <div class="ai-message ai">Hello! I am Cyou Assistant, created by Legend. How can I help you code or create today?</div>
+            </div>
+            <div class="chat-input-bar" style="background:#2d3436; position:absolute; bottom:60px; width:100%;">
+                <input type="text" id="aiInput" placeholder="Ask AI code or generate image..." style="background:#444; color:white; border:none;">
+                <button id="sendAiBtn" class="send-btn" style="background:#00b894;"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
         </div>
 
         <div id="tab-discover" class="tab-content hidden">
@@ -70,9 +90,9 @@
             </header>
             <div class="scroll-content bg-gray">
                 <div class="section-header">Top Creators 🏆</div>
-                <div id="recommendedList" class="list-block"></div>
+                <div id="recommendedList" class="clean-list"></div>
                 <div class="section-header">All Users</div>
-                <div id="usersList" class="list-block"></div>
+                <div id="usersList" class="clean-list"></div>
             </div>
         </div>
 
@@ -96,12 +116,13 @@
                     <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
                 <div class="section-header">My Posts</div>
-                <div id="myPostsList" class="feed-list-block"></div>
+                <div id="myPostsList" class="clean-list"></div>
             </div>
         </div>
 
         <nav class="bottom-nav">
             <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
+            <button class="nav-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i></button>
             <button class="nav-btn" onclick="switchTab('discover')"><i class="fa-solid fa-magnifying-glass"></i></button>
             <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-solid fa-comment-dots"></i></button>
             <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-solid fa-user"></i></button>
@@ -117,7 +138,6 @@
             </div>
         </header>
         <div id="messages" class="messages-area"></div>
-        
         <div id="replyContext" class="hidden">
             <div class="reply-bar"></div>
             <div style="flex:1; font-size:0.8rem;">
@@ -126,7 +146,6 @@
             </div>
             <button id="cancelReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
         <form id="inputForm" class="chat-input-bar">
             <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
             <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
