@@ -6,7 +6,6 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -20,7 +19,7 @@
             <div id="loginForm">
                 <input type="email" id="loginEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="loginPass" class="simple-input" placeholder="Password">
-                <button id="loginBtn" type="button" class="primary-btn">Log In</button>
+                <button id="loginBtn" class="primary-btn">Log In</button>
                 <div class="auth-links">
                     <button id="showSignup" class="anon-btn">Create Account</button>
                     <button id="showForgot" class="anon-btn">Forgot Password?</button>
@@ -30,12 +29,12 @@
                 <input type="text" id="signupName" class="simple-input" placeholder="Username">
                 <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="signupPass" class="simple-input" placeholder="Password">
-                <label style="text-align:left; display:block; margin-top:10px;">I am:</label>
+                <label style="display:block; margin-top:10px; text-align:left;">Gender:</label>
                 <select id="signupGender" class="simple-input">
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                 </select>
-                <button id="signupBtn" type="button" class="primary-btn">Sign Up</button>
+                <button id="signupBtn" class="primary-btn">Sign Up</button>
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
             <div id="forgotForm" class="hidden">
@@ -54,7 +53,7 @@
                 <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate"></i></button>
             </header>
             <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's happening? Use #hashtags"></textarea>
+                <textarea id="newPostText" placeholder="What's on your mind?"></textarea>
                 <div class="post-actions-bar">
                     <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
@@ -71,9 +70,9 @@
             </header>
             <div class="scroll-content bg-gray">
                 <div class="section-header">Top Creators 🏆</div>
-                <div id="recommendedList" class="clean-list"></div>
+                <div id="recommendedList" class="list-block"></div>
                 <div class="section-header">All Users</div>
-                <div id="usersList" class="clean-list"></div>
+                <div id="usersList" class="list-block"></div>
             </div>
         </div>
 
@@ -97,7 +96,7 @@
                     <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
                 <div class="section-header">My Posts</div>
-                <div id="myPostsList" class="clean-list" style="padding-bottom:20px;"></div>
+                <div id="myPostsList" class="feed-list-block"></div>
             </div>
         </div>
 
