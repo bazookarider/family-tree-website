@@ -6,7 +6,6 @@
     <title>Cyou</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -30,12 +29,12 @@
                 <input type="text" id="signupName" class="simple-input" placeholder="Username">
                 <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="signupPass" class="simple-input" placeholder="Password">
-                <label style="text-align:left; display:block; margin-top:10px;">I am:</label>
+                <label style="display:block;margin-top:10px;text-align:left">Gender:</label>
                 <select id="signupGender" class="simple-input">
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                 </select>
-                <button id="signupBtn" type="button" class="primary-btn">Sign Up</button>
+                <button id="signupBtn" class="primary-btn">Sign Up</button>
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
             <div id="forgotForm" class="hidden">
@@ -49,12 +48,9 @@
 
     <div id="app-screen" class="hidden">
         <div id="tab-home" class="tab-content">
-            <header class="top-bar">
-                <h2>Cyou Home</h2>
-                <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate"></i></button>
-            </header>
+            <header class="top-bar"><h2>Cyou Home</h2> <i class="fa-solid fa-rotate icon-btn" id="refreshFeedBtn"></i></header>
             <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's happening? Use #hashtags"></textarea>
+                <textarea id="newPostText" placeholder="What's happening? #Hashtags..."></textarea>
                 <div class="post-actions-bar">
                     <button id="postBtn" class="primary-btn small-btn">Post</button>
                 </div>
@@ -69,7 +65,12 @@
                     <input type="text" id="userSearchInput" placeholder="Search users...">
                 </div>
             </header>
-            <div id="usersList" class="scroll-content bg-gray"></div>
+            <div class="scroll-content bg-gray">
+                <div class="section-header">Top Creators 🏆</div>
+                <div id="recommendedList" class="clean-list"></div>
+                <div class="section-header">All Users</div>
+                <div id="usersList" class="clean-list"></div>
+            </div>
         </div>
 
         <div id="tab-chats" class="tab-content hidden">
@@ -78,13 +79,13 @@
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
-            <header class="top-bar"><h2>Profile</h2> <button id="logoutBtn" class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button></header>
+            <header class="top-bar"><h2>Profile</h2> <i class="fa-solid fa-right-from-bracket icon-btn" id="logoutBtn"></i></header>
             <div class="scroll-content profile-wrapper bg-gray">
                 <div class="profile-header-card">
                     <img id="myAvatar" src="" class="avatar-xl">
                     <h2 id="myName">...</h2>
                     <div id="myCategoryDisplay" class="category-pill">Member</div>
-                    <div id="myBio" class="bio-text">...</div>
+                    <p id="myBio" class="bio-text">...</p>
                     <div class="stats-row">
                         <div class="stat-box" id="myFollowersBox"><b id="myFollowersCount">0</b><span>Followers</span></div>
                         <div class="stat-box" id="myFollowingBox"><b id="myFollowingCount">0</b><span>Following</span></div>
@@ -106,7 +107,7 @@
 
     <div id="chat-room" class="screen hidden">
         <header class="chat-room-header">
-            <button id="backToAppBtn" class="icon-btn"><i class="fa-solid fa-arrow-left"></i></button>
+            <i class="fa-solid fa-arrow-left icon-btn" id="backToAppBtn"></i>
             <div class="chat-info">
                 <div id="chatTitle">User</div>
                 <div id="chatStatus">Offline</div>
@@ -129,18 +130,24 @@
         </form>
     </div>
 
+    <div id="msgOptionsModal" class="modal hidden bottom-sheet">
+        <div class="modal-content bottom-sheet-content">
+            <div class="modal-header">Options <span class="close-modal" id="closeMsgOptions">&times;</span></div>
+            <button class="opt-btn" id="optReply"><i class="fa-solid fa-reply"></i> Reply</button>
+            <button class="opt-btn" id="optCopy"><i class="fa-solid fa-copy"></i> Copy</button>
+            <button class="opt-btn" id="optEdit"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button class="opt-btn delete" id="optDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>
+    </div>
+
     <div id="userProfileModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <button id="closeProfileModal" class="close-modal">&times;</button>
+            <span class="close-modal" id="closeProfileModal">&times;</span>
             <div class="profile-header-card no-border">
                 <img id="viewAvatar" src="" class="avatar-xl">
                 <h2 id="viewName">Name</h2>
                 <div id="viewCategory" class="category-pill">Member</div>
                 <div id="viewBio" class="bio-text"></div>
-                <div class="stats-row">
-                    <div class="stat-box"><b id="viewFollowers">0</b><span>Followers</span></div>
-                    <div class="stat-box"><b id="viewFollowing">0</b><span>Following</span></div>
-                </div>
                 <div class="action-row">
                     <button id="followBtn" class="primary-btn">Follow</button>
                     <button id="messageBtn" class="outline-btn" disabled>Locked 🔒</button>
@@ -154,16 +161,21 @@
             <h3>Edit Profile</h3>
             <input type="text" id="editUsername" class="simple-input" placeholder="Username">
             <input type="text" id="editCategory" class="simple-input" placeholder="Category">
-            <textarea id="editBio" class="simple-input" style="height:80px;" placeholder="Bio"></textarea>
+            <textarea id="editBio" class="simple-input" placeholder="Bio"></textarea>
             <label>Gender</label>
             <select id="editGender" class="simple-input">
                 <option value="male">Male</option>
                 <option value="female">Female</option>
             </select>
-            <div class="action-row">
-                 <button id="cancelEditBtn" class="outline-btn">Cancel</button>
-                 <button id="saveProfileBtn" class="primary-btn">Save</button>
-            </div>
+            <button id="saveProfileBtn" class="primary-btn">Save</button>
+            <button id="cancelEditBtn" class="outline-btn">Cancel</button>
+        </div>
+    </div>
+
+    <div id="followListModal" class="modal hidden bottom-sheet">
+        <div class="modal-content bottom-sheet-content">
+            <div class="modal-header">Users <span class="close-modal" id="closeFollowList">&times;</span></div>
+            <div id="followListContent" class="scroll-content clean-list" style="max-height:60vh;"></div>
         </div>
     </div>
 
@@ -178,16 +190,6 @@
                 <input type="text" id="commentInput" placeholder="Add a comment...">
                 <button id="sendCommentBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
-        </div>
-    </div>
-
-    <div id="msgOptionsModal" class="modal hidden bottom-sheet">
-        <div class="modal-content bottom-sheet-content">
-            <div class="modal-header">Options <span class="close-modal" id="closeMsgOptions">&times;</span></div>
-            <button class="opt-btn" id="optReply"><i class="fa-solid fa-reply"></i> Reply</button>
-            <button class="opt-btn" id="optCopy"><i class="fa-solid fa-copy"></i> Copy</button>
-            <button class="opt-btn" id="optEdit"><i class="fa-solid fa-pen"></i> Edit</button>
-            <button class="opt-btn delete" id="optDelete"><i class="fa-solid fa-trash"></i> Delete</button>
         </div>
     </div>
 
