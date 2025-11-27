@@ -5,109 +5,110 @@
 <title>CYOU Chat App</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js"></script>
 </head>
 <body>
 <div id="auth-screen">
-    <div class="auth-container">
-        <form id="loginForm">
-            <h2>Login</h2>
-            <input type="email" id="loginEmail" placeholder="Email" required>
-            <input type="password" id="loginPass" placeholder="Password" required>
-            <button id="loginBtn">Login</button>
-            <p>Don't have an account? <span id="showSignup">Sign up</span></p>
-        </form>
-        <form id="signupForm" class="hidden">
-            <h2>Sign Up</h2>
-            <input type="text" id="signupName" placeholder="Username" required>
-            <input type="email" id="signupEmail" placeholder="Email" required>
-            <input type="password" id="signupPass" placeholder="Password" required>
-            <select id="signupGender">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-            <button id="signupBtn">Sign Up</button>
-            <p>Already have an account? <span id="showLogin">Login</span></p>
-        </form>
-    </div>
-</div><div id="app-screen" class="hidden">
-    <div class="tab-content" id="tab-profile">
-        <div class="profile-header">
-            <img id="myAvatar" class="avatar-xl" src="">
-            <div>
-                <h3 id="myName"></h3>
-                <p id="myCategoryDisplay"></p>
-                <p id="myBio"></p>
-                <p>Followers: <span id="myFollowersCount">0</span> | Following: <span id="myFollowingCount">0</span></p>
-                <button id="openEditProfileBtn">Edit Profile</button>
-            </div>
-        </div>
-        <div id="myPostsList"></div>
-    </div><div class="tab-content hidden" id="tab-chats">
-    <div id="activeChatsList"></div>
-</div>
-
-<div class="tab-content hidden" id="tab-ai">
-    <div id="aiChatList" class="chat-list"></div>
-    <div class="ai-input-container">
-        <input type="text" id="aiInput" placeholder="Type a message...">
-        <button id="aiImageBtn"><i class="fa-solid fa-image"></i></button>
-        <input type="file" id="aiImageInput" class="hidden" accept="image/*">
-        <button id="sendAiBtn"><i class="fa-solid fa-paper-plane"></i></button>
-    </div>
-    <div id="aiImagePreview" class="hidden"></div>
-</div>
-
-<div class="tab-content hidden" id="tab-home">
-    <div id="publicChatList" class="chat-list"></div>
-    <div id="publicReplyContext" class="reply-context hidden">
-        Replying to <b id="publicReplyingToName"></b>: <span id="publicReplyingToText"></span>
-        <button id="cancelPublicReplyBtn"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form id="publicInputForm">
-        <input type="text" id="publicMessageInput" placeholder="Send a message...">
-        <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+  <div class="auth-box">
+    <form id="loginForm">
+      <h2>Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button type="button" id="loginBtn">Login</button>
+      <p>Don't have an account? <span id="showSignup">Sign up</span></p>
     </form>
-    <div id="publicTypingIndicator" class="typing-indicator hidden">Someone is typing...</div>
-</div>
-
-<div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-users"></i></button>
-    <button class="nav-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i></button>
-    <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-solid fa-comment"></i></button>
-    <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-solid fa-user"></i></button>
-</div>
-
-</div><!-- Modals --><div id="editProfileModal" class="modal hidden">
-    <h3>Edit Profile</h3>
-    <input type="text" id="editUsername" placeholder="Username">
-    <input type="text" id="editBio" placeholder="Bio">
-    <input type="text" id="editCategory" placeholder="Category">
-    <select id="editGender">
+    <form id="signupForm" class="hidden">
+      <h2>Sign Up</h2>
+      <input type="text" id="signupName" placeholder="Username">
+      <input type="email" id="signupEmail" placeholder="Email">
+      <input type="password" id="signupPass" placeholder="Password">
+      <select id="signupGender">
         <option value="male">Male</option>
         <option value="female">Female</option>
-    </select>
-    <button id="saveProfileBtn">Save</button>
-    <button id="cancelEditBtn">Cancel</button>
-</div><div id="userProfileModal" class="modal hidden">
-    <img id="viewAvatar" class="avatar-xl">
-    <h3 id="viewName"></h3>
-    <p id="viewCategory"></p>
-    <p id="viewBio"></p>
-    <button id="followBtn"></button>
-    <button id="messageBtn"></button>
-    <button id="closeProfileModal"><i class="fa-solid fa-xmark"></i></button>
-</div><div id="chat-room" class="modal hidden">
-    <h3 id="chatTitle"></h3>
-    <p id="chatStatus"></p>
-    <div id="messages" class="chat-list"></div>
-    <div id="replyContext" class="reply-context hidden">
-        Replying to <b id="replyingToName"></b>: <span id="replyingToText"></span>
-        <button id="cancelReplyBtn"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form id="inputForm">
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+      </select>
+      <button type="button" id="signupBtn">Sign Up</button>
+      <p>Already have an account? <span id="showLogin">Login</span></p>
     </form>
-    <button id="backToAppBtn">Back</button>
-</div><script type="module" src="app.js"></script></body>
+  </div>
+</div><div id="app-screen" class="hidden">
+  <div id="tabs">
+    <button class="nav-btn active" onclick="switchTab('home')">Home</button>
+    <button class="nav-btn" onclick="switchTab('ai')">AI</button>
+    <button class="nav-btn" onclick="switchTab('chats')">Chats</button>
+    <button class="nav-btn" onclick="switchTab('profile')">Profile</button>
+  </div>  <div id="tab-home" class="tab-content">
+    <div id="publicChatList" class="chat-list"></div>
+    <div id="publicReplyContext" class="reply-context hidden">
+      Replying to <span id="publicReplyingToName"></span>: <span id="publicReplyingToText"></span>
+      <button id="cancelPublicReplyBtn">Cancel</button>
+    </div>
+    <form id="publicInputForm">
+      <input type="text" id="publicMessageInput" placeholder="Message...">
+      <button type="button" id="sendPublicBtn"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+  </div>  <div id="tab-ai" class="tab-content hidden">
+    <div id="aiChatList" class="chat-list"></div>
+    <div id="aiImagePreview" class="hidden"></div>
+    <input type="file" id="aiImageInput" class="hidden">
+    <input type="text" id="aiInput" placeholder="Ask AI...">
+    <button id="aiImageBtn"><i class="fa-solid fa-image"></i></button>
+    <button id="sendAiBtn"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>  <div id="tab-chats" class="tab-content hidden">
+    <div id="activeChatsList" class="chat-list"></div>
+    <div id="chat-room" class="hidden">
+      <div id="chatHeader">
+        <span id="chatTitle"></span>
+        <span id="chatStatus"></span>
+        <button id="backToAppBtn"><i class="fa-solid fa-arrow-left"></i></button>
+      </div>
+      <div id="messages" class="chat-list"></div>
+      <div id="replyContext" class="reply-context hidden">
+        Replying to <span id="replyingToName"></span>: <span id="replyingToText"></span>
+        <button id="cancelReplyBtn">Cancel</button>
+      </div>
+      <form id="inputForm">
+        <input type="text" id="messageInput" placeholder="Message...">
+        <button type="button" id="sendMessageBtn"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+    </div>
+  </div>  <div id="tab-profile" class="tab-content hidden">
+    <div id="myProfile">
+      <img id="myAvatar">
+      <h3 id="myName"></h3>
+      <p id="myCategoryDisplay"></p>
+      <p id="myBio"></p>
+      <p>Followers: <span id="myFollowersCount"></span> | Following: <span id="myFollowingCount"></span></p>
+      <button id="openEditProfileBtn">Edit Profile</button>
+      <button id="logoutBtn">Logout</button>
+      <div id="myPostsList" class="chat-list"></div>
+    </div>
+  </div>
+</div><div id="msgOptionsModal" class="modal hidden">
+  <button id="optReply">Reply</button>
+  <button id="optCopy">Copy</button>
+  <button id="optEdit">Edit</button>
+  <button id="optDelete">Delete</button>
+  <button id="closeMsgOptions">Close</button>
+</div><div id="userProfileModal" class="modal hidden">
+  <img id="viewAvatar">
+  <h3 id="viewName"></h3>
+  <p id="viewCategory"></p>
+  <p id="viewBio"></p>
+  <button id="followBtn">Follow</button>
+  <button id="messageBtn">Message</button>
+  <button id="closeProfileModal">Close</button>
+</div><div id="editProfileModal" class="modal hidden">
+  <input type="text" id="editUsername">
+  <textarea id="editBio"></textarea>
+  <input type="text" id="editCategory">
+  <select id="editGender">
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+  <button id="saveProfileBtn">Save</button>
+  <button id="cancelEditBtn">Cancel</button>
+</div><script src="app.js"></script></body>
 </html>
