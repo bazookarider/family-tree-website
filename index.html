@@ -7,11 +7,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -23,7 +21,6 @@
         <div class="login-container">
             <h1 class="brand-title">Cyou</h1>
             <p class="subtitle">The Truth Network</p>
-            
             <div id="loginForm">
                 <input type="email" id="loginEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="loginPass" class="simple-input" placeholder="Password">
@@ -33,15 +30,18 @@
                     <button id="showForgot" class="anon-btn">Forgot Password?</button>
                 </div>
             </div>
-
             <div id="signupForm" class="hidden">
                 <input type="text" id="signupName" class="simple-input" placeholder="Username">
                 <input type="email" id="signupEmail" class="simple-input" placeholder="Email">
                 <input type="password" id="signupPass" class="simple-input" placeholder="Password">
+                <label style="text-align:left;display:block;margin-top:10px">Gender:</label>
+                <select id="signupGender" class="simple-input">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
                 <button id="signupBtn" class="primary-btn">Sign Up</button>
                 <button id="showLogin" class="anon-btn">Back to Login</button>
             </div>
-            
             <div id="forgotForm" class="hidden">
                 <input type="email" id="forgotEmail" class="simple-input" placeholder="Email">
                 <button id="resetPassBtn" class="primary-btn">Send Link</button>
@@ -54,16 +54,24 @@
         
         <div id="tab-home" class="tab-content">
             <header class="top-bar">
-                <h2>Cyou Home</h2>
-                <button id="refreshFeedBtn" class="icon-btn"><i class="fa-solid fa-rotate"></i></button>
+                <h2>Public Chat 🌍</h2>
             </header>
-            <div class="create-post-box">
-                <textarea id="newPostText" placeholder="What's happening?"></textarea>
-                <div class="post-actions-bar">
-                    <button id="postBtn" class="primary-btn small-btn">Post</button>
+            <div id="publicChatList" class="messages-area bg-gray" style="padding-bottom:130px;"></div>
+            
+            <div class="chat-input-wrapper">
+                <div id="publicReplyContext" class="hidden reply-context-bar">
+                    <div class="reply-bar"></div>
+                    <div style="flex:1; font-size:0.8rem;">
+                        <b id="publicReplyingToName" style="color:#006677;">Name</b>
+                        <div id="publicReplyingToText" style="color:#666; height:18px; overflow:hidden;">Text</div>
+                    </div>
+                    <button id="cancelPublicReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
                 </div>
+                <form id="publicInputForm" class="chat-input-bar">
+                    <input type="text" id="publicMessageInput" placeholder="Message everyone..." autocomplete="off">
+                    <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
             </div>
-            <div id="feedList" class="scroll-content bg-gray"></div>
         </div>
 
         <div id="tab-ai" class="tab-content hidden">
@@ -71,16 +79,19 @@
                 <h2>AI Studio 🤖</h2>
                 <button id="aiSettingsBtn" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
             </header>
-            <div id="aiChatList" class="messages-area bg-gray" style="padding-bottom:80px;">
-                <div class="message them">Hello. I am Cyou Assistant. How can I help?</div>
+            <div id="aiChatList" class="messages-area bg-gray" style="padding-bottom:130px;">
+                <div class="message them">Hello. I am Cyou Assistant.</div>
             </div>
-            <div class="chat-input-bar ai-bar">
-                <input type="file" id="aiImageInput" accept="image/*" hidden>
-                <button id="aiImageBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-paperclip"></i></button>
-                <input type="text" id="aiInput" placeholder="Ask AI..." style="flex:1;">
-                <button id="sendAiBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            
+            <div class="chat-input-wrapper">
+                <div id="aiImagePreview" class="hidden selected-image-preview"></div>
+                <div class="chat-input-bar">
+                    <input type="file" id="aiImageInput" accept="image/*" hidden>
+                    <button id="aiImageBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-paperclip"></i></button>
+                    <input type="text" id="aiInput" placeholder="Ask AI..." style="flex:1;">
+                    <button id="sendAiBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
             </div>
-            <div id="aiImagePreview" class="hidden"></div>
         </div>
 
         <div id="tab-discover" class="tab-content hidden">
@@ -91,6 +102,9 @@
                 </div>
             </header>
             <div class="scroll-content bg-gray">
+                <div class="section-header">Top Creators</div>
+                <div id="recommendedList" class="clean-list"></div>
+                <div class="section-header">All Users</div>
                 <div id="usersList" class="clean-list"></div>
             </div>
         </div>
@@ -104,26 +118,20 @@
             <header class="top-bar"><h2>Profile</h2> <button id="logoutBtn" class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i></button></header>
             <div class="scroll-content profile-wrapper bg-gray">
                 <div class="profile-header-card">
-                    <img id="myAvatar" class="avatar-xxl">
+                    <img id="myAvatar" src="" class="avatar-xl">
                     <h2 id="myName">...</h2>
                     <div id="myCategoryDisplay" class="category-pill">Member</div>
                     <p id="myBio" class="bio-text">...</p>
-                    <div class="stats-row">
-                        <div class="stat-box" id="myFollowersBox"><b id="myFollowersCount">0</b><span>Followers</span></div>
-                        <div class="stat-box" id="myFollowingBox"><b id="myFollowingCount">0</b><span>Following</span></div>
-                    </div>
                     <button id="openEditProfileBtn" class="outline-btn">Edit Profile</button>
                 </div>
-                <div class="section-header">My Posts</div>
-                <div id="myPostsList" class="clean-list"></div>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i></button>
+            <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-earth-africa"></i></button>
             <button class="nav-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i></button>
             <button class="nav-btn" onclick="switchTab('discover')"><i class="fa-solid fa-magnifying-glass"></i></button>
-            <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-solid fa-comment-dots"></i></button>
+            <button class="nav-btn" onclick="switchTab('chats')"><i class="fa-regular fa-comment-dots"></i></button>
             <button class="nav-btn" onclick="switchTab('profile')"><i class="fa-solid fa-user"></i></button>
         </nav>
     </div>
@@ -136,35 +144,48 @@
                 <div id="chatStatus">Offline</div>
             </div>
         </header>
-        <div id="messages" class="messages-area"></div>
-        <div id="replyContext" class="hidden">
-            <div class="reply-line"></div>
-            <div style="flex:1; font-size:0.8rem;">
-                <b id="replyingToName">Name</b>
-                <div id="replyingToText">Text</div>
+        <div id="messages" class="messages-area bg-gray" style="padding-bottom:70px;"></div>
+        
+        <div class="chat-input-wrapper">
+            <div id="replyContext" class="hidden reply-context-bar">
+                <div class="reply-bar"></div>
+                <div style="flex:1; font-size:0.8rem;">
+                    <b id="replyingToName">Name</b>
+                    <div id="replyingToText" style="overflow:hidden; height:18px;">Text</div>
+                </div>
+                <button id="cancelReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <button id="cancelReplyBtn" class="icon-btn" style="color:#666;"><i class="fa-solid fa-xmark"></i></button>
+            <form id="inputForm" class="chat-input-bar">
+                <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
+                <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
         </div>
-        <form id="inputForm" class="chat-input-bar">
-            <input type="text" id="messageInput" placeholder="Message..." autocomplete="off">
-            <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
-        </form>
     </div>
 
     <div id="aiKeyModal" class="modal hidden center-modal">
         <div class="modal-content">
-            <h3>AI API Key</h3>
+            <h3>AI Key</h3>
             <input type="text" id="geminiKeyInput" class="simple-input" placeholder="Paste Key Here">
             <button id="saveAiKeyBtn" class="primary-btn">Save</button>
             <button onclick="document.getElementById('aiKeyModal').classList.add('hidden')" class="anon-btn">Close</button>
         </div>
     </div>
 
+    <div id="msgOptionsModal" class="modal hidden bottom-sheet">
+        <div class="modal-content bottom-sheet-content">
+            <div class="modal-header">Options <span class="close-modal" id="closeMsgOptions">&times;</span></div>
+            <button class="opt-btn" id="optReply"><i class="fa-solid fa-reply"></i> Reply</button>
+            <button class="opt-btn" id="optCopy"><i class="fa-solid fa-copy"></i> Copy</button>
+            <button class="opt-btn" id="optEdit"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button class="opt-btn delete" id="optDelete"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>
+    </div>
+
     <div id="userProfileModal" class="modal hidden bottom-sheet">
         <div class="modal-content bottom-sheet-content">
-            <button id="closeProfileModal" class="close-modal">&times;</button>
+            <span class="close-modal" id="closeProfileModal">&times;</span>
             <div class="profile-header-card no-border">
-                <img id="viewAvatar" class="avatar-xxl">
+                <img id="viewAvatar" src="" class="avatar-xl">
                 <h2 id="viewName">Name</h2>
                 <div id="viewCategory" class="category-pill">Member</div>
                 <div id="viewBio" class="bio-text"></div>
@@ -186,20 +207,14 @@
             <input type="text" id="editUsername" class="simple-input" placeholder="Username">
             <input type="text" id="editCategory" class="simple-input" placeholder="Category">
             <textarea id="editBio" class="simple-input" placeholder="Bio"></textarea>
+            <label>Gender</label>
+            <select id="editGender" class="simple-input">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
             <div class="action-row">
                  <button id="cancelEditBtn" class="outline-btn">Cancel</button>
                  <button id="saveProfileBtn" class="primary-btn">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="commentModal" class="modal hidden bottom-sheet">
-        <div class="modal-content bottom-sheet-content">
-            <div class="modal-header"><h3>Comments</h3><button id="closeCommentModal" class="close-modal">&times;</button></div>
-            <div id="commentsList" class="scroll-content" style="max-height: 300px;"></div>
-            <div class="chat-input-bar">
-                <input type="text" id="commentInput" placeholder="Add a comment...">
-                <button id="sendCommentBtn" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
