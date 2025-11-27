@@ -1,4 +1,4 @@
- :root {
+:root {
     --primary: #006677;
     --primary-dark: #004c59;
     --bg-app: #ffffff;
@@ -14,7 +14,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .verified-badge { color: var(--blue-tick); margin-left: 4px; }
 .category-pill { background: #e0f7fa; color: var(--primary); font-size: 0.8rem; padding: 2px 8px; border-radius: 10px; display: inline-block; font-weight: bold;}
 
-/* BUTTONS */
 .primary-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 25px; width: 100%; font-weight: bold; font-size: 1rem; cursor: pointer; }
 .outline-btn { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 8px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
 .outline-btn:disabled { border-color: #ccc; color: #ccc; }
@@ -29,18 +28,20 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .login-container { width: 90%; max-width: 400px; text-align: center; margin: auto; }
 .brand-title { color: var(--primary); font-size: 2.5rem; margin: 0; }
 .auth-links { display: flex; justify-content: space-between; }
-.top-bar { height: 60px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-weight: bold; font-size: 1.1rem; }
-.scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; }
+.top-bar { height: 60px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
+.scroll-content { flex: 1; overflow-y: auto; padding-bottom: 70px; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; }
 .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
 .nav-btn { background: none; border: none; font-size: 1.5rem; color: #ccc; padding: 10px; }
 .nav-btn.active { color: var(--primary); }
 
-/* FEED */
-.create-post-box { background: white; padding: 15px; border-bottom: 1px solid #eee; }
+/* FEED & POSTS - FIX STICKING */
+.create-post-box { background: white; padding: 15px; border-bottom: 1px solid #eee; flex-shrink: 0; }
 .create-post-box textarea { width: 100%; border: none; resize: none; outline: none; height: 60px; font-family: inherit; }
 .post-actions-bar { text-align: right; }
-.post { background: white; padding: 15px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; gap: 10px; }
-.avatar-xl { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; }
+
+/* THE POST CARD */
+.post { background: white; padding: 15px; margin-bottom: 10px; border-bottom: 1px solid #eee; display: flex; gap: 10px; flex-shrink: 0; }
+.avatar-xl { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; flex-shrink: 0; }
 .post-header { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;}
 .hashtag { color: var(--primary); font-weight: bold; }
 .post-actions { display: flex; gap: 25px; margin-top: 12px; color: #666; font-size: 0.9rem; }
@@ -48,13 +49,12 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .action-btn i { font-size: 1.1rem; }
 .action-btn.liked { color: #e0245e; }
 
-/* SEARCH */
 .search-bar-wrapper { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; width: 100%; }
 .search-bar-wrapper input { background: transparent; border: none; color: white; margin-left: 10px; width: 100%; outline: none; }
-.user-item, .chat-item, .comment-item { background: white; padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer;}
+.user-item, .chat-item, .comment-item { background: white; padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0;}
 
 /* PROFILE */
-.profile-header-card { background: white; padding: 30px 20px; text-align: center; border-bottom: 1px solid #eee; }
+.profile-header-card { background: white; padding: 30px 20px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 10px; }
 .avatar-xl.large { width: 90px; height: 90px; margin: 0 auto 10px; }
 .stats-row { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
 .section-header { padding: 10px 15px; background: #eee; font-weight: bold; font-size: 0.9rem; color: #555; }
@@ -62,10 +62,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 
 /* CHAT ROOM */
 #chat-room { background: #e5ddd5; z-index: 2000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; }
-.chat-room-header { background: var(--primary); color: white; height: 60px; display: flex; align-items: center; padding: 0 10px; gap: 10px; }
+.chat-room-header { background: var(--primary); color: white; height: 60px; display: flex; align-items: center; padding: 0 10px; gap: 10px; flex-shrink: 0; }
 .chat-info #chatStatus { font-size: 0.75rem; opacity: 0.9; }
 .messages-area { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-.chat-input-bar { background: white; padding: 8px; display: flex; gap: 10px; align-items: center; }
+.chat-input-bar { background: white; padding: 8px; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .chat-input-bar input { flex: 1; padding: 10px 15px; background: white; border: none; border-radius: 25px; outline: none; font-size: 1rem; }
 .send-btn { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; }
 
@@ -80,7 +80,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .reply-quote { background: rgba(0,0,0,0.1); padding: 3px 5px; border-left: 3px solid rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 3px; border-radius: 4px; }
 .message.them .reply-quote { border-left-color: var(--primary); }
 
-/* MODALS */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; display: flex; justify-content: center; align-items: center; }
 .bottom-sheet-content { background: white; width: 100%; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; padding: 20px; position: absolute; bottom: 0;}
 .center-modal .modal-content { background: white; width: 90%; max-width: 350px; border-radius: 15px; padding: 20px; text-align: center;}
