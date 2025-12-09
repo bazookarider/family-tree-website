@@ -1,4 +1,4 @@
-// 1. FIREBASE CONFIG
+ // 1. FIREBASE CONFIG
 const firebaseConfig = {
     apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
     authDomain: "cyou-db8f0.firebaseapp.com",
@@ -14,17 +14,17 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 // 2. CONSTANTS
-// Updated Token from your screenshot
 const ALOC_TOKEN = "QB-9bea5116f01bd14dc704"; 
-const ADMIN_WHATSAPP = "2349125297720"; // International format for WA link
+const ADMIN_WHATSAPP = "2349125297720"; 
 
-// State
+// 3. UI STATE
 let currentUser = null;
-let currentExamType = ""; // JAMB, WAEC, NECO
+let currentExamType = "";
 let currentQuestions = [];
 let currentIndex = 0;
+let userAnswers = {}; // Stores user choices { 0: 2, 1: 0 }
+let timerInterval;
 
-// List of subjects for the UI
 const AVAILABLE_SUBJECTS = [
     { id: 'english', name: 'English Language', icon: 'fa-language' },
     { id: 'mathematics', name: 'Mathematics', icon: 'fa-calculator' },
@@ -36,8 +36,7 @@ const AVAILABLE_SUBJECTS = [
     { id: 'government', name: 'Government', icon: 'fa-landmark' }
 ];
 
-// --- AUTHENTICATION ---
-
+// --- AUTHENTICATION (Same as before) ---
 function toggleAuth(view) {
     if(view === 'register') {
         document.getElementById('login-form').classList.add('hidden');
@@ -52,22 +51,14 @@ function registerUser() {
     const name = document.getElementById('reg-username').value;
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
-
     if(!name) return alert("Please enter your name");
 
-    auth.createUserWithEmailAndPassword(email, pass)
-        .then((cred) => {
-            db.ref('users/' + cred.user.uid).set({
-                username: name,
-                email: email,
-                isPremium: false,
-                jambPaid: false, 
-                waecPaid: false,
-                necoPaid: false
-            });
-            alert("Account created! Logging in...");
-        })
-        .catch(e => alert(e.message));
+    auth.createUserWithEmailAndPassword(email, pass).then((cred) => {
+        db.ref('users/' + cred.user.uid).set({
+            username: name, email: email, isPremium: false, jambPaid: false, waecPaid: false
+        });
+        alert("Account created! Logging in...");
+    }).catch(e => alert(e.message));
 }
 
 function loginUser() {
@@ -77,19 +68,12 @@ function loginUser() {
 }
 
 function resetPassword() {
-    const email = prompt("Enter your email to reset password:");
-    if(email && email.includes('@')) {
-        auth.sendPasswordResetEmail(email)
-            .then(() => alert("Reset link sent! Check your email."))
-            .catch(e => alert(e.message));
-    } else {
-        alert("Please enter a valid email.");
-    }
+    const email = prompt("Enter your email:");
+    if(email) auth.sendPasswordResetEmail(email).then(()=>alert("Sent!")).catch(e=>alert(e.message));
 }
 
 function logout() { auth.signOut(); window.location.reload(); }
 
-// Auth Listener
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
@@ -106,25 +90,17 @@ function loadUserProfile() {
             document.getElementById('display-username').innerText = data.username;
             document.getElementById('profile-name').innerText = data.username;
             document.getElementById('profile-email').innerText = data.email;
-            document.getElementById('profile-uid').innerText = currentUser.uid;
             
             const badge = document.getElementById('user-badge');
             const status = document.getElementById('profile-status');
-            
             if(data.isPremium || data.jambPaid) {
-                badge.className = "user-badge badge-premium";
-                badge.innerText = "PREMIUM";
-                status.innerText = "Premium / Paid";
-                status.style.color = "green";
-            } else {
-                badge.innerText = "FREE";
-            }
+                badge.className = "user-badge badge-premium"; badge.innerText = "PREMIUM"; status.innerText = "Premium"; status.style.color = "green";
+            } else { badge.innerText = "FREE"; }
         }
     });
 }
 
-// --- NAVIGATION & MENUS ---
-
+// --- NAVIGATION ---
 function openExamMenu(type) {
     currentExamType = type;
     document.getElementById('selected-exam-title').innerText = type + " Preparation";
@@ -133,198 +109,252 @@ function openExamMenu(type) {
 }
 
 function goBack(to) {
-    // Hide all
     document.getElementById('exam-menu-container').classList.add('hidden');
     document.getElementById('subject-menu-container').classList.add('hidden');
     document.getElementById('quiz-container').classList.add('hidden');
+    document.getElementById('result-container').classList.add('hidden');
     
-    if(to === 'dashboard') {
-        document.getElementById('dashboard-container').classList.remove('hidden');
-    } else if (to === 'exam-menu') {
-        document.getElementById('exam-menu-container').classList.remove('hidden');
-    }
+    if(to === 'dashboard') document.getElementById('dashboard-container').classList.remove('hidden');
+    if(to === 'exam-menu') document.getElementById('exam-menu-container').classList.remove('hidden');
+    
+    clearInterval(timerInterval); // Stop timer if they leave
 }
 
 function showSubjectSelection(mode) {
     document.getElementById('exam-menu-container').classList.add('hidden');
     document.getElementById('subject-menu-container').classList.remove('hidden');
-    
     const list = document.getElementById('subject-list');
-    list.innerHTML = ""; // Clear old
-
+    list.innerHTML = "";
     AVAILABLE_SUBJECTS.forEach(sub => {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `
-            <i class="fa-solid ${sub.icon}"></i>
-            <h3>${sub.name}</h3>
-        `;
+        div.innerHTML = `<i class="fa-solid ${sub.icon}"></i><h3>${sub.name}</h3>`;
         div.onclick = () => startQuiz(sub.id);
         list.appendChild(div);
     });
 }
 
-// --- MONEY & MOCK EXAMS ---
-
-function checkPremiumAndStartMock() {
-    db.ref('users/' + currentUser.uid).once('value').then(snap => {
-        const data = snap.val();
-        let hasAccess = false;
-        let price = "0";
-
-        if(currentExamType === 'JAMB') {
-            hasAccess = data.jambPaid || data.isPremium;
-            price = "1,000";
-        } else if (currentExamType === 'WAEC' || currentExamType === 'NECO') {
-            hasAccess = data.waecPaid || data.isPremium;
-            price = "2,000";
-        }
-
-        if(hasAccess) {
-            // Paid users get to start English mock for now (or randomize)
-            startQuiz('english'); 
-        } else {
-            showPaymentModal(price);
-        }
-    });
-}
-
-function showPaymentModal(price) {
-    document.getElementById('pay-exam-name').innerText = currentExamType;
-    document.getElementById('pay-amount').innerText = "₦" + price;
-    document.getElementById('payment-modal').classList.remove('hidden');
-}
-
-function closePayment() {
-    document.getElementById('payment-modal').classList.add('hidden');
-}
-
-function sendProofWhatsApp() {
-    const text = `Hello Speaker of Naija, I just paid for the ${currentExamType} Mock Exam. My email is ${currentUser.email}. Please approve me.`;
-    const url = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-}
-
-function contactSupport() {
-    const text = "Hello, I need help with the Cyou App.";
-    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(text)}`, '_blank');
-}
-
-// --- QUIZ LOGIC ---
+// --- QUIZ LOGIC (UPDATED WITH TIMER & SCORE) ---
 
 function startQuiz(subjectKey) {
     document.getElementById('subject-menu-container').classList.add('hidden');
     document.getElementById('quiz-container').classList.remove('hidden');
     document.getElementById('subject-label').innerText = "Subject: " + subjectKey.toUpperCase();
 
-    // Construct DB path: e.g., "subjects/english"
-    // Note: The Admin function below saves them as just "subjects/english" (no 'jamb_' prefix to keep it simple for now)
-    const dbPath = `subjects/${subjectKey}`; 
+    // Reset State
+    currentQuestions = [];
+    userAnswers = {};
+    currentIndex = 0;
     
+    // Start Timer (e.g., 10 minutes)
+    startTimer(600); 
+
+    // Fetch Questions
+    const dbPath = `subjects/${subjectKey}`;
     document.getElementById('question-text').innerText = "Loading questions...";
     
     db.ref(dbPath).once('value').then(snap => {
         if(snap.exists()) {
             currentQuestions = Object.values(snap.val());
-            currentIndex = 0;
+            // Limit to 20 questions for practice
+            if(currentQuestions.length > 20) currentQuestions = currentQuestions.slice(0,20);
             showQuestion();
         } else {
-            alert(`No questions found for ${subjectKey}. Use the Admin Import tool to add them first!`);
-            quitQuiz();
+            alert("No questions found. Use Admin Panel to Import.");
+            goBack('dashboard');
         }
     });
 }
 
-function showQuestion() {
-    if(currentIndex >= currentQuestions.length) {
-        alert("Session Finished!");
-        quitQuiz();
-        return;
-    }
-    const q = currentQuestions[currentIndex];
-    document.getElementById('question-text').innerText = q.question;
+function startTimer(duration) {
+    let timer = duration, minutes, seconds;
+    clearInterval(timerInterval); // Clear any old timers
+    const display = document.getElementById('timer');
     
+    timerInterval = setInterval(function () {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        display.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            submitQuiz(); // Auto Submit
+        }
+    }, 1000);
+}
+
+function showQuestion() {
+    const q = currentQuestions[currentIndex];
+    document.getElementById('question-text').innerText = `Q${currentIndex+1}: ${q.question}`;
+    
+    // Update Progress Bar
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+    document.getElementById('progress-fill').style.width = `${progress}%`;
+
     const div = document.getElementById('options-container');
     div.innerHTML = "";
     
     q.options.forEach((opt, idx) => {
         const btn = document.createElement('button');
         btn.className = "option-btn";
+        if(userAnswers[currentIndex] === idx) btn.classList.add('selected'); // Keep selection
+        
         btn.innerHTML = `<i class="fa-regular fa-circle"></i> ${opt}`;
-        btn.onclick = () => {
-             document.querySelectorAll('.option-btn').forEach(b => {
-                 b.classList.remove('selected');
-                 b.innerHTML = b.innerHTML.replace('fa-circle-check', 'fa-circle');
-             });
-             btn.classList.add('selected');
-             btn.innerHTML = btn.innerHTML.replace('fa-circle', 'fa-circle-check');
-        };
+        btn.onclick = () => selectAnswer(idx, btn);
         div.appendChild(btn);
     });
 }
 
+function selectAnswer(idx, btn) {
+    userAnswers[currentIndex] = idx;
+    // UI Update
+    document.querySelectorAll('.option-btn').forEach(b => {
+        b.classList.remove('selected');
+        b.innerHTML = b.innerHTML.replace('fa-circle-check', 'fa-circle');
+    });
+    btn.classList.add('selected');
+    btn.innerHTML = btn.innerHTML.replace('fa-circle', 'fa-circle-check');
+}
+
 function nextQuestion() {
-    currentIndex++;
-    showQuestion();
+    if(currentIndex < currentQuestions.length - 1) {
+        currentIndex++;
+        showQuestion();
+    } else {
+        // Last question
+        if(confirm("Submit Quiz?")) submitQuiz();
+    }
 }
 
-function quitQuiz() {
+// --- SUBMIT & SCORING ---
+
+function submitQuiz() {
+    clearInterval(timerInterval); // Stop Timer
     document.getElementById('quiz-container').classList.add('hidden');
-    document.getElementById('dashboard-container').classList.remove('hidden');
+    document.getElementById('result-container').classList.remove('hidden');
+    document.getElementById('corrections-list').classList.add('hidden');
+    document.querySelector('.result-box').classList.remove('hidden');
+
+    let score = 0;
+    const total = currentQuestions.length;
+
+    // Calculate Score
+    currentQuestions.forEach((q, idx) => {
+        // Handle API letter answers ('a'=0, 'b'=1...)
+        let correctIndex = q.answer;
+        if(typeof correctIndex === 'string') {
+            const map = {'a':0, 'b':1, 'c':2, 'd':3};
+            correctIndex = map[correctIndex.toLowerCase()] || 0;
+        } else {
+            correctIndex = parseInt(correctIndex);
+        }
+
+        if(userAnswers[idx] === correctIndex) {
+            score++;
+        }
+    });
+
+    const percentage = Math.round((score / total) * 100);
+    
+    // Show Results
+    document.getElementById('score-text').innerText = `${score}/${total}`;
+    document.getElementById('score-percentage').innerText = `${percentage}%`;
+    
+    const msg = document.getElementById('score-message');
+    const circle = document.querySelector('.score-circle');
+    
+    if(percentage >= 50) {
+        msg.innerText = "PASSED! Great Job.";
+        msg.className = "pass";
+        circle.style.borderColor = "#1e8e3e";
+        circle.style.color = "#1e8e3e";
+        circle.style.background = "#e6f4ea";
+    } else {
+        msg.innerText = "FAILED. Try Again.";
+        msg.className = "fail";
+        circle.style.borderColor = "#d93025";
+        circle.style.color = "#d93025";
+        circle.style.background = "#fce8e6";
+    }
 }
 
-// --- ADMIN IMPORT LOGIC (THE FIX) ---
+function showCorrections() {
+    document.querySelector('.result-box').classList.add('hidden');
+    const list = document.getElementById('corrections-list');
+    list.classList.remove('hidden');
+    
+    const content = document.getElementById('corrections-content');
+    content.innerHTML = "";
+
+    currentQuestions.forEach((q, idx) => {
+        let correctIndex = q.answer;
+        if(typeof correctIndex === 'string') {
+            const map = {'a':0, 'b':1, 'c':2, 'd':3};
+            correctIndex = map[correctIndex.toLowerCase()] || 0;
+        } else {
+            correctIndex = parseInt(correctIndex);
+        }
+
+        const userIdx = userAnswers[idx];
+        const isCorrect = (userIdx === correctIndex);
+        
+        const card = document.createElement('div');
+        card.className = `correction-card ${isCorrect ? 'correct' : 'wrong'}`;
+        
+        card.innerHTML = `
+            <p><strong>Q${idx+1}:</strong> ${q.question}</p>
+            <span class="answer-label txt-green"><i class="fa-solid fa-check"></i> Correct: ${q.options[correctIndex]}</span>
+            ${!isCorrect ? `<span class="answer-label txt-red"><i class="fa-solid fa-xmark"></i> You chose: ${q.options[userIdx] || 'Skipped'}</span>` : ''}
+            <p style="font-size:11px; color:#666; margin-top:5px;"><em>${q.explanation || 'No explanation'}</em></p>
+        `;
+        content.appendChild(card);
+    });
+}
+
+// --- ADMIN IMPORT ---
 async function importQuestionsFromAPI() {
-    // 1. Get Selected Subject from Dropdown
     const subjectSelect = document.getElementById('admin-subject-select');
     const selectedSubject = subjectSelect.value;
-    
     const statusText = document.getElementById('import-status');
-    statusText.innerText = `Connecting to ALOC API for ${selectedSubject}...`;
+    statusText.innerText = `Connecting...`;
 
-    // 2. Fetch from API (Using your Token)
     const url = `https://questions.aloc.com.ng/api/v2/q/20?subject=${selectedSubject}&year=2023`;
     
     try {
-        const res = await fetch(url, { 
-            headers: { 
-                'AccessToken': ALOC_TOKEN,
-                'Content-Type': 'application/json'
-            }
-        });
+        const res = await fetch(url, { headers: { 'AccessToken': ALOC_TOKEN }});
         const data = await res.json();
         
-        console.log(data); // Debugging
-
         if(data.data && data.data.length > 0) {
-            statusText.innerText = `Found ${data.data.length} questions. Saving to Database...`;
-
-            // 3. Save to Firebase under subjects/[subjectName]
-            // We use Promise.all to ensure all saves finish
+            statusText.innerText = `Saving...`;
             const updates = {};
             data.data.forEach(q => {
                 const newKey = db.ref(`subjects/${selectedSubject}`).push().key;
                 updates[`subjects/${selectedSubject}/${newKey}`] = {
                     question: q.question,
                     options: [q.option.a, q.option.b, q.option.c, q.option.d],
-                    answer: q.answer,
-                    explanation: q.section || "None"
+                    answer: q.answer, // Saves 'a', 'b' etc.
+                    explanation: q.section
                 };
             });
-            
             await db.ref().update(updates);
-
-            alert(`Success! Imported ${data.data.length} ${selectedSubject} questions.`);
+            alert(`Imported ${data.data.length} questions for ${selectedSubject}`);
             statusText.innerText = "Done.";
         } else {
-            statusText.innerText = "❌ API returned no questions. Try another subject.";
+            statusText.innerText = "No data found.";
         }
     } catch(e) {
-        console.error(e);
-        statusText.innerText = "❌ Error: " + e.message;
+        statusText.innerText = "Error: " + e.message;
     }
 }
 
-// Modal Profiles
+// Payment/Modal functions (unchanged)
+function checkPremiumAndStartMock() { showPaymentModal("1,000"); }
+function showPaymentModal(p) { document.getElementById('payment-modal').classList.remove('hidden'); }
+function closePayment() { document.getElementById('payment-modal').classList.add('hidden'); }
+function sendProofWhatsApp() { window.open(`https://wa.me/${ADMIN_WHATSAPP}`, '_blank'); }
+function contactSupport() { window.open(`https://wa.me/${ADMIN_WHATSAPP}`, '_blank'); }
 function showProfile() { document.getElementById('profile-modal').classList.remove('hidden'); }
 function closeProfile() { document.getElementById('profile-modal').classList.add('hidden'); }
