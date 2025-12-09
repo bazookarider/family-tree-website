@@ -77,10 +77,8 @@
             </button>
         </div>
 
-        <div class="admin-panel" style="margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px;">
+        <div class="admin-panel">
             <h4><i class="fa-solid fa-lock"></i> Admin Import Tool</h4>
-            <p style="font-size: 12px; color: #666;">Select a subject and click Import to fill your database.</p>
-            
             <select id="admin-subject-select" class="input-field">
                 <option value="english">English</option>
                 <option value="mathematics">Mathematics</option>
@@ -94,9 +92,8 @@
                 <option value="crs">CRK</option>
                 <option value="irs">IRS</option>
             </select>
-            
             <button onclick="importQuestionsFromAPI()" class="btn-small">Import Selected Subject</button>
-            <span id="import-status" style="display:block; margin-top:5px; font-size:12px; color:blue;"></span>
+            <span id="import-status"></span>
         </div>
     </div>
 
@@ -127,40 +124,53 @@
             <i class="fa-solid fa-crown fa-3x gold-icon"></i>
             <h2>Unlock Premium</h2>
             <p>You need a Premium License to access <span id="pay-exam-name">JAMB</span> Mock Exams.</p>
-            
-            <div class="price-tag">
-                <h1 id="pay-amount">₦1,000</h1>
-            </div>
-
+            <div class="price-tag"><h1 id="pay-amount">₦1,000</h1></div>
             <div class="bank-details">
                 <p>Transfer to:</p>
                 <strong>OPAY</strong>
                 <p class="account-num">9125297720</p>
                 <strong>ABDUL KARIM ALI</strong>
             </div>
-
             <p class="instruction">After transfer, send proof to WhatsApp to get activated instantly.</p>
-            
-            <button onclick="sendProofWhatsApp()" class="btn-whatsapp">
-                <i class="fa-brands fa-whatsapp"></i> Send Payment Proof
-            </button>
+            <button onclick="sendProofWhatsApp()" class="btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Send Payment Proof</button>
         </div>
     </div>
 
     <div id="quiz-container" class="container hidden">
         <div class="quiz-header">
-            <button onclick="quitQuiz()" class="btn-small"><i class="fa-solid fa-xmark"></i> Quit</button>
+            <button onclick="submitQuiz()" class="btn-small" style="background:#d93025; color:white;">Submit</button>
             <div class="timer-box"><i class="fa-regular fa-clock"></i> <span id="timer">00:00</span></div>
         </div>
 
         <div id="question-box">
             <h4 id="subject-label">Subject: ...</h4>
+            <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
             <p id="question-text">Loading...</p>
             <div id="options-container"></div>
         </div>
         
         <div class="controls">
             <button onclick="nextQuestion()" class="btn-primary">Next <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <div id="result-container" class="container hidden">
+        <div class="result-box">
+            <h2 id="result-title">Test Completed!</h2>
+            <div class="score-circle">
+                <span id="score-text">0/0</span>
+            </div>
+            <p id="score-percentage">0%</p>
+            <p id="score-message">Keep Practicing!</p>
+            
+            <button onclick="showCorrections()" class="btn-secondary">View Corrections</button>
+            <button onclick="goBack('dashboard')" class="btn-primary">Back to Home</button>
+        </div>
+
+        <div id="corrections-list" class="hidden">
+            <h3>Corrections</h3>
+            <div id="corrections-content"></div>
+            <button onclick="goBack('dashboard')" class="btn-primary">Finish</button>
         </div>
     </div>
 
@@ -172,7 +182,6 @@
                 <p><strong>Name:</strong> <span id="profile-name">User</span></p>
                 <p><strong>Email:</strong> <span id="profile-email">email@test.com</span></p>
                 <p><strong>Status:</strong> <span id="profile-status">Free</span></p>
-                <p><strong>Wallet ID:</strong> <span id="profile-uid" style="font-size:10px; color:#888;"></span></p>
             </div>
         </div>
     </div>
