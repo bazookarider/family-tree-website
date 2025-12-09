@@ -3,7 +3,7 @@
     --primary-bg: #eaeff2; /* Google Ash/Slate Gray Light */
     --card-bg: #ffffff;
     --main-text: #202124;
-    --accent-color: #006677; /* Your requested Teal Color */
+    --accent-color: #006677; /* Your Deep Teal */
     --accent-hover: #004d5a;
     --secondary-btn: #5f6368;
     --whatsapp-green: #25D366;
@@ -27,6 +27,7 @@ body {
     background: var(--card-bg);
     min-height: 100vh; /* Full mobile height */
     padding: 20px;
+    box-sizing: border-box; /* Ensures padding doesn't break width */
     box-shadow: 0 0 15px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
@@ -43,11 +44,12 @@ body {
 .hidden { display: none !important; }
 
 /* Typography & Icons */
-h1, h2, h3 { margin: 10px 0; color: #3c4043; }
+h1, h2, h3, h4 { margin: 10px 0; color: #3c4043; }
 i { margin-right: 8px; }
 
 /* Buttons & Inputs */
-.input-field {
+/* Added 'select' here so the Admin dropdown looks good */
+.input-field, select {
     width: 100%;
     padding: 14px;
     margin: 10px 0;
@@ -56,6 +58,7 @@ i { margin-right: 8px; }
     font-size: 16px;
     background: #f8f9fa;
     box-sizing: border-box; 
+    font-family: inherit; /* Fixes font inside dropdowns */
 }
 
 button {
@@ -80,10 +83,21 @@ button {
 
 .btn-whatsapp { background-color: var(--whatsapp-green); color: white; margin-top: 15px; }
 
-.btn-icon { width: auto; background: transparent; color: #5f6368; padding: 10px; }
-.btn-small { padding: 8px 16px; font-size: 14px; width: auto; }
+/* New Back Button Style */
+.btn-back {
+    background: transparent;
+    color: #5f6368;
+    width: auto;
+    justify-content: flex-start;
+    padding: 0;
+    margin-bottom: 10px;
+}
+.btn-back:hover { color: var(--accent-color); }
 
-.text-link { color: var(--accent-color); cursor: pointer; font-size: 14px; margin-top: 15px; }
+.btn-icon { width: auto; background: transparent; color: #5f6368; padding: 10px; }
+.btn-small { padding: 8px 16px; font-size: 14px; width: auto; background: #eee; color: #333;}
+
+.text-link { color: var(--accent-color); cursor: pointer; font-size: 14px; margin-top: 15px; text-align: center; }
 .small { font-size: 12px; color: #777; }
 
 /* Dashboard Styling */
@@ -131,6 +145,16 @@ button {
 .card h3 { font-size: 16px; margin: 0; }
 .card p { font-size: 12px; color: #666; margin: 5px 0 0; }
 
+/* Admin Panel Styling (New) */
+.admin-panel {
+    margin-top: 30px;
+    border-top: 2px dashed #ccc;
+    padding-top: 20px;
+    background: #fafafa;
+    padding: 15px;
+    border-radius: 10px;
+}
+
 /* Modal (Payment & Profile) */
 .modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -176,7 +200,10 @@ button {
     margin: 10px 0;
     padding: 15px;
     border-radius: 8px;
+    cursor: pointer;
 }
+.option-btn:hover { background: #f1f3f4; }
+
 .option-btn.selected {
     background-color: #e8f0fe;
     border-color: var(--accent-color);
