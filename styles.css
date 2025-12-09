@@ -1,4 +1,4 @@
-body { font-family: 'Poppins', sans-serif; }
+ body { font-family: 'Poppins', sans-serif; }
 ::-webkit-scrollbar { width: 8px; background: #111; }
 ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 4px; }
 .animate-pulse { animation: pulse 2s infinite; }
