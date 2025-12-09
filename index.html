@@ -77,10 +77,26 @@
             </button>
         </div>
 
-        <div class="admin-panel">
-            <h4><i class="fa-solid fa-lock"></i> Admin Controls</h4>
-            <button onclick="importQuestionsFromAPI()" class="btn-small">Import API Data</button>
-            <span id="import-status"></span>
+        <div class="admin-panel" style="margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px;">
+            <h4><i class="fa-solid fa-lock"></i> Admin Import Tool</h4>
+            <p style="font-size: 12px; color: #666;">Select a subject and click Import to fill your database.</p>
+            
+            <select id="admin-subject-select" class="input-field">
+                <option value="english">English</option>
+                <option value="mathematics">Mathematics</option>
+                <option value="physics">Physics</option>
+                <option value="chemistry">Chemistry</option>
+                <option value="biology">Biology</option>
+                <option value="commerce">Commerce</option>
+                <option value="economics">Economics</option>
+                <option value="government">Government</option>
+                <option value="literature">Literature</option>
+                <option value="crs">CRK</option>
+                <option value="irs">IRS</option>
+            </select>
+            
+            <button onclick="importQuestionsFromAPI()" class="btn-small">Import Selected Subject</button>
+            <span id="import-status" style="display:block; margin-top:5px; font-size:12px; color:blue;"></span>
         </div>
     </div>
 
@@ -89,13 +105,20 @@
         <h2 id="selected-exam-title">JAMB</h2>
         
         <div class="action-buttons">
-            <button onclick="startPracticeMode()" class="btn-primary">
+            <button onclick="showSubjectSelection('practice')" class="btn-primary">
                 <i class="fa-solid fa-pencil"></i> Practice Subjects (Free)
             </button>
-            <button onclick="checkPremiumAndStart('mock')" class="btn-secondary">
+            <button onclick="checkPremiumAndStartMock()" class="btn-secondary">
                 <i class="fa-solid fa-clock"></i> Take Full Mock Exam
             </button>
         </div>
+    </div>
+
+    <div id="subject-menu-container" class="container hidden">
+        <button onclick="goBack('exam-menu')" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        <h2>Select Subject</h2>
+        <div id="subject-list" class="grid-menu">
+            </div>
     </div>
 
     <div id="payment-modal" class="modal hidden">
@@ -131,7 +154,7 @@
         </div>
 
         <div id="question-box">
-            <h4 id="subject-label">Subject: English</h4>
+            <h4 id="subject-label">Subject: ...</h4>
             <p id="question-text">Loading...</p>
             <div id="options-container"></div>
         </div>
