@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
@@ -14,14 +14,12 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Login / Register
-document.getElementById("loginBtn").onclick = () => signInWithEmailAndPassword(auth, email.value, password.value).catch(e => alert(e.message));
-document.getElementById("registerBtn").onclick = () => createUserWithEmailAndPassword(auth, email.value, password.value).catch(e => alert(e.message));
+// CHANGE THIS TO YOUR REAL EMAIL (the only admin)
+const ADMIN_EMAIL = "youremail@gmail.com";   // ← PUT YOUR EMAIL HERE
 
-const email = document.getElementById("email");
-const password = document.getElementById("password");
+document.getElementById("loginBtn").onclick = () => signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(e => alert(e.message));
+document.getElementById("registerBtn").onclick = () => createUserWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(e => alert(e.message));
 
-// Auth State
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     document.getElementById("authSection").classList.add("hidden");
@@ -33,33 +31,84 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById("vipSection").classList.remove("hidden");
       loadChat();
     }
+
+    // ADMIN PANEL (only you)
+    if (user.email === ADMIN_EMAIL) {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div class="fixed bottom-4 right-4 bg-red-600 p-4 rounded-full shadow-2xl z-50 animate-bounce cursor-pointer" onclick="toggleAdminPanel()">
+          <span class="text-3xl">Admin</span>
+        </div>
+        <div id="adminPanel" class="hidden fixed inset-0 bg-black/95 z-50 p-6 overflow-y-auto">
+          <div class="bg-gray-900 rounded-xl p-8 max-w-2xl mx-auto">
+            <h2 class="text-4xl font-bold text-yellow-400 mb-6">ADMIN PANEL</h2>
+            <button onclick="toggleAdminPanel()" class="float-right text-3xl">Close</button>
+            <h3 class="text-2xl mt-8 mb-4">Pending Payments</h3>
+            <div id="pendingList" class="space-y-4"></div>
+          </div>
+        </div>
+      `);
+      loadPendingPayments();
+    }
   }
 });
 
-// WhatsApp Payment Button
 window.payViaWhatsApp = () => {
-  const text = encodeURIComponent(`Hello NaijaSureOdds! I want VIP access (50% off ₦1,000). My email: ${auth.currentUser?.email || email.value}`);
+  const email = auth.currentUser?.email || document.getElementById("email").value;
+  const text = encodeURIComponent(`Hello NaijaSureOdds! I just paid ₦1,000 for VIP (50% OFF). My email: ${email}`);
   window.open(`https://wa.me/2347056353236?text=${text}`, "_blank");
+
+  // Auto-save pending payment
+  if (auth.currentUser) {
+    setDoc(doc(db, "vipUsers", auth.currentUser.uid), {
+      email: auth.currentUser.email,
+      amount: 1000,
+      timestamp: serverTimestamp(),
+      isApproved: false
+    }, { merge: true });
+  }
 };
 
-// Live Chat
+window.toggleAdminPanel = () => document.getElementById("adminPanel")?.classList.toggle("hidden");
+
+async function loadPendingPayments() {
+  const q = query(collection(db, "vipUsers"), where("isApproved", "==", false));
+  onSnapshot(q, (snap) => {
+    const list = document.getElementById("pendingList");
+    if (!list) return;
+    list.innerHTML = snap.empty ? "<p>No pending payments</p>" : "";
+    snap.forEach(d => {
+      const data = d.data();
+      const div = document.createElement("div");
+      div.className = "bg-gray-800 p-4 rounded flex justify-between items-center";
+      div.innerHTML = `
+        <div><strong>\( {data.email}</strong><br>₦ \){data.amount || 1000} • ${data.timestamp?.toDate().toLocaleString() || "Just now"}</div>
+        <button onclick="approveUser('${d.id}')" class="bg-green-600 px-6 py-2 rounded font-bold">Approve VIP</button>
+      `;
+      list.appendChild(div);
+    });
+  });
+}
+
+window.approveUser = async (uid) => {
+  await setDoc(doc(db, "vipUsers", uid), { isApproved: true }, { merge: true });
+  alert("VIP Approved! User now has full access.");
+};
+
 function loadChat() {
   const q = query(collection(db, "vipChat"), orderBy("timestamp"));
   onSnapshot(q, (snap) => {
-    document.getElementById("chatMessages").innerHTML = "";
+    const messages = document.getElementById("chatMessages");
+    messages.innerHTML = "";
     snap.forEach(d => {
       const m = d.data();
-      const div = document.createElement("div");
-      div.className = "mb-2";
-      div.innerHTML = `<strong>\( {m.name}:</strong> \){m.text}`;
-      document.getElementById("chatMessages").appendChild(div);
+      messages.innerHTML += `<div class="mb-2"><strong>\( {m.name}:</strong> \){m.text}</div>`;
     });
-    document.getElementById("chatMessages").scrollTop = document.getElementById("chatMessages").scrollHeight;
+    messages.scrollTop = messages.scrollHeight;
   });
 
   document.getElementById("sendChat").onclick = async () => {
     const input = document.getElementById("chatInput");
-    if (input.value.trim()) {
+    if (input.value.trim() && auth.currentUser) {
       await addDoc(collection(db, "vipChat"), {
         name: auth.currentUser.email.split("@")[0],
         text: input.value,
