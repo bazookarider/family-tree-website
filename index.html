@@ -1,114 +1,56 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CYOU Chat App</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#000000"/>
+  <title>Sure10_ODD | Daily 10+ Odds</title>
+  <link rel="manifest" href="data:application/manifest+json,{
+    \"name\":\"Sure10_ODD\",
+    \"short_name\":\"Sure10\",
+    \"start_url\":\".\",
+    \"display\":\"standalone\",
+    \"background_color\":\"#000\",
+    \"theme_color\":\"#FFD700\",
+    \"icons\":[{\"src\":\"https://img.icons8.com/color/192/000000/money-bag.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"}]
+  }"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    .splash { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; color:gold; display:flex; align-items:center; justify-content:center; font-size:30px; z-index:9999; }
+  </style>
 </head>
 <body>
-<div id="auth-screen">
-  <div class="auth-box">
-    <form id="loginForm">
-      <h2>Login</h2>
-      <input type="email" id="loginEmail" placeholder="Email">
-      <input type="password" id="loginPass" placeholder="Password">
-      <button type="button" id="loginBtn">Login</button>
-      <p>Don't have an account? <span id="showSignup">Sign up</span></p>
-    </form>
-    <form id="signupForm" class="hidden">
-      <h2>Sign Up</h2>
-      <input type="text" id="signupName" placeholder="Username">
-      <input type="email" id="signupEmail" placeholder="Email">
-      <input type="password" id="signupPass" placeholder="Password">
-      <select id="signupGender">
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-      </select>
-      <button type="button" id="signupBtn">Sign Up</button>
-      <p>Already have an account? <span id="showLogin">Login</span></p>
-    </form>
-  </div>
-</div><div id="app-screen" class="hidden">
-  <div id="tabs">
-    <button class="nav-btn active" onclick="switchTab('home')">Home</button>
-    <button class="nav-btn" onclick="switchTab('ai')">AI</button>
-    <button class="nav-btn" onclick="switchTab('chats')">Chats</button>
-    <button class="nav-btn" onclick="switchTab('profile')">Profile</button>
-  </div>  <div id="tab-home" class="tab-content">
-    <div id="publicChatList" class="chat-list"></div>
-    <div id="publicReplyContext" class="reply-context hidden">
-      Replying to <span id="publicReplyingToName"></span>: <span id="publicReplyingToText"></span>
-      <button id="cancelPublicReplyBtn">Cancel</button>
+  <div class="splash" id="splash">Sure10_ODD</div>
+
+  <div class="container">
+    <h1>Sure10<span style="color:#FFD700">_ODD</span></h1>
+    <p id="status">Loading...</p>
+
+    <div id="auth">
+      <input type="email" id="email" placeholder="Email"/><br/><br/>
+      <input type="password" id="password" placeholder="Password"/><br/><br/>
+      <button onclick="register()">Register</button>
+      <button onclick="login()">Login</button>
     </div>
-    <form id="publicInputForm">
-      <input type="text" id="publicMessageInput" placeholder="Message...">
-      <button type="button" id="sendPublicBtn"><i class="fa-solid fa-paper-plane"></i></button>
-    </form>
-  </div>  <div id="tab-ai" class="tab-content hidden">
-    <div id="aiChatList" class="chat-list"></div>
-    <div id="aiImagePreview" class="hidden"></div>
-    <input type="file" id="aiImageInput" class="hidden">
-    <input type="text" id="aiInput" placeholder="Ask AI...">
-    <button id="aiImageBtn"><i class="fa-solid fa-image"></i></button>
-    <button id="sendAiBtn"><i class="fa-solid fa-paper-plane"></i></button>
-  </div>  <div id="tab-chats" class="tab-content hidden">
-    <div id="activeChatsList" class="chat-list"></div>
-    <div id="chat-room" class="hidden">
-      <div id="chatHeader">
-        <span id="chatTitle"></span>
-        <span id="chatStatus"></span>
-        <button id="backToAppBtn"><i class="fa-solid fa-arrow-left"></i></button>
-      </div>
-      <div id="messages" class="chat-list"></div>
-      <div id="replyContext" class="reply-context hidden">
-        Replying to <span id="replyingToName"></span>: <span id="replyingToText"></span>
-        <button id="cancelReplyBtn">Cancel</button>
-      </div>
-      <form id="inputForm">
-        <input type="text" id="messageInput" placeholder="Message...">
-        <button type="button" id="sendMessageBtn"><i class="fa-solid fa-paper-plane"></i></button>
-      </form>
-    </div>
-  </div>  <div id="tab-profile" class="tab-content hidden">
-    <div id="myProfile">
-      <img id="myAvatar">
-      <h3 id="myName"></h3>
-      <p id="myCategoryDisplay"></p>
-      <p id="myBio"></p>
-      <p>Followers: <span id="myFollowersCount"></span> | Following: <span id="myFollowingCount"></span></p>
-      <button id="openEditProfileBtn">Edit Profile</button>
-      <button id="logoutBtn">Logout</button>
-      <div id="myPostsList" class="chat-list"></div>
+
+    <div id="app" style="display:none">
+      <button onclick="logout()" style="float:right">Logout</button>
+      <h2>Free Tips Today</h2>
+      <div id="free" class="box"></div>
+
+      <button class="vip-btn" onclick="checkVip()">VIP 10+ Odds → ₦500/week</button>
+      <div id="vip" class="box" style="display:none"></div>
+
+      <div id="adminBtn"></div>
     </div>
   </div>
-</div><div id="msgOptionsModal" class="modal hidden">
-  <button id="optReply">Reply</button>
-  <button id="optCopy">Copy</button>
-  <button id="optEdit">Edit</button>
-  <button id="optDelete">Delete</button>
-  <button id="closeMsgOptions">Close</button>
-</div><div id="userProfileModal" class="modal hidden">
-  <img id="viewAvatar">
-  <h3 id="viewName"></h3>
-  <p id="viewCategory"></p>
-  <p id="viewBio"></p>
-  <button id="followBtn">Follow</button>
-  <button id="messageBtn">Message</button>
-  <button id="closeProfileModal">Close</button>
-</div><div id="editProfileModal" class="modal hidden">
-  <input type="text" id="editUsername">
-  <textarea id="editBio"></textarea>
-  <input type="text" id="editCategory">
-  <select id="editGender">
-    <option value="male">Male</option>
-    <option value="female">Female</option>
-  </select>
-  <button id="saveProfileBtn">Save</button>
-  <button id="cancelEditBtn">Cancel</button>
-</div><script src="app.js"></script></body>
+
+  <script src="script.js"></script>
+  <script>
+    setTimeout(() => document.getElementById('splash').remove(), 2000);
+  </script>
+</body>
 </html>
