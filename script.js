@@ -15,7 +15,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // CHANGE THIS TO YOUR REAL EMAIL (the only admin)
-const ADMIN_EMAIL = "abdulkareemglo@gmail.com";   // ← PUT YOUR EMAIL HERE
+const ADMIN_EMAIL = "abdulkareemgloo@gmail.com";   // ← PUT YOUR EMAIL HERE
 
 document.getElementById("loginBtn").onclick = () => signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(e => alert(e.message));
 document.getElementById("registerBtn").onclick = () => createUserWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(e => alert(e.message));
