@@ -1,3 +1,2 @@
- body { font-family: 'Segoe UI', sans-serif; margin:0; padding:0; }
+body { font-family: 'Segoe UI', sans-serif; margin:0; padding:0; }
 .animate-pulse { animation: pulse 1.5s infinite; }
-button, a { -webkit-tap-highlight-color: transparent; }
