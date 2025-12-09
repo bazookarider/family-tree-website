@@ -3,32 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sure10_ODD | Daily 10+ Odds</title>
+  <title>NaijaSureOdds - VIP Winning Community</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="styles.css"/>
-  <link rel="manifest" href="data:application/manifest+json,{\"name\":\"Sure10_ODD\",\"short_name\":\"Sure10\",\"start_url\":\".\",\"display\":\"standalone\",\"background_color\":\"#000\",\"theme_color\":\"#FFD700\",\"icons\":[{\"src\":\"https://img.icons8.com/fluency/192/trophy.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"}]}"/>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
-<body>
+<body class="bg-black text-white min-h-screen">
 
-  <div class="container">
-    <h1>Sure<span style="color:#FFD700">10</span>_ODD</h1>
-    <p id="status">Connecting...</p>
-
-    <div id="main">
-      <div class="card">
-        <h2>Free Tips Today</h2>
-        <div id="freeTips" class="tips"></div>
-      </div>
-
-      <button class="vip-btn" onclick="showVip()">VIP 10+ ODDS → ₦500/week</button>
-      <div id="vipSection" class="card" style="display:none"></div>
-
-      <div id="adminOnly"></div>
+  <!-- Header -->
+  <div class="text-center py-8 bg-gradient-to-b from-green-900 to-black">
+    <h1 class="text-5xl font-bold text-yellow-400 flex items-center justify-center gap-3">
+      <i class="fas fa-trophy"></i> NaijaSureOdds <i class="fas fa-trophy"></i>
+    </h1>
+    <p class="text-xl mt-2">Join 2,000+ Daily Winners • 15–30 Odds Guaranteed</p>
+    <div class="mt-4 text-2xl font-bold text-green-400 animate-pulse">
+      <i class="fas fa-fire"></i> CHAMPIONS LEAGUE NIGHT <i class="fas fa-fire"></i>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Login / Register -->
+  <div id="authSection" class="max-w-md mx-auto p-6 bg-gray-900 rounded-xl my-8">
+    <h2 class="text-2xl text-center mb-4">Login or Register (Email Required)</h2>
+    <input type="email" id="email" placeholder="Your Email" class="w-full p-3 rounded bg-gray-800 mb-3"/>
+    <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded bg-gray-800 mb-3"/>
+    <button id="loginBtn" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold">Login</button>
+    <button id="registerBtn" class="w-full bg-yellow-600 hover:bg-yellow-500 py-3 rounded font-bold mt-2">Register</button>
+  </div>
+
+  <!-- Free Tips (Visible after login) -->
+  <div id="freeSection" class="hidden max-w-2xl mx-auto space-y-6 px-4">
+    <div class="bg-green-800 p-6 rounded-xl">
+      <h2 class="text-3xl font-bold flex items-center gap-3"><i class="fas fa-gift"></i> Today's Free Games</h2>
+      <ul class="mt-4 space-y-3 text-lg">
+        <li class="flex justify-between"><span>Real Madrid vs Man City</span> <span class="text-yellow-400">Over 2.5 🔥</span></li>
+        <li class="flex justify-between"><span>Bayern vs Arsenal</span> <span class="text-yellow-400">GG (Both Score)</span></li>
+        <li class="flex justify-between"><span>Liverpool vs Chelsea</span> <span class="text-yellow-400">1X & Under 4.5</span></li>
+      </ul>
+    </div>
+
+    <!-- VIP Locked Section -->
+    <div id="vipLocked" class="bg-gradient-to-r from-purple-900 to-black p-8 rounded-xl text-center">
+      <h2 class="text-4xl font-bold text-yellow-400 mb-4">Unlock VIP Now!</h2>
+      <p class="text-2xl mb-4">First 50 Users → 50% OFF (Only ₦1,000 for 30 Days)</p>
+      <button onclick="payViaWhatsApp()" class="bg-green-500 hover:bg-green-400 text-black text-2xl font-bold py-5 px-12 rounded-full">
+        <i class="fab fa-whatsapp"></i> Pay ₦1,000 via WhatsApp Now
+      </button>
+      <p class="mt-4 text-gray-300">Chat: 07056353236 (Send proof → Get VIP + Group Link instantly)</p>
+    </div>
+
+    <!-- VIP Unlocked Section (Shows after approval) -->
+    <div id="vipSection" class="hidden space-y-8">
+      <div class="bg-purple-900 p-8 rounded-xl">
+        <h2 class="text-3xl font-bold text-yellow-400">VIP ROLL-OVER (22.4 Odds)</h2>
+        <ol class="list-decimal pl-6 text-lg space-y-2 mt-4"> <!-- Update daily -->
+          <li>Man City vs Real Madrid – Over 1.5</li>
+          <li>Arsenal vs Bayern – GG</li>
+          <!-- Add 15–20 more -->
+        </ol>
+        <p class="mt-6 text-3xl font-bold text-green-400">Total Odds: 22.4+</p>
+      </div>
+
+      <!-- Live Chat -->
+      <div class="bg-gray-900 p-6 rounded-xl">
+        <h3 class="text-2xl mb-4"><i class="fas fa-comments"></i> VIP Live Chat</h3>
+        <div id="chatMessages" class="h-64 overflow-y-auto bg-black p-4 rounded mb-4"></div>
+        <div class="flex">
+          <input id="chatInput" class="flex-1 p-3 bg-gray-800 rounded-l" placeholder="Say something..."/>
+          <button id="sendChat" class="bg-green-600 px-6 rounded-r">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
