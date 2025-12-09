@@ -14,14 +14,27 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 // 2. CONSTANTS
+// Updated Token from your screenshot
 const ALOC_TOKEN = "QB-9bea5116f01bd14dc704"; 
-const ADMIN_WHATSAPP = "2349125297720"; // Your Number
+const ADMIN_WHATSAPP = "2349125297720"; // International format for WA link
 
 // State
 let currentUser = null;
 let currentExamType = ""; // JAMB, WAEC, NECO
 let currentQuestions = [];
 let currentIndex = 0;
+
+// List of subjects for the UI
+const AVAILABLE_SUBJECTS = [
+    { id: 'english', name: 'English Language', icon: 'fa-language' },
+    { id: 'mathematics', name: 'Mathematics', icon: 'fa-calculator' },
+    { id: 'physics', name: 'Physics', icon: 'fa-atom' },
+    { id: 'chemistry', name: 'Chemistry', icon: 'fa-flask' },
+    { id: 'biology', name: 'Biology', icon: 'fa-dna' },
+    { id: 'commerce', name: 'Commerce', icon: 'fa-briefcase' },
+    { id: 'economics', name: 'Economics', icon: 'fa-chart-line' },
+    { id: 'government', name: 'Government', icon: 'fa-landmark' }
+];
 
 // --- AUTHENTICATION ---
 
@@ -44,12 +57,11 @@ function registerUser() {
 
     auth.createUserWithEmailAndPassword(email, pass)
         .then((cred) => {
-            // Create User Profile in DB
             db.ref('users/' + cred.user.uid).set({
                 username: name,
                 email: email,
                 isPremium: false,
-                jambPaid: false, // Track specific exams
+                jambPaid: false, 
                 waecPaid: false,
                 necoPaid: false
             });
@@ -66,10 +78,12 @@ function loginUser() {
 
 function resetPassword() {
     const email = prompt("Enter your email to reset password:");
-    if(email) {
+    if(email && email.includes('@')) {
         auth.sendPasswordResetEmail(email)
-            .then(() => alert("Reset link sent to your email."))
+            .then(() => alert("Reset link sent! Check your email."))
             .catch(e => alert(e.message));
+    } else {
+        alert("Please enter a valid email.");
     }
 }
 
@@ -94,7 +108,6 @@ function loadUserProfile() {
             document.getElementById('profile-email').innerText = data.email;
             document.getElementById('profile-uid').innerText = currentUser.uid;
             
-            // Badge Logic
             const badge = document.getElementById('user-badge');
             const status = document.getElementById('profile-status');
             
@@ -110,47 +123,70 @@ function loadUserProfile() {
     });
 }
 
-// --- NAVIGATION & MOCK EXAMS ---
+// --- NAVIGATION & MENUS ---
 
 function openExamMenu(type) {
     currentExamType = type;
     document.getElementById('selected-exam-title').innerText = type + " Preparation";
-    
     document.getElementById('dashboard-container').classList.add('hidden');
     document.getElementById('exam-menu-container').classList.remove('hidden');
 }
 
 function goBack(to) {
+    // Hide all
     document.getElementById('exam-menu-container').classList.add('hidden');
-    document.getElementById('dashboard-container').classList.remove('hidden');
+    document.getElementById('subject-menu-container').classList.add('hidden');
+    document.getElementById('quiz-container').classList.add('hidden');
+    
+    if(to === 'dashboard') {
+        document.getElementById('dashboard-container').classList.remove('hidden');
+    } else if (to === 'exam-menu') {
+        document.getElementById('exam-menu-container').classList.remove('hidden');
+    }
 }
 
-// THE MONEY LOGIC 💰
-function checkPremiumAndStart(mode) {
-    if(mode === 'mock') {
-        db.ref('users/' + currentUser.uid).once('value').then(snap => {
-            const data = snap.val();
-            let hasAccess = false;
-            let price = "0";
+function showSubjectSelection(mode) {
+    document.getElementById('exam-menu-container').classList.add('hidden');
+    document.getElementById('subject-menu-container').classList.remove('hidden');
+    
+    const list = document.getElementById('subject-list');
+    list.innerHTML = ""; // Clear old
 
-            // Check specific exam payment
-            if(currentExamType === 'JAMB') {
-                hasAccess = data.jambPaid || data.isPremium;
-                price = "1,000";
-            } else if (currentExamType === 'WAEC' || currentExamType === 'NECO') {
-                hasAccess = data.waecPaid || data.isPremium; // Assuming combined or specific
-                price = "2,000";
-            }
+    AVAILABLE_SUBJECTS.forEach(sub => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+            <i class="fa-solid ${sub.icon}"></i>
+            <h3>${sub.name}</h3>
+        `;
+        div.onclick = () => startQuiz(sub.id);
+        list.appendChild(div);
+    });
+}
 
-            if(hasAccess) {
-                // User has paid -> Start Quiz
-                startQuiz(currentExamType.toLowerCase());
-            } else {
-                // User NOT paid -> Show Payment Modal
-                showPaymentModal(price);
-            }
-        });
-    }
+// --- MONEY & MOCK EXAMS ---
+
+function checkPremiumAndStartMock() {
+    db.ref('users/' + currentUser.uid).once('value').then(snap => {
+        const data = snap.val();
+        let hasAccess = false;
+        let price = "0";
+
+        if(currentExamType === 'JAMB') {
+            hasAccess = data.jambPaid || data.isPremium;
+            price = "1,000";
+        } else if (currentExamType === 'WAEC' || currentExamType === 'NECO') {
+            hasAccess = data.waecPaid || data.isPremium;
+            price = "2,000";
+        }
+
+        if(hasAccess) {
+            // Paid users get to start English mock for now (or randomize)
+            startQuiz('english'); 
+        } else {
+            showPaymentModal(price);
+        }
+    });
 }
 
 function showPaymentModal(price) {
@@ -174,21 +210,18 @@ function contactSupport() {
     window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
-// --- QUIZ LOGIC (Simplified for Demo) ---
-
-function startPracticeMode() {
-    // Free mode - limited questions or subjects
-    startQuiz(currentExamType.toLowerCase());
-}
+// --- QUIZ LOGIC ---
 
 function startQuiz(subjectKey) {
-    // Hide menus
-    document.getElementById('exam-menu-container').classList.add('hidden');
+    document.getElementById('subject-menu-container').classList.add('hidden');
     document.getElementById('quiz-container').classList.remove('hidden');
+    document.getElementById('subject-label').innerText = "Subject: " + subjectKey.toUpperCase();
 
-    // 1. Fetch from Firebase
-    // Note: For now we fetch 'jamb_english' as a test. In real app, you select subject.
-    const dbPath = `subjects/${subjectKey}_english`; 
+    // Construct DB path: e.g., "subjects/english"
+    // Note: The Admin function below saves them as just "subjects/english" (no 'jamb_' prefix to keep it simple for now)
+    const dbPath = `subjects/${subjectKey}`; 
+    
+    document.getElementById('question-text').innerText = "Loading questions...";
     
     db.ref(dbPath).once('value').then(snap => {
         if(snap.exists()) {
@@ -196,7 +229,7 @@ function startQuiz(subjectKey) {
             currentIndex = 0;
             showQuestion();
         } else {
-            alert("No questions found for this subject yet. Admin needs to import them.");
+            alert(`No questions found for ${subjectKey}. Use the Admin Import tool to add them first!`);
             quitQuiz();
         }
     });
@@ -204,7 +237,7 @@ function startQuiz(subjectKey) {
 
 function showQuestion() {
     if(currentIndex >= currentQuestions.length) {
-        alert("Exam Finished!");
+        alert("Session Finished!");
         quitQuiz();
         return;
     }
@@ -219,7 +252,6 @@ function showQuestion() {
         btn.className = "option-btn";
         btn.innerHTML = `<i class="fa-regular fa-circle"></i> ${opt}`;
         btn.onclick = () => {
-             // Visual selection only for now
              document.querySelectorAll('.option-btn').forEach(b => {
                  b.classList.remove('selected');
                  b.innerHTML = b.innerHTML.replace('fa-circle-check', 'fa-circle');
@@ -241,28 +273,55 @@ function quitQuiz() {
     document.getElementById('dashboard-container').classList.remove('hidden');
 }
 
-// --- ADMIN IMPORT (Imports JAMB English 2021) ---
+// --- ADMIN IMPORT LOGIC (THE FIX) ---
 async function importQuestionsFromAPI() {
-    document.getElementById('import-status').innerText = "Loading...";
-    const url = `https://questions.aloc.com.ng/api/v2/q/10?subject=english&year=2021`;
+    // 1. Get Selected Subject from Dropdown
+    const subjectSelect = document.getElementById('admin-subject-select');
+    const selectedSubject = subjectSelect.value;
+    
+    const statusText = document.getElementById('import-status');
+    statusText.innerText = `Connecting to ALOC API for ${selectedSubject}...`;
+
+    // 2. Fetch from API (Using your Token)
+    const url = `https://questions.aloc.com.ng/api/v2/q/20?subject=${selectedSubject}&year=2023`;
     
     try {
-        const res = await fetch(url, { headers: { 'AccessToken': ALOC_TOKEN }});
+        const res = await fetch(url, { 
+            headers: { 
+                'AccessToken': ALOC_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        });
         const data = await res.json();
         
-        if(data.data) {
+        console.log(data); // Debugging
+
+        if(data.data && data.data.length > 0) {
+            statusText.innerText = `Found ${data.data.length} questions. Saving to Database...`;
+
+            // 3. Save to Firebase under subjects/[subjectName]
+            // We use Promise.all to ensure all saves finish
+            const updates = {};
             data.data.forEach(q => {
-                db.ref('subjects/jamb_english').push({
+                const newKey = db.ref(`subjects/${selectedSubject}`).push().key;
+                updates[`subjects/${selectedSubject}/${newKey}`] = {
                     question: q.question,
                     options: [q.option.a, q.option.b, q.option.c, q.option.d],
-                    answer: q.answer
-                });
+                    answer: q.answer,
+                    explanation: q.section || "None"
+                };
             });
-            alert("Imported JAMB English questions successfully!");
-            document.getElementById('import-status').innerText = "Done.";
+            
+            await db.ref().update(updates);
+
+            alert(`Success! Imported ${data.data.length} ${selectedSubject} questions.`);
+            statusText.innerText = "Done.";
+        } else {
+            statusText.innerText = "❌ API returned no questions. Try another subject.";
         }
     } catch(e) {
-        alert("Error: " + e.message);
+        console.error(e);
+        statusText.innerText = "❌ Error: " + e.message;
     }
 }
 
