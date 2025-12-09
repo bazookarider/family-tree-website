@@ -15,9 +15,9 @@ auth.onAuthStateChanged(user => {
 });
 
 function payViaWhatsApp() {
-  const email = prompt("Enter your email for VIP access:");
+  const email = prompt("Enter your email for VIP:");
   if (!email) return;
-  const text = encodeURIComponent(`Hello NaijaSureOdds! I paid ₦1,000 for VIP. My email: ${email}`);
+  const text = encodeURIComponent(`Hello! Paid ₦1,000 for VIP. Email: ${email}`);
   window.open(`https://wa.me/2347056353236?text=${text}`, "_blank");
-  alert("Payment request sent! Wait for approval (1–5 mins)");
+  alert("Request sent! Wait 1–5 mins for approval");
 }
