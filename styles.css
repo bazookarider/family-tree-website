@@ -1,10 +1,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Segoe UI', sans-serif; background:#000; color:#fff; min-height:100vh; }
-.container { max-width:420px; margin:20px auto; padding:20px; background:#111; border-radius:20px; box-shadow:0 0 30px gold; }
-h1 { text-align:center; font-size:32px; margin-bottom:20px; }
-input, button { width:100%; padding:15px; margin:8px 0; border-radius:12px; border:none; font-size:16px; }
-input { background:#222; color:white; }
-button { background:#FFD700; color:#000; font-weight:bold; cursor:pointer; }
-.vip-btn { background:#8B00FF !important; margin:20px 0; }
-.box { background:#1a1a1a; padding:20px; border-radius:15px; margin:15px 0; line-height:1.8; }
-p { margin:10px 0; }
+body { background:#000; color:#fff; font-family:system-ui; min-height:100vh; }
+.container { max-width:420px; margin:20px auto; padding:20px; }
+h1 { text-align:center; font-size:42px; margin:20px 0; }
+.card { background:linear-gradient(135deg,#1a1a1a,#111); padding:25px; border-radius:20px; margin:20px 0; box-shadow:0 10px 30px rgba(255,215,0,0.3); }
+.tips p { background:#222; padding:15px; margin:10px 0; border-radius:12px; font-size:18px; }
+.vip-btn { width:100%; padding:20px; font-size:22px; background:linear-gradient(45deg,#8B00FF,#FFD700); color:#000; border:none; border-radius:20px; font-weight:bold; margin:20px 0; }
