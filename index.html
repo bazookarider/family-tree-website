@@ -3,81 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NaijaSureOdds - VIP Winning Tips</title>
+  <title>NaijaSureOdds</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body class="bg-black text-white min-h-screen">
 
-  <div class="text-center py-8 bg-gradient-to-b from-green-900 to-black">
-    <h1 class="text-5xl font-bold text-yellow-400 flex items-center justify-center gap-3">
-      <i class="fas fa-trophy"></i> NaijaSureOdds <i class="fas fa-trophy"></i>
+  <!-- Header -->
+  <header class="text-center py-10 bg-gradient-to-b from-green-900 to-black">
+    <h1 class="text-5xl md:text-6xl font-bold text-yellow-400">
+      <i class="fas fa-trophy"></i> NaijaSureOdds
     </h1>
-    <p class="text-xl mt-2">2,000+ Daily Winners • 15–30 Odds Daily</p>
+    <p class="text-xl mt-3">2,000+ Daily Winners</p>
     <div class="mt-4 text-2xl font-bold text-green-400 animate-pulse">
       <i class="fas fa-fire"></i> CHAMPIONS LEAGUE NIGHT <i class="fas fa-fire"></i>
     </div>
-  </div>
+  </header>
 
-  <div id="authSection" class="max-w-md mx-auto p-6 bg-gray-900 rounded-xl my-8">
-    <h2 class="text-2xl text-center mb-4">Login / Register</h2>
-    <input type="email" id="email" placeholder="Your Email" class="w-full p-3 rounded bg-gray-800 mb-3"/>
-    <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded bg-gray-800 mb-3"/>
-    <button id="loginBtn" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold">Login</button>
-    <button id="registerBtn" class="w-full bg-yellow-600 hover:bg-yellow-500 py-3 rounded font-bold mt-2">Register</button>
-  </div>
+  <!-- Main Content -->
+  <main class="max-w-2xl mx-auto px-5 pb-32">
 
-  <div id="freeSection" class="hidden max-w-2xl mx-auto space-y-6 px-4">
-    <div class="bg-green-800 p-6 rounded-xl">
-      <h2 class="text-3xl font-bold flex items-center gap-3"><i class="fas fa-gift"></i> Free Games Today</h2>
-      <ul class="mt-4 space-y-3 text-lg">
-        <li class="flex justify-between"><span>Real Madrid vs Man City</span> <span class="text-yellow-400">Over 2.5</span></li>
-        <li class="flex justify-between"><span>Bayern vs Arsenal</span> <span class="text-yellow-400">GG</span></li>
-      </ul>
-    </div>
+    <!-- Free Games -->
+    <section class="bg-green-800 rounded-2xl p-6 my-8 shadow-2xl">
+      <h2 class="text-3xl font-bold mb-6 text-center"><i class="fas fa-gift"></i> Free Games Today</h2>
+      <div class="space-y-5 text-lg">
+        <div class="bg-black/50 p-5 rounded-xl text-center"><strong>Real Madrid vs Man City</strong><br><span class="text-yellow-400 text-2xl">Over 2.5 Goals</span></div>
+        <div class="bg-black/50 p-5 rounded-xl text-center"><strong>Bayern vs Arsenal</strong><br><span class="text-yellow-400 text-2xl">Both Teams Score (GG)</span></div>
+      </div>
+    </section>
 
-    <div id="vipLocked" class="bg-gradient-to-r from-purple-900 to-black p-8 rounded-xl text-center">
+    <!-- VIP Locked -->
+    <section id="vipLocked" class="bg-gradient-to-r from-purple-900 to-pink-900 rounded-3xl p-10 text-center shadow-2xl">
       <h2 class="text-4xl font-bold text-yellow-400 mb-4">Unlock VIP Now!</h2>
-      <p class="text-2xl mb-4">First 50 users → ₦1,000 only (30 Days)</p>
-      <button onclick="payViaWhatsApp()" class="bg-green-500 hover:bg-green-400 text-black text-2xl font-bold py-5 px-12 rounded-full">
-        <i class="fab fa-whatsapp"></i> Pay ₦1,000 on WhatsApp
+      <p class="text-2xl mb-6">First 50 users → Only ₦1,000 (30 Days)</p>
+      <button onclick="payViaWhatsApp()" class="bg-green-500 hover:bg-green-400 text-black text-2xl font-bold py-6 px-16 rounded-full shadow-2xl transform hover:scale-105 transition">
+        <i class="fab fa-whatsapp text-3xl"></i> Pay ₦1,000 on WhatsApp
       </button>
-      <p class="mt-4 text-gray-300">WhatsApp: 07056353236</p>
-    </div>
+      <p class="mt-6 text-lg">WhatsApp: <strong>07056353236</strong></p>
+    </section>
 
-    <div id="vipSection" class="hidden space-y-10">
-      <div class="bg-purple-900 p-8 rounded-xl">
-        <h2 class="text-3xl font-bold text-yellow-400 mb-4">VIP Roll-Over → 22.4+ Odds</h2>
-        <ol class="list-decimal pl-6 text-lg space-y-3">
-          <li>Man City vs Real Madrid – Over 1.5</li>
-          <li>Arsenal vs Bayern – GG</li>
-          <li>PSG vs Barcelona – 1X</li>
+    <!-- VIP Content (Hidden until approved) -->
+    <section id="vipSection" class="hidden space-y-8">
+      <div class="bg-purple-900 rounded-3xl p-8 shadow-2xl">
+        <h2 class="text-3xl font-bold text-yellow-400 text-center mb-6">VIP Roll-Over → 22.4+ Odds</h2>
+        <ol class="space-y-4 text-lg">
+          <li class="bg-black/50 p-5 rounded-xl">1. Man City vs Real Madrid – Over 1.5</li>
+          <li class="bg-black/50 p-5 rounded-xl">2. Arsenal vs Bayern – GG</li>
+          <li class="bg-black/50 p-5 rounded-xl">3. PSG vs Barcelona – 1X</li>
+          <!-- Add more daily -->
         </ol>
-        <p class="mt-6 text-3xl font-bold text-green-400">Total Odds: 22.4+</p>
+        <p class="text-center text-3xl font-bold text-green-400 mt-8">Total Odds: 22.4+</p>
       </div>
 
-      <div class="bg-gradient-to-r from-green-900 to-black p-8 rounded-xl border-4 border-green-500">
-        <h2 class="text-3xl font-bold text-yellow-400 mb-6"><i class="fas fa-brain"></i> ROLLOVER STRATEGY</h2>
-        <div class="space-y-4 text-lg">
-          <div class="bg-black/50 p-5 rounded-lg"><strong>Start:</strong> ₦5,000–₦10,000</div>
-          <div class="bg-black/50 p-5 rounded-lg"><strong>Stake:</strong> 10–20% daily</div>
-          <div class="bg-black/50 p-5 rounded-lg"><strong>7-Day Target:</strong> ₦500k–₦1.5M</div>
-          <div class="bg-red-900 p-5 rounded-lg font-bold">Discipline = Millions</div>
+      <div class="bg-gradient-to-r from-green-900 to-black rounded-3xl p-8 border-4 border-green-500 shadow-2xl">
+        <h2 class="text-3xl font-bold text-yellow-400 text-center mb-6"><i class="fas fa-brain"></i> ROLLOVER STRATEGY</h2>
+        <div class="text-lg space-y-5">
+          <div class="bg-black/60 p-6 rounded-xl"><strong>Start with:</strong> ₦5,000 – ₦10,000</div>
+          <div class="bg-black/60 p-6 rounded-xl"><strong>Stake daily:</strong> Only 10–20% of bankroll</div>
+          <div class="bg-black/60 p-6 rounded-xl"><strong>7-Day Plan:</strong> Turn ₦10k → ₦1.5M+</div>
+          <div class="bg-red-900 p-6 rounded-xl font-bold text-xl">Discipline = Millions!</div>
         </div>
       </div>
+    </section>
+  </main>
 
-      <div class="bg-gray-900 p-6 rounded-xl">
-        <h3 class="text-2xl mb-4"><i class="fas fa-comments"></i> VIP Live Chat</h3>
-        <div id="chatMessages" class="h-64 overflow-y-auto bg-black p-4 rounded mb-4"></div>
-        <div class="flex">
-          <input id="chatInput" class="flex-1 p-3 bg-gray-800 rounded-l" placeholder="Type message..."/>
-          <button id="sendChat" class="bg-green-600 px-6 rounded-r">Send</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Secret Admin Button (Only you see) -->
+  <a href="admin-secret-07056353236.html" class="fixed bottom-8 right-6 bg-red-600 text-white px-8 py-6 rounded-full font-bold text-2xl shadow-2xl z-50 animate-bounce">
+    ADMIN
+  </a>
 
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
