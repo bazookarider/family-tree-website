@@ -15,25 +15,30 @@
     \"icons\":[{\"src\":\"https://img.icons8.com/color/192/000000/money-bag.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"}]
   }"/>
   <link rel="stylesheet" href="styles.css"/>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- Modern Firebase v10 – fixes loading issues -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
+    window.firebase = { initializeApp, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getFirestore, collection, doc, getDoc, setDoc };
+  </script>
   <style>
     .splash { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; color:gold; display:flex; align-items:center; justify-content:center; font-size:30px; z-index:9999; }
   </style>
 </head>
 <body>
-  <div class="splash" id="splash">Sure10_ODD</div>
+  <div class="splash" id="splash">Sure10_ODD Loading...</div>
 
   <div class="container">
     <h1>Sure10<span style="color:#FFD700">_ODD</span></h1>
     <p id="status">Loading...</p>
 
     <div id="auth">
-      <input type="email" id="email" placeholder="Email"/><br/><br/>
-      <input type="password" id="password" placeholder="Password"/><br/><br/>
+      <input type="email" id="email" placeholder="Email" /><br/><br/>
+      <input type="password" id="password" placeholder="Password" /><br/><br/>
       <button onclick="register()">Register</button>
       <button onclick="login()">Login</button>
+      <p id="msg" style="color:red;"></p>
     </div>
 
     <div id="app" style="display:none">
