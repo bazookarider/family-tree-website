@@ -1,7 +1,4 @@
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; color:#fff; font-family:system-ui; min-height:100vh; }
-.container { max-width:420px; margin:20px auto; padding:20px; }
-h1 { text-align:center; font-size:42px; margin:20px 0; }
-.card { background:linear-gradient(135deg,#1a1a1a,#111); padding:25px; border-radius:20px; margin:20px 0; box-shadow:0 10px 30px rgba(255,215,0,0.3); }
-.tips p { background:#222; padding:15px; margin:10px 0; border-radius:12px; font-size:18px; }
-.vip-btn { width:100%; padding:20px; font-size:22px; background:linear-gradient(45deg,#8B00FF,#FFD700); color:#000; border:none; border-radius:20px; font-weight:bold; margin:20px 0; }
+body { font-family: 'Poppins', sans-serif; }
+::-webkit-scrollbar { width: 8px; background: #111; }
+::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 4px; }
+.animate-pulse { animation: pulse 2s infinite; }
