@@ -1,69 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NaijaSureOdds</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
-  <link rel="stylesheet" href="styles.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyou JAMB CBT</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-black text-white min-h-screen">
+<body>
 
-  <header class="text-center py-10 bg-gradient-to-b from-green-900 to-black">
-    <h1 class="text-5xl font-bold text-yellow-400">NaijaSureOdds</h1>
-    <p class="text-xl mt-3">2,000+ Daily Winners • 15–30 Odds</p>
-    <div class="mt-4 text-2xl font-bold text-green-400 animate-pulse">
-      CHAMPIONS LEAGUE NIGHT
+    <div id="auth-container" class="container">
+        <h1>Cyou JAMB Prep</h1>
+        <p>Login to start practicing</p>
+        
+        <input type="text" id="username" placeholder="Username" class="input-field">
+        <input type="email" id="email" placeholder="Email Address" class="input-field">
+        <input type="password" id="password" placeholder="Password" class="input-field">
+        
+        <button onclick="registerUser()" id="btn-register">Create Account</button>
+        <button onclick="loginUser()" id="btn-login">Login</button>
+        
+        <p id="auth-message"></p>
     </div>
-  </header>
 
-  <main class="max-w-2xl mx-auto px-5 pb-32">
-    <section class="bg-green-800 rounded-2xl p-6 my-8 shadow-2xl">
-      <h2 class="text-3xl font-bold mb-6 text-center">Free Games Today</h2>
-      <div class="space-y-5 text-lg">
-        <div class="bg-black/50 p-5 rounded-xl text-center"><strong>Real Madrid vs Man City</strong><br><span class="text-yellow-400 text-2xl">Over 2.5</span></div>
-        <div class="bg-black/50 p-5 rounded-xl text-center"><strong>Bayern vs Arsenal</strong><br><span class="text-yellow-400 text-2xl">GG</span></div>
-      </div>
-    </section>
-
-    <section id="vipLocked" class="bg-gradient-to-r from-purple-900 to-pink-900 rounded-3xl p-10 text-center shadow-2xl">
-      <h2 class="text-4xl font-bold text-yellow-400 mb-4">Unlock VIP Now!</h2>
-      <p class="text-2xl mb-6">First 50 users → Only ₦1,000 (30 Days)</p>
-      <button onclick="payViaWhatsApp()" class="bg-green-500 hover:bg-green-400 text-black text-2xl font-bold py-6 px-16 rounded-full shadow-2xl">
-        Pay on WhatsApp
-      </button>
-      <p class="mt-6 text-lg">WhatsApp: <strong>07056353236</strong></p>
-    </section>
-
-    <section id="vipSection" class="hidden space-y-8">
-      <div class="bg-purple-900 rounded-3xl p-8 shadow-2xl">
-        <h2 class="text-3xl font-bold text-yellow-400 text-center mb-6">VIP Roll-Over → 22.4+ Odds</h2>
-        <ol class="space-y-4 text-lg">
-          <li class="bg-black/50 p-5 rounded-xl">1. Man City vs Real Madrid – Over 1.5</li>
-          <li class="bg-black/50 p-5 rounded-xl">2. Arsenal vs Bayern – GG</li>
-          <li class="bg-black/50 p-5 rounded-xl">3. PSG vs Barcelona – 1X</li>
-        </ol>
-        <p class="text-center text-3xl font-bold text-green-400 mt-8">Total Odds: 22.4+</p>
-      </div>
-
-      <div class="bg-gradient-to-r from-green-900 to-black rounded-3xl p-8 border-4 border-green-500 shadow-2xl">
-        <h2 class="text-3xl font-bold text-yellow-400 text-center mb-6">ROLLOVER STRATEGY</h2>
-        <div class="text-lg space-y-5">
-          <div class="bg-black/60 p-6 rounded-xl"><strong>Start:</strong> ₦5,000–₦10,000</div>
-          <div class="bg-black/60 p-6 rounded-xl"><strong>Stake:</strong> 10–20% daily</div>
-          <div class="bg-black/60 p-6 rounded-xl"><strong>7-Day Target:</strong> ₦500k–₦1.5M</div>
-          <div class="bg-red-900 p-6 rounded-xl font-bold text-xl">Discipline = Millions!</div>
+    <div id="dashboard-container" class="container hidden">
+        <div class="header">
+            <h2 id="welcome-text">Welcome</h2>
+            <button onclick="logout()" class="btn-small">Logout</button>
         </div>
-      </div>
-    </section>
-  </main>
 
-  <!-- Secret Admin Button (only you see) -->
-  <a href="admin-secret-07056353236.html" class="fixed bottom-8 right-6 bg-red-600 text-white px-8 py-6 rounded-full font-bold text-2xl shadow-2xl z-50 animate-bounce">
-    ADMIN
-  </a>
+        <div class="card">
+            <h3>Start Practice</h3>
+            <p>Subject: <strong>JAMB English</strong></p>
+            <button onclick="startQuiz('english')" class="btn-primary">Start Quiz</button>
+        </div>
 
-  <script src="script.js"></script>
+        <div class="card admin-card">
+            <h3>⚠️ Admin Panel</h3>
+            <p>Click below to download new questions from ALOC API to your Database.</p>
+            <button onclick="importQuestionsFromAPI()" class="btn-warning">Import Questions (Data)</button>
+            <p id="import-status"></p>
+        </div>
+    </div>
+
+    <div id="quiz-container" class="container hidden">
+        <div class="quiz-header">
+            <button onclick="goToDashboard()" class="btn-small">Back</button>
+            <span id="timer">Time: 00:00</span>
+        </div>
+
+        <div id="question-box">
+            <h3 id="question-text">Loading question...</h3>
+            <div id="options-container">
+                </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="nextQuestion()" class="btn-primary">Next Question</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
