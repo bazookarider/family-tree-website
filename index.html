@@ -11,15 +11,13 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-  <!-- Header -->
   <header class="bg-slate-800 text-white shadow-xl">
     <div class="max-w-7xl mx-auto px-6 py-8 text-center">
       <h1 class="text-5xl md:text-6xl font-bold font-playfair">MyRoots</h1>
-      <p class="text-xl mt-3 opacity-90">Preserving Our Family Heritage</p>
+      <p class="text-xl mt-3 opacity-90">Our Family Heritage Preserved Forever</p>
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-6 py-12">
     <div id="members" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
       <!-- Members load here -->
@@ -27,12 +25,12 @@
 
     <div id="empty" class="text-center py-32">
       <i class="fas fa-tree text-9xl text-slate-300 mb-8"></i>
-      <p class="text-2xl text-slate-500">No family members yet.<br>Admin will begin the legacy soon.</p>
+      <p class="text-2xl text-slate-500">No family members yet.<br>The legacy begins with the first entry.</p>
     </div>
   </main>
 
-  <!-- Floating Admin Button -->
-  <button id="adminBtn" onclick="showLogin()" class="fixed bottom-8 right-8 bg-teal-700 hover:bg-teal-800 text-white p-6 rounded-full shadow-2xl text-3xl z-50 transition-all">
+  <!-- Admin Button -->
+  <button id="adminBtn" class="fixed bottom-8 right-8 bg-teal-700 hover:bg-teal-800 text-white p-6 rounded-full shadow-2xl text-3xl z-50 transition-all">
     <i class="fas fa-shield-alt"></i>
   </button>
 
@@ -42,26 +40,26 @@
       <h2 class="text-3xl font-bold text-center text-slate-800 mb-8">Admin Access</h2>
       <input type="password" id="adminPass" placeholder="Enter password" class="w-full p-5 border-2 border-slate-300 rounded-xl text-lg focus:border-teal-700 outline-none">
       <button onclick="loginAdmin()" class="w-full mt-6 bg-teal-700 hover:bg-teal-800 text-white py-5 rounded-xl text-xl font-semibold transition">
-        <i class="fas fa-lock-open mr-3"></i> Unlock Admin Panel
+        Unlock Admin Panel
       </button>
     </div>
   </div>
 
-  <!-- Add/Edit Member Modal -->
+  <!-- Add/Edit Modal -->
   <div id="addModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-5">
     <div class="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-2xl max-h-screen overflow-y-auto">
-      <h2 class="text-3xl font-bold text-center text-slate-800 mb-8" id="modalTitle">Add Family Member</h2>
+      <h2 id="modalTitle" class="text-3xl font-bold text-center text-slate-800 mb-8">Add Family Member</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <input type="text" id="name" placeholder="Full Name" class="p-5 border-2 rounded-xl text-lg">
-        <input type="text" id="relation" placeholder="Relation (e.g. Grandfather)" class="p-5 border-2 rounded-xl text-lg">
+        <input type="text" id="relation" placeholder="Relation" class="p-5 border-2 rounded-xl text-lg">
         <input type="text" id="tribe" placeholder="Tribe / Village" class="p-5 border-2 rounded-xl text-lg">
         <input type="date" id="birth" class="p-5 border-2 rounded-xl text-lg">
         <input type="date" id="death" placeholder="Death Date (optional)" class="p-5 border-2 rounded-xl text-lg">
-        <textarea id="story" placeholder="Life story, memories..." class="p-5 border-2 rounded-xl text-lg h-32 col-span-2"></textarea>
+        <textarea id="story" placeholder="Life story..." class="p-5 border-2 rounded-xl text-lg h-32 col-span-2"></textarea>
       </div>
       <div class="flex gap-4 mt-8">
         <button onclick="saveMember()" class="flex-1 bg-teal-700 hover:bg-teal-800 text-white py-5 rounded-xl text-xl font-semibold">
-          <i class="fas fa-save mr-3"></i> Save Member
+          Save Member
         </button>
         <button onclick="closeModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-5 rounded-xl text-xl font-semibold">
           Cancel
