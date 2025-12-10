@@ -1,13 +1,122 @@
-function payWhatsApp() {
-  const details = prompt("Enter your email/phone:");
-  if (details) {
-    const msg = encodeURIComponent(`Paid ₦1,000 for VIP. Details: ${details}`);
-    window.open(`https://wa.me/2347056353236?text=${msg}`);
-  }
-}
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-// For VIP (add user ID to localStorage after approval)
-if (localStorage.getItem('vipApproved')) {
-  document.getElementById('vip-locked').classList.add('hidden');
-  document.getElementById('vip-content').classList.remove('hidden');
+const firebaseConfig = {
+    apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+    authDomain: "cyou-db8f0.firebaseapp.com",
+    projectId: "cyou-db8f0",
+    storageBucket: "cyou-db8f0.firebasestorage.app",
+    messagingSenderId: "873569975141",
+    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+    measurementId: "G-T66B50HFJ8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// CHANGE THIS TO YOUR OWN STRONG PASSWORD
+const ADMIN_PASSWORD = "myroots2025";
+
+let isAdmin = false;
+let editingId = null;
+
+// Load family members
+onSnapshot(collection(db, "family"), (snapshot) => {
+  const container = document.getElementById("members");
+  const empty = document.getElementById("empty");
+  container.innerHTML = "";
+
+  if (snapshot.empty) {
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+
+  snapshot.forEach((docSnap) => {
+    const m = docSnap.data();
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="bg-gradient-to-b from-teal-700 to-teal-900 text-white p-8 text-center">
+        <i class="fas fa-user-circle text-6xl mb-4"></i>
+        <h3 class="text-2xl font-bold">${m.name || "Unknown"}</h3>
+        <p class="text-lg opacity-90">${m.relation || ""}</p>
+      </div>
+      <div class="p-8">
+        <p class="text-lg"><i class="fas fa-map-marker-alt text-teal-700 mr-2"></i> ${m.tribe || "Not specified"}</p>
+        <p class="text-md text-gray-600 mt-2"><i class="fas fa-calendar-alt mr-2"></i> ${m.birth ? new Date(m.birth).toLocaleDateString() : "Unknown"}</p>
+        \( {m.story ? `<p class="mt-6 italic text-gray-700 leading-relaxed">" \){m.story}"</p>` : ""}
+        ${isAdmin ? `
+          <div class="flex gap-3 mt-6">
+            <button onclick="editMember('\( {docSnap.id}', \){JSON.stringify(m).replace(/"/g, '&quot;')})" class="flex-1 bg-slate-700 text-white py-3 rounded-lg"><i class="18n fas fa-edit"></i> Edit</button>
+            <button onclick="deleteMember('${docSnap.id}')" class="flex-1 bg-red-600 text-white py-3 rounded-lg"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        ` : ""}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+});
+
+// Admin Login
+function showLogin() {
+  document.getElementById("loginModal").classList.remove("hidden");
 }
+window.loginAdmin = () => {
+  if (document.getElementById("adminPass").value === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById("loginModal").classList.add("hidden");
+    document.getElementById("adminBtn").innerHTML = "<i class='fas fa-plus'></i>";
+    document.getElementById("adminBtn").onclick = () => document.getElementById("addModal").classList.remove("hidden");
+    alert("Admin access granted");
+  } else {
+    alert("Incorrect password");
+  }
+};
+
+// Save or Update
+window.saveMember = async () => {
+  if (!isAdmin) return;
+  const data = {
+    name: document.getElementById("name").value,
+    relation: document.getElementById("relation").value,
+    tribe: document.getElementById("tribe").value,
+    birth: document.getElementById("birth").value,
+    death: document.getElementById("death").value,
+    story: document.getElementById("story").value,
+  };
+  if (editingId) {
+    await updateDoc(doc(db, "family", editingId), data);
+    editingId = null;
+    document.getElementById("modalTitle").innerText = "Add Family Member";
+  } else {
+    await addDoc(collection(db, "family"), data);
+  }
+  closeModal();
+};
+
+// Edit
+window.editMember = (id, member) => {
+  if (!isAdmin) return;
+  editingId = id;
+  document.getElementById("modalTitle").innerText = "Edit Family Member";
+  document.getElementById("name").value = member.name;
+  document.getElementById("relation").value = member.relation;
+  document.getElementById("tribe").value = member.tribe;
+  document.getElementById("birth").value = member.birth;
+  document.getElementById("death").value = member.death || "";
+  document.getElementById("story").value = member.story || "";
+  document.getElementById("addModal").classList.remove("hidden");
+};
+
+// Delete
+window.deleteMember = async (id) => {
+  if (isAdmin && confirm("Delete this member permanently?")) {
+    await deleteDoc(doc(db, "family", id));
+  }
+};
+
+window.closeModal = () => {
+  document.getElementById("addModal").classList.add("hidden");
+  document.querySelectorAll("#addModal input, #addModal textarea").forEach(el => el.value = "");
+};
