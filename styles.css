@@ -1,7 +1,18 @@
-body { font-family: Arial; background: #000; color: #fff; margin: 0; padding: 0; }
-.header { background: #22c55e; padding: 20px; text-align: center; }
-.free-tips, .vip-locked { background: #333; margin: 20px; padding: 20px; border-radius: 10px; }
-.tip { background: #555; padding: 10px; margin: 10px 0; }
-button { background: #22c55e; color: #000; padding: 15px; border: none; border-radius: 25px; font-size: 18px; width: 100%; }
-.hidden { display: none; }
-.strategy { background: #111; padding: 15px; margin: 10px 0; }
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap');
+
+body { font-family: 'Inter', sans-serif; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+
+.bg-teal-700 { background-color: #006677; }
+.hover\:bg-teal-800:hover { background-color: #00565c; }
+.text-teal-700 { color: #006677; }
+.border-teal-700 { border-color: #006677; }
+
+.card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+}
+.card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(0,102,119,0.2); }
