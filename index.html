@@ -1,191 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyou CBT Prep</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WinDaily - VIP Tips</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#22c55e">
 </head>
 <body>
+  <header class="header">
+    <h1>WinDaily</h1>
+    <p>5,000+ Winners Daily</p>
+  </header>
 
-    <div id="auth-container" class="container">
-        <div class="logo-area">
-            <i class="fa-solid fa-graduation-cap fa-3x"></i>
-            <h1>Cyou Prep</h1>
-        </div>
-        
-        <div id="login-form">
-            <input type="email" id="email" placeholder="Email Address" class="input-field">
-            <input type="password" id="password" placeholder="Password" class="input-field">
-            <button onclick="loginUser()" class="btn-primary"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-            <p class="text-link" onclick="toggleAuth('register')">Don't have an account? Register</p>
-            <p class="text-link small" onclick="resetPassword()">Forgot Password?</p>
-        </div>
+  <main>
+    <section class="free-tips">
+      <h2>Free Games Today</h2>
+      <div class="tip">Arsenal vs Chelsea → Over 2.5</div>
+      <div class="tip">Man City vs Liverpool → GG</div>
+    </section>
 
-        <div id="register-form" class="hidden">
-            <input type="text" id="reg-username" placeholder="Full Name" class="input-field">
-            <input type="email" id="reg-email" placeholder="Email Address" class="input-field">
-            <input type="password" id="reg-password" placeholder="Password" class="input-field">
-            <button onclick="registerUser()" class="btn-secondary"><i class="fa-solid fa-user-plus"></i> Create Account</button>
-            <p class="text-link" onclick="toggleAuth('login')">Already have an account? Login</p>
-        </div>
-        <p id="auth-message"></p>
-    </div>
+    <section class="vip-locked">
+      <h2>Unlock VIP (₦1,000/week)</h2>
+      <button onclick="payWhatsApp()">Pay on WhatsApp</button>
+      <p>07056353236</p>
+    </section>
 
-    <div id="dashboard-container" class="container hidden">
-        <div class="top-bar">
-            <div class="user-info" onclick="showProfile()">
-                <i class="fa-solid fa-circle-user fa-2x"></i>
-                <div>
-                    <span id="display-username">Loading...</span>
-                    <br>
-                    <span id="user-badge" class="badge-free">Free Plan</span>
-                </div>
-            </div>
-            <button onclick="logout()" class="btn-icon"><i class="fa-solid fa-power-off"></i></button>
-        </div>
+    <section id="vip-content" class="hidden">
+      <h2>VIP Odds (24.6+)</h2>
+      <ol>
+        <li>Arsenal vs Chelsea – Over 1.5</li>
+        <li>Man City vs Liverpool – GG</li>
+      </ol>
+      <div class="strategy">
+        <h3>Rollover Strategy</h3>
+        <p>Start ₦5k → Day 7: ₦2M+</p>
+      </div>
+    </section>
+  </main>
 
-        <div class="section-title"><i class="fa-solid fa-layer-group"></i> Select Exam Category</div>
-        
-        <div class="grid-menu">
-            <div class="card" onclick="openExamMenu('JAMB')">
-                <i class="fa-solid fa-book-open"></i>
-                <h3>JAMB</h3>
-                <p>UTME Past Questions</p>
-            </div>
-            <div class="card" onclick="openExamMenu('WAEC')">
-                <i class="fa-solid fa-certificate"></i>
-                <h3>WAEC</h3>
-                <p>SSCE Practice</p>
-            </div>
-            <div class="card" onclick="openExamMenu('NECO')">
-                <i class="fa-solid fa-school"></i>
-                <h3>NECO</h3>
-                <p>Senior Exam Prep</p>
-            </div>
-        </div>
-
-        <div class="support-section">
-            <button onclick="contactSupport()" class="btn-whatsapp">
-                <i class="fa-brands fa-whatsapp"></i> Contact Support / Help
-            </button>
-        </div>
-
-        <div class="admin-panel">
-            <h4><i class="fa-solid fa-lock"></i> Admin Import Tool</h4>
-            <select id="admin-subject-select" class="input-field">
-                <option value="english">English</option>
-                <option value="mathematics">Mathematics</option>
-                <option value="physics">Physics</option>
-                <option value="chemistry">Chemistry</option>
-                <option value="biology">Biology</option>
-                <option value="commerce">Commerce</option>
-                <option value="economics">Economics</option>
-                <option value="government">Government</option>
-                <option value="literature">Literature</option>
-                <option value="crs">CRK</option>
-                <option value="irs">IRS</option>
-            </select>
-            <button onclick="importQuestionsFromAPI()" class="btn-small">Import Selected Subject</button>
-            <span id="import-status"></span>
-        </div>
-    </div>
-
-    <div id="exam-menu-container" class="container hidden">
-        <button onclick="goBack('dashboard')" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
-        <h2 id="selected-exam-title">JAMB</h2>
-        
-        <div class="action-buttons">
-            <button onclick="showSubjectSelection('practice')" class="btn-primary">
-                <i class="fa-solid fa-pencil"></i> Practice Subjects (Free)
-            </button>
-            <button onclick="checkPremiumAndStartMock()" class="btn-secondary">
-                <i class="fa-solid fa-clock"></i> Take Full Mock Exam
-            </button>
-        </div>
-    </div>
-
-    <div id="subject-menu-container" class="container hidden">
-        <button onclick="goBack('exam-menu')" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
-        <h2>Select Subject</h2>
-        <div id="subject-list" class="grid-menu">
-            </div>
-    </div>
-
-    <div id="payment-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closePayment()">&times;</span>
-            <i class="fa-solid fa-crown fa-3x gold-icon"></i>
-            <h2>Unlock Premium</h2>
-            <p>You need a Premium License to access <span id="pay-exam-name">JAMB</span> Mock Exams.</p>
-            <div class="price-tag"><h1 id="pay-amount">₦1,000</h1></div>
-            <div class="bank-details">
-                <p>Transfer to:</p>
-                <strong>OPAY</strong>
-                <p class="account-num">9125297720</p>
-                <strong>ABDUL KARIM ALI</strong>
-            </div>
-            <p class="instruction">After transfer, send proof to WhatsApp to get activated instantly.</p>
-            <button onclick="sendProofWhatsApp()" class="btn-whatsapp"><i class="fa-brands fa-whatsapp"></i> Send Payment Proof</button>
-        </div>
-    </div>
-
-    <div id="quiz-container" class="container hidden">
-        <div class="quiz-header">
-            <button onclick="submitQuiz()" class="btn-small" style="background:#d93025; color:white;">Submit</button>
-            <div class="timer-box"><i class="fa-regular fa-clock"></i> <span id="timer">00:00</span></div>
-        </div>
-
-        <div id="question-box">
-            <h4 id="subject-label">Subject: ...</h4>
-            <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
-            <p id="question-text">Loading...</p>
-            <div id="options-container"></div>
-        </div>
-        
-        <div class="controls">
-            <button onclick="nextQuestion()" class="btn-primary">Next <i class="fa-solid fa-arrow-right"></i></button>
-        </div>
-    </div>
-
-    <div id="result-container" class="container hidden">
-        <div class="result-box">
-            <h2 id="result-title">Test Completed!</h2>
-            <div class="score-circle">
-                <span id="score-text">0/0</span>
-            </div>
-            <p id="score-percentage">0%</p>
-            <p id="score-message">Keep Practicing!</p>
-            
-            <button onclick="showCorrections()" class="btn-secondary">View Corrections</button>
-            <button onclick="goBack('dashboard')" class="btn-primary">Back to Home</button>
-        </div>
-
-        <div id="corrections-list" class="hidden">
-            <h3>Corrections</h3>
-            <div id="corrections-content"></div>
-            <button onclick="goBack('dashboard')" class="btn-primary">Finish</button>
-        </div>
-    </div>
-
-    <div id="profile-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeProfile()">&times;</span>
-            <h2>My Profile</h2>
-            <div class="profile-details">
-                <p><strong>Name:</strong> <span id="profile-name">User</span></p>
-                <p><strong>Email:</strong> <span id="profile-email">email@test.com</span></p>
-                <p><strong>Status:</strong> <span id="profile-status">Free</span></p>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </body>
 </html>
