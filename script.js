@@ -1,4 +1,5 @@
  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -12,7 +13,11 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Anonymous auth for writes (admin only)
+signInAnonymously(auth).catch(console.error);
 
 // CHANGE THIS TO YOUR OWN PASSWORD
 const ADMIN_PASSWORD = "myroots2025";
@@ -20,7 +25,7 @@ const ADMIN_PASSWORD = "myroots2025";
 let isAdmin = false;
 let editingId = null;
 
-// Load members (everyone can see)
+// Load members (everyone sees)
 onSnapshot(collection(db, "family"), (snapshot) => {
   const container = document.getElementById("members");
   const empty = document.getElementById("empty");
@@ -59,12 +64,12 @@ onSnapshot(collection(db, "family"), (snapshot) => {
   });
 });
 
-// Admin button click
+// Admin Login
 document.getElementById("adminBtn").addEventListener("click", () => {
   const pass = prompt("Enter Admin Password:");
   if (pass === ADMIN_PASSWORD) {
     isAdmin = true;
-    alert("Admin access granted!");
+    alert("Admin access granted! You can now add/edit members.");
     document.getElementById("adminBtn").innerHTML = "<i class='fas fa-plus'></i>";
     document.getElementById("adminBtn").onclick = () => document.getElementById("addModal").classList.remove("hidden");
   } else if (pass !== null) {
@@ -72,9 +77,9 @@ document.getElementById("adminBtn").addEventListener("click", () => {
   }
 });
 
-// Save member
+// Save Member
 window.saveMember = async () => {
-  if (!isAdmin) return alert("Not authorized");
+  if (!isAdmin) return alert("Admin only");
 
   const data = {
     name: document.getElementById("name").value.trim(),
@@ -95,23 +100,26 @@ window.saveMember = async () => {
     await addDoc(collection(db, "family"), data);
   }
   closeModal();
+  alert("Saved!");
 };
 
-// Edit & Delete
+// Edit Member
 window.editMember = (id) => {
   if (!isAdmin) return;
   editingId = id;
   document.getElementById("modalTitle").innerText = "Edit Family Member";
-  // You can fetch and fill form here if needed
+  // Fetch and fill form (simple for now)
   document.getElementById("addModal").classList.remove("hidden");
 };
 
+// Delete Member
 window.deleteMember = async (id) => {
   if (isAdmin && confirm("Delete permanently?")) {
     await deleteDoc(doc(db, "family", id));
   }
 };
 
+// Close Modal
 window.closeModal = () => {
   document.getElementById("addModal").classList.add("hidden");
   editingId = null;
