@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -14,13 +14,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// CHANGE THIS TO YOUR OWN STRONG PASSWORD
+// CHANGE THIS TO YOUR OWN PASSWORD
 const ADMIN_PASSWORD = "myroots2025";
 
 let isAdmin = false;
 let editingId = null;
 
-// Load family members
+// Load members (everyone can see)
 onSnapshot(collection(db, "family"), (snapshot) => {
   const container = document.getElementById("members");
   const empty = document.getElementById("empty");
@@ -45,11 +45,12 @@ onSnapshot(collection(db, "family"), (snapshot) => {
       <div class="p-8">
         <p class="text-lg"><i class="fas fa-map-marker-alt text-teal-700 mr-2"></i> ${m.tribe || "Not specified"}</p>
         <p class="text-md text-gray-600 mt-2"><i class="fas fa-calendar-alt mr-2"></i> ${m.birth ? new Date(m.birth).toLocaleDateString() : "Unknown"}</p>
+        \( {m.death ? `<p class="text-md text-red-600"><i class="fas fa-cross mr-2"></i> \){new Date(m.death).toLocaleDateString()}</p>` : ""}
         \( {m.story ? `<p class="mt-6 italic text-gray-700 leading-relaxed">" \){m.story}"</p>` : ""}
         ${isAdmin ? `
           <div class="flex gap-3 mt-6">
-            <button onclick="editMember('\( {docSnap.id}', \){JSON.stringify(m).replace(/"/g, '&quot;')})" class="flex-1 bg-slate-700 text-white py-3 rounded-lg"><i class="18n fas fa-edit"></i> Edit</button>
-            <button onclick="deleteMember('${docSnap.id}')" class="flex-1 bg-red-600 text-white py-3 rounded-lg"><i class="fas fa-trash"></i> Delete</button>
+            <button onclick="editMember('${docSnap.id}')" class="flex-1 bg-slate-700 text-white py-3 rounded-lg">Edit</button>
+            <button onclick="deleteMember('${docSnap.id}')" class="flex-1 bg-red-600 text-white py-3 rounded-lg">Delete</button>
           </div>
         ` : ""}
       </div>
@@ -58,33 +59,34 @@ onSnapshot(collection(db, "family"), (snapshot) => {
   });
 });
 
-// Admin Login
-function showLogin() {
-  document.getElementById("loginModal").classList.remove("hidden");
-}
-window.loginAdmin = () => {
-  if (document.getElementById("adminPass").value === ADMIN_PASSWORD) {
+// Admin button click
+document.getElementById("adminBtn").addEventListener("click", () => {
+  const pass = prompt("Enter Admin Password:");
+  if (pass === ADMIN_PASSWORD) {
     isAdmin = true;
-    document.getElementById("loginModal").classList.add("hidden");
+    alert("Admin access granted!");
     document.getElementById("adminBtn").innerHTML = "<i class='fas fa-plus'></i>";
     document.getElementById("adminBtn").onclick = () => document.getElementById("addModal").classList.remove("hidden");
-    alert("Admin access granted");
-  } else {
-    alert("Incorrect password");
+  } else if (pass !== null) {
+    alert("Wrong password!");
   }
-};
+});
 
-// Save or Update
+// Save member
 window.saveMember = async () => {
-  if (!isAdmin) return;
+  if (!isAdmin) return alert("Not authorized");
+
   const data = {
-    name: document.getElementById("name").value,
-    relation: document.getElementById("relation").value,
-    tribe: document.getElementById("tribe").value,
+    name: document.getElementById("name").value.trim(),
+    relation: document.getElementById("relation").value.trim(),
+    tribe: document.getElementById("tribe").value.trim(),
     birth: document.getElementById("birth").value,
     death: document.getElementById("death").value,
-    story: document.getElementById("story").value,
+    story: document.getElementById("story").value.trim()
   };
+
+  if (!data.name || !data.relation) return alert("Name and Relation required");
+
   if (editingId) {
     await updateDoc(doc(db, "family", editingId), data);
     editingId = null;
@@ -95,28 +97,24 @@ window.saveMember = async () => {
   closeModal();
 };
 
-// Edit
-window.editMember = (id, member) => {
+// Edit & Delete
+window.editMember = (id) => {
   if (!isAdmin) return;
   editingId = id;
   document.getElementById("modalTitle").innerText = "Edit Family Member";
-  document.getElementById("name").value = member.name;
-  document.getElementById("relation").value = member.relation;
-  document.getElementById("tribe").value = member.tribe;
-  document.getElementById("birth").value = member.birth;
-  document.getElementById("death").value = member.death || "";
-  document.getElementById("story").value = member.story || "";
+  // You can fetch and fill form here if needed
   document.getElementById("addModal").classList.remove("hidden");
 };
 
-// Delete
 window.deleteMember = async (id) => {
-  if (isAdmin && confirm("Delete this member permanently?")) {
+  if (isAdmin && confirm("Delete permanently?")) {
     await deleteDoc(doc(db, "family", id));
   }
 };
 
 window.closeModal = () => {
   document.getElementById("addModal").classList.add("hidden");
+  editingId = null;
+  document.getElementById("modalTitle").innerText = "Add Family Member";
   document.querySelectorAll("#addModal input, #addModal textarea").forEach(el => el.value = "");
 };
