@@ -1,5 +1,4 @@
  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -13,11 +12,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Anonymous auth for writes (admin only)
-signInAnonymously(auth).catch(console.error);
 
 // CHANGE THIS TO YOUR OWN PASSWORD
 const ADMIN_PASSWORD = "myroots2025";
@@ -64,14 +59,16 @@ onSnapshot(collection(db, "family"), (snapshot) => {
   });
 });
 
-// Admin Login
-document.getElementById("adminBtn").addEventListener("click", () => {
+// Admin Button Click (Fixed — Triggers Prompt)
+document.getElementById("adminBtn").addEventListener("click", function() {
   const pass = prompt("Enter Admin Password:");
   if (pass === ADMIN_PASSWORD) {
     isAdmin = true;
-    alert("Admin access granted! You can now add/edit members.");
-    document.getElementById("adminBtn").innerHTML = "<i class='fas fa-plus'></i>";
-    document.getElementById("adminBtn").onclick = () => document.getElementById("addModal").classList.remove("hidden");
+    alert("Admin access granted! Click + to add members.");
+    this.innerHTML = "<i class='fas fa-plus'></i>";
+    this.onclick = function() {
+      document.getElementById("addModal").classList.remove("hidden");
+    };
   } else if (pass !== null) {
     alert("Wrong password!");
   }
@@ -103,16 +100,15 @@ window.saveMember = async () => {
   alert("Saved!");
 };
 
-// Edit Member
+// Edit
 window.editMember = (id) => {
   if (!isAdmin) return;
   editingId = id;
   document.getElementById("modalTitle").innerText = "Edit Family Member";
-  // Fetch and fill form (simple for now)
   document.getElementById("addModal").classList.remove("hidden");
 };
 
-// Delete Member
+// Delete
 window.deleteMember = async (id) => {
   if (isAdmin && confirm("Delete permanently?")) {
     await deleteDoc(doc(db, "family", id));
