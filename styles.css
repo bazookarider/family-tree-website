@@ -1,114 +1,354 @@
- :root {
-    --bg-dark: #090b10;
-    --bg-card: #14181f;
-    --text-main: #ffffff;
-    --neon-green: #00e701; 
-    --neon-blue: #00baff;
-    --neon-red: #ff2d55;
-    --purple: #9d00ff;
-    --input-bg: #000000;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
+    authDomain: "cyou-db8f0.firebaseapp.com",
+    databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
+    projectId: "cyou-db8f0",
+    storageBucket: "cyou-db8f0.firebasestorage.app",
+    messagingSenderId: "873569975141",
+    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
+    measurementId: "G-T66B50HFJ8"
+};
+
+const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn"; 
+const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
+
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let currentUser = null;
+let currentBalance = 0;
+
+// === 1. WAIT FOR PAGE TO LOAD (FIXES BUTTONS) ===
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("VELOBET LOADED");
+
+    // Auth Buttons
+    const btnGoogle = document.getElementById('google-login-btn');
+    if(btnGoogle) btnGoogle.addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()));
+
+    const btnEmailLogin = document.getElementById('email-login-btn');
+    if(btnEmailLogin) btnEmailLogin.addEventListener('click', () => {
+        const e = document.getElementById('login-email').value;
+        const p = document.getElementById('login-pass').value;
+        if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => alert("Login Error: " + err.message));
+    });
+
+    const btnRegister = document.getElementById('email-register-btn');
+    if(btnRegister) btnRegister.addEventListener('click', () => {
+        const n = document.getElementById('reg-nick').value;
+        const e = document.getElementById('reg-email').value;
+        const p = document.getElementById('reg-pass').value;
+        if(!n) return alert("Username is required");
+        
+        createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
+            // Create Profile
+            await setDoc(doc(db, "users", c.user.uid), { 
+                nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] 
+            });
+            window.location.reload();
+        }).catch(err => alert("Registration Error: " + err.message));
+    });
+
+    // Toggle Forms
+    document.getElementById('goto-register').addEventListener('click', () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.remove('hidden');
+    });
+    document.getElementById('goto-login').addEventListener('click', () => {
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth).then(()=>window.location.reload()));
+
+    // Game Controls
+    document.getElementById('bet-btn').addEventListener('click', placeBet);
+    document.getElementById('inc-bet').addEventListener('click', () => adjustBet(50));
+    document.getElementById('dec-bet').addEventListener('click', () => adjustBet(-50));
+    
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.addEventListener('click', () => document.getElementById('bet-amount').value = btn.dataset.val);
+    });
+
+    // Nav
+    document.getElementById('nav-sports').addEventListener('click', () => switchTab('sports'));
+    document.getElementById('nav-aviator').addEventListener('click', () => switchTab('aviator'));
+    document.getElementById('nav-profile').addEventListener('click', () => switchTab('profile'));
+
+    // Deposit/Withdraw Modals
+    document.getElementById('open-deposit-modal').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'flex');
+    document.getElementById('cancel-deposit').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'none');
+    document.getElementById('confirm-deposit').addEventListener('click', processDeposit);
+
+    document.getElementById('open-withdraw-modal').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'flex');
+    document.getElementById('cancel-withdraw').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'none');
+    document.getElementById('confirm-withdraw').addEventListener('click', processWithdraw);
+    
+    // Nickname Save
+    document.getElementById('save-nickname-btn').addEventListener('click', saveNick);
+});
+
+// === 2. AUTH STATE MONITOR ===
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        const userRef = doc(db, "users", user.uid);
+        const snap = await getDoc(userRef);
+        
+        // If profile missing (Google Login first time)
+        if (!snap.exists() || !snap.data().nickname) {
+            if(!snap.exists()) await setDoc(userRef, { email: user.email, balance: 0, uid: user.uid, history: [] }, {merge: true});
+            document.getElementById('auth-screen').classList.remove('active');
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('nickname-modal').style.display = 'flex';
+        } else {
+            initDashboard(snap.data());
+        }
+    } else {
+        document.getElementById('dashboard-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('auth-screen').classList.add('active');
+    }
+});
+
+async function saveNick() {
+    const nick = document.getElementById('google-nickname-input').value;
+    if(nick) {
+        await updateDoc(doc(db, "users", currentUser.uid), { nickname: nick });
+        window.location.reload();
+    }
 }
 
-body {
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    font-family: 'Inter', sans-serif;
-    margin: 0; padding: 0; padding-bottom: 80px;
-    overflow-x: hidden;
+function initDashboard(data) {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('dashboard-screen').classList.remove('hidden');
+    document.getElementById('nickname-modal').style.display = 'none'; // Ensure modal gone
+    
+    document.getElementById('header-nick').innerText = data.nickname;
+    document.getElementById('profile-name').innerText = data.nickname;
+    document.getElementById('profile-email').innerText = currentUser.email;
+    document.getElementById('profile-id').innerText = "ID: " + currentUser.uid.slice(0,6).toUpperCase();
+
+    // Live Balance
+    onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+        if(docSnap.exists()) {
+            currentBalance = docSnap.data().balance;
+            document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
+            renderTxHistory(docSnap.data().history);
+        }
+    });
+
+    startAviator();
+    startBotSimulation();
+    loadMatches();
 }
 
-.screen { min-height: 100vh; padding: 15px; display: none; }
-.screen.active { display: block; }
-.hidden { display: none !important; }
-
-/* AUTH */
-.auth-box { max-width: 320px; margin: 40px auto; text-align: center; background: var(--bg-card); padding: 25px; border-radius: 12px; }
-.logo-area { text-align: center; margin-top: 40px; margin-bottom: 20px; }
-input { width: 100%; padding: 15px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-.divider { margin: 15px 0; color: #555; font-size: 12px; }
-.switch-auth { margin-top: 20px; color: #888; cursor: pointer; }
-.switch-auth b { color: var(--neon-green); }
-
-/* HEADER */
-header { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px 0; }
-.user-pill { display: flex; align-items: center; gap: 5px; font-weight: bold; background: var(--bg-card); padding: 5px 15px; border-radius: 20px; }
-.balance-pill { text-align: right; }
-.balance-pill h2 { margin: 0; color: var(--neon-green); font-size: 20px; }
-
-/* AVIATOR (SUPER HERO THEME) */
-.round-history-bar { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; }
-.history-pill { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #232a35; min-width: 40px; text-align: center; }
-.history-pill.purple { color: #d946ef; background: rgba(217, 70, 239, 0.1); border: 1px solid #d946ef; }
-.history-pill.blue { color: #3b82f6; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; }
-.history-pill.red { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
-
-.game-stage-galaxy {
-    height: 280px; background: radial-gradient(circle at center, #2a1b3d 0%, #090b10 100%);
-    border-radius: 12px; margin-bottom: 15px; position: relative; border: 1px solid #333;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+function renderTxHistory(hist) {
+    const list = document.getElementById('tx-history');
+    list.innerHTML = "";
+    if(!hist) return;
+    hist.slice(-10).reverse().forEach(tx => {
+        list.innerHTML += `<div class="match-card" style="font-size:12px; padding:10px;">
+            <div style="display:flex; justify-content:space-between;">
+                <span>${tx.type}</span>
+                <span style="color:${tx.amount>0?'var(--neon-green)':'var(--neon-red)'}">${tx.amount}</span>
+            </div>
+        </div>`;
+    });
 }
-/* Stars Effect */
-.game-stage-galaxy::before { content: '.'; position: absolute; color: white; font-size: 2px; box-shadow: 10px 10px white, 50px 50px white, 100px 20px white, 200px 150px white; opacity: 0.5; }
 
-#multiplier-display { font-size: 64px; font-weight: 900; color: white; z-index: 2; text-shadow: 0 0 20px rgba(157, 0, 255, 0.5); }
-#rocket-icon { font-size: 40px; color: var(--neon-red); margin-top: 10px; z-index: 2; transition: transform 0.1s; }
-#status-text { color: #aaa; margin-top: 10px; font-size: 12px; letter-spacing: 2px; z-index: 2; }
+// === 3. AVIATOR LOGIC ===
+let avState = "WAITING";
+let avMult = 1.00;
+let avBet = 0;
+let avCash = false;
 
-/* LIVE BETS (SIDE PANEL) */
-.live-bets-overlay {
-    position: absolute; left: 0; top: 0; bottom: 0; width: 110px;
-    background: rgba(0,0,0,0.6); border-right: 1px solid #333;
-    display: flex; flex-direction: column; padding: 5px; z-index: 5;
+function startAviator() {
+    setInterval(() => {
+        const now = Date.now();
+        const loop = now % 10000; // 10s loop
+        
+        if (loop < 3000) { // WAITING
+            if(avState !== "WAITING") {
+                avState = "WAITING";
+                document.getElementById('status-text').innerText = "NEXT ROUND...";
+                document.getElementById('multiplier-display').innerText = "1.00x";
+                document.getElementById('multiplier-display').style.color = "white";
+                document.getElementById('rocket-icon').style.transform = "rotate(0deg)";
+                
+                const btn = document.getElementById('bet-btn');
+                if(avBet > 0 && !avCash) {
+                    avBet = 0; // Lost
+                    btn.innerText = "LOST";
+                    btn.style.background = "#333";
+                    setTimeout(() => { btn.innerText = "BET"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; }, 1500);
+                } else {
+                    btn.innerText = "BET";
+                    btn.style.background = "var(--neon-green)";
+                    btn.style.color = "#0a192f";
+                }
+            }
+        } else { // FLYING
+            avState = "FLYING";
+            const flyTime = loop - 3000;
+            avMult = (1 + (flyTime/1000) * 0.3).toFixed(2);
+            document.getElementById('status-text').innerText = "FLYING";
+            document.getElementById('rocket-icon').style.transform = "translate(5px, -5px)";
+
+            const seed = Math.floor(now / 10000);
+            const crash = ((seed % 6) + 1.1).toFixed(2);
+
+            if (parseFloat(avMult) >= parseFloat(crash)) {
+                avState = "CRASHED";
+                document.getElementById('multiplier-display').innerText = crash + "x";
+                document.getElementById('multiplier-display').style.color = "var(--neon-red)";
+                document.getElementById('status-text').innerText = "CRASHED";
+                
+                const hist = document.getElementById('round-history');
+                if(!hist.firstChild || hist.firstChild.innerText !== crash+"x") {
+                    hist.innerHTML = `<span class="history-pill ${crash>=2?'purple':'blue'}">${crash}x</span>` + hist.innerHTML;
+                }
+            } else {
+                document.getElementById('multiplier-display').innerText = avMult + "x";
+                if(avBet > 0 && !avCash) {
+                    const btn = document.getElementById('bet-btn');
+                    btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
+                    btn.style.background = "var(--neon-red)";
+                    btn.style.color = "white";
+                    
+                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) {
+                        doCashout();
+                    }
+                }
+            }
+        }
+    }, 100);
 }
-.lb-header { font-size: 10px; color: #888; margin-bottom: 5px; text-align: center; }
-#live-bets-list { overflow-y: auto; font-size: 10px; color: #ccc; }
-.bot-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-.bot-row.win { color: var(--neon-green); }
 
-/* CONTROLS */
-.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 12px; }
-.quick-chips { display: flex; gap: 5px; margin-bottom: 10px; }
-.quick-chips button { flex: 1; background: #0b0e11; border: 1px solid #333; color: white; padding: 8px; border-radius: 20px; font-size: 12px; }
-.bet-input-row { display: flex; gap: 10px; margin-bottom: 15px; }
-.bet-input-row input { text-align: center; font-size: 22px; font-weight: bold; margin: 0; background: black; }
-.adjust-btn { width: 50px; background: #222; border: none; color: white; font-size: 20px; border-radius: 8px; }
-.auto-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: #ccc; font-size: 14px; }
+function placeBet() {
+    if(avState === "WAITING" && avBet === 0) {
+        const amt = parseInt(document.getElementById('bet-amount').value);
+        if(amt > currentBalance) return alert("Insufficient Balance");
+        avBet = amt; avCash = false;
+        updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
+        document.getElementById('bet-btn').innerText = "BET PLACED";
+        document.getElementById('bet-btn').style.background = "#ff9900";
+    } else if (avState === "FLYING" && avBet > 0 && !avCash) {
+        doCashout();
+    }
+}
 
-/* BUTTONS */
-.neon-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: black; background: var(--neon-green); font-size: 16px; }
-.neon-btn.white-btn { background: white; color: #333; margin-top: 10px; }
-.neon-btn.large { font-size: 20px; box-shadow: 0 0 15px rgba(0, 231, 1, 0.3); }
+function doCashout() {
+    avCash = true;
+    const win = Math.floor(avBet * avMult);
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
+    document.getElementById('bet-btn').innerText = "WON " + win;
+    document.getElementById('bet-btn').style.background = "var(--neon-green)";
+    document.getElementById('bet-btn').style.color = "#0a192f";
+}
 
-/* PROFILE */
-.profile-header-card { text-align: center; background: var(--bg-card); padding: 30px 20px; border-radius: 12px; margin-bottom: 20px; }
-.avatar-circle { width: 80px; height: 80px; background: var(--neon-green); color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 15px; }
-.wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-.wallet-btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; }
-.wallet-btn.deposit { background: var(--neon-green); color: black; }
-.wallet-btn.withdraw { background: #222; color: white; border: 1px solid #444; }
-.menu-item { display: block; background: #25D366; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 20px; }
-.logout-btn { width: 100%; padding: 15px; background: var(--neon-red); border: none; color: white; font-weight: bold; border-radius: 8px; }
+// --- BOTS ---
+function startBotSimulation() {
+    const names = ["Winner22", "Player_X", "Speedy", "Lucky77", "ProGamer", "King01"];
+    const list = document.getElementById('live-bets-list');
+    setInterval(() => {
+        if(avState === "FLYING") {
+            const name = names[Math.floor(Math.random()*names.length)];
+            const amt = [100, 200, 500, 1000][Math.floor(Math.random()*4)];
+            const div = document.createElement('div');
+            div.className = "bot-row win";
+            div.innerHTML = `<span>${name}</span> <span>+${amt}</span>`;
+            list.prepend(div);
+            if(list.children.length > 8) list.removeChild(list.lastChild);
+        }
+    }, 1500);
+}
 
-/* SPORTS */
-.match-card { background: var(--bg-card); padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--neon-blue); }
-.live-badge { background: var(--neon-red); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; }
+// --- SPORTS ---
+async function loadMatches() {
+    const list = document.getElementById('fixtures-list');
+    list.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Loading Matches...</div>';
+    const today = new Date().toISOString().split('T')[0];
+    try {
+        const res = await fetch(`https://api-football-v1.p.rapidapi.com/v3/fixtures?date=${today}`, {
+            headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' }
+        });
+        const data = await res.json();
+        if(data.response && data.response.length > 0) renderMatches(data.response);
+        else renderVirtuals();
+    } catch(e) { renderVirtuals(); }
+}
 
-/* NAV */
-.game-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid #222; display: flex; padding: 10px 0; z-index: 100; }
-.nav-btn { flex: 1; background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; }
-.nav-btn.active { color: var(--neon-green); }
-.nav-btn i { font-size: 20px; }
+function renderVirtuals() {
+    const list = document.getElementById('fixtures-list');
+    list.innerHTML = `<div style="text-align:center; padding:10px; color:#888;">Simulated Live League (24/7)</div>`;
+    const teams = [ ["Man City", "Liverpool"], ["Arsenal", "Chelsea"], ["Real Madrid", "Barca"] ];
+    teams.forEach(pair => {
+        const odds = (Math.random()*2+1.2).toFixed(2);
+        list.innerHTML += `<div class="match-card">
+            <div><b>${pair[0]}</b> vs <b>${pair[1]}</b><br><span class="live-badge" style="background:#bd34fe;">V-LIVE</span></div>
+            <button class="neon-btn" style="width:auto; padding:5px 15px; font-size:12px;">${odds}</button>
+        </div>`;
+    });
+}
 
-/* MODALS */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; }
-.modal-box { background: var(--bg-card); width: 85%; padding: 25px; border-radius: 12px; text-align: center; }
-.modal-actions { display: flex; gap: 10px; margin-top: 15px; }
-.confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; }
-.cancel-btn { flex: 1; background: transparent; border: 1px solid #555; color: #888; padding: 12px; border-radius: 8px; }
+function renderMatches(matches) {
+    const list = document.getElementById('fixtures-list');
+    list.innerHTML = "";
+    matches.slice(0,20).forEach(m => {
+        const odds = (Math.random()*2+1.2).toFixed(2);
+        list.innerHTML += `<div class="match-card">
+            <div><b>${m.teams.home.name}</b> vs <b>${m.teams.away.name}</b><br><span class="live-badge" style="background:#333; color:#ccc;">UPCOMING</span></div>
+            <button class="neon-btn" style="width:auto; padding:5px 15px; font-size:12px;">${odds}</button>
+        </div>`;
+    });
+}
 
-.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-input:checked + .slider { background-color: var(--neon-green); }
-input:checked + .slider:before { content: ""; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(20px); }
-.small-input { width: 50px !important; padding: 5px !important; margin: 0 !important; text-align: center; }
+// --- TAB SWITCH ---
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('nav-' + tab).classList.add('active');
+
+    if(tab === 'sports') loadMatches();
+}
+
+function adjustBet(val) {
+    let el = document.getElementById('bet-amount');
+    el.value = Math.max(50, parseInt(el.value) + val);
+}
+
+function processDeposit() {
+    const amt = parseInt(document.getElementById('deposit-input').value);
+    if(amt < 100) return alert("Min 100");
+    document.getElementById('deposit-modal').style.display='none';
+    
+    if(PAYSTACK_PUB_KEY.startsWith("cb7d")) return alert("Wrong Key! You used RapidAPI key.");
+
+    let h = PaystackPop.setup({
+        key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
+        callback: function(r) {
+            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) });
+        }
+    });
+    h.openIframe();
+}
+
+function processWithdraw() {
+    const amt = parseInt(document.getElementById('withdraw-amount').value);
+    if(amt > currentBalance) return alert("Insufficient Balance");
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdraw", amount:-amt, date:new Date().toISOString()}) });
+    document.getElementById('withdraw-modal').style.display='none';
+    const bank = document.getElementById('withdraw-bank').value;
+    window.open(`https://wa.me/2347056353236?text=Withdraw ${amt} to ${bank}`, '_blank');
+}
