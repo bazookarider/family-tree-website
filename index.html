@@ -1,73 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MyRoots – Family Legacy</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeloBet | High Velocity Gaming</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body>
 
-  <header class="bg-slate-800 text-white shadow-xl">
-    <div class="max-w-7xl mx-auto px-6 py-8 text-center">
-      <h1 class="text-5xl md:text-6xl font-bold font-playfair">MyRoots</h1>
-      <p class="text-xl mt-3 opacity-90">Our Family Heritage Preserved Forever</p>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-6 py-12">
-    <div id="members" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-      <!-- Members load here -->
-    </div>
-
-    <div id="empty" class="text-center py-32">
-      <i class="fas fa-tree text-9xl text-slate-300 mb-8"></i>
-      <p class="text-2xl text-slate-500">No family members yet.<br>The legacy begins with the first entry.</p>
-    </div>
-  </main>
-
-  <!-- Admin Button -->
-  <button id="adminBtn" class="fixed bottom-8 right-8 bg-teal-700 hover:bg-teal-800 text-white p-6 rounded-full shadow-2xl text-3xl z-50 transition-all">
-    <i class="fas fa-shield-alt"></i>
-  </button>
-
-  <!-- Admin Login Modal -->
-  <div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-5">
-    <div class="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
-      <h2 class="text-3xl font-bold text-center text-slate-800 mb-8">Admin Access</h2>
-      <input type="password" id="adminPass" placeholder="Enter password" class="w-full p-5 border-2 border-slate-300 rounded-xl text-lg focus:border-teal-700 outline-none">
-      <button onclick="loginAdmin()" class="w-full mt-6 bg-teal-700 hover:bg-teal-800 text-white py-5 rounded-xl text-xl font-semibold transition">
-        Unlock Admin Panel
-      </button>
-    </div>
-  </div>
-
-  <!-- Add/Edit Modal -->
-  <div id="addModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-5">
-    <div class="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-2xl max-h-screen overflow-y-auto">
-      <h2 id="modalTitle" class="text-3xl font-bold text-center text-slate-800 mb-8">Add Family Member</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <input type="text" id="name" placeholder="Full Name" class="p-5 border-2 rounded-xl text-lg">
-        <input type="text" id="relation" placeholder="Relation" class="p-5 border-2 rounded-xl text-lg">
-        <input type="text" id="tribe" placeholder="Tribe / Village" class="p-5 border-2 rounded-xl text-lg">
-        <input type="date" id="birth" class="p-5 border-2 rounded-xl text-lg">
-        <input type="date" id="death" placeholder="Death Date (optional)" class="p-5 border-2 rounded-xl text-lg">
-        <textarea id="story" placeholder="Life story..." class="p-5 border-2 rounded-xl text-lg h-32 col-span-2"></textarea>
-      </div>
-      <div class="flex gap-4 mt-8">
-        <button onclick="saveMember()" class="flex-1 bg-teal-700 hover:bg-teal-800 text-white py-5 rounded-xl text-xl font-semibold">
-          Save Member
+    <div id="auth-screen" class="screen active">
+        <div class="logo-area">
+            <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
+            <p>High Velocity Trading</p>
+        </div>
+        <button id="login-btn" class="neon-btn">
+            <i class="ri-google-fill"></i> Sign in with Google
         </button>
-        <button onclick="closeModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-5 rounded-xl text-xl font-semibold">
-          Cancel
-        </button>
-      </div>
     </div>
-  </div>
 
-  <script type="module" src="script.js"></script>
+    <div id="dashboard-screen" class="screen hidden">
+        <header>
+            <div class="user-info">
+                <span id="user-name">Player</span>
+                <div class="balance-box">
+                    <small>Balance</small>
+                    <h2 id="wallet-balance">₦0.00</h2>
+                </div>
+            </div>
+            <button id="deposit-btn" class="action-btn deposit"><i class="ri-add-circle-line"></i> Deposit</button>
+        </header>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <i class="ri-funds-line"></i>
+                <span>Profit Today</span>
+                <b id="daily-profit" class="text-green">+₦0.00</b>
+            </div>
+            <div class="stat-card">
+                <i class="ri-hand-coin-line"></i>
+                <span>Withdrawable</span>
+                <b id="safe-withdraw">₦0.00</b>
+            </div>
+        </div>
+
+        <nav class="game-nav">
+            <button class="nav-btn active" onclick="switchTab('sports')"><i class="ri-football-line"></i> Sports</button>
+            <button class="nav-btn" onclick="switchTab('aviator')"><i class="ri-rocket-2-line"></i> Aviator</button>
+            <button class="nav-btn" onclick="switchTab('profile')"><i class="ri-user-settings-line"></i> Wallet</button>
+        </nav>
+
+        <div id="tab-sports" class="tab-content active">
+            <div class="section-title">Live Fixtures <span class="live-dot"></span></div>
+            <div id="fixtures-list" class="scroll-list">
+                <div class="loader"><i class="ri-loader-4-line spin"></i> Loading Matches...</div>
+            </div>
+        </div>
+
+        <div id="tab-aviator" class="tab-content">
+            <div class="game-stage">
+                <div class="multiplier-box">
+                    <span id="multiplier-display">1.00x</span>
+                </div>
+                <div class="crash-graph">
+                    <i id="rocket-icon" class="ri-rocket-fill"></i>
+                </div>
+            </div>
+            <div class="controls">
+                <input type="number" id="bet-amount" placeholder="Amount (e.g. 1000)" value="1000">
+                <button id="bet-btn" class="neon-btn">PLACE BET</button>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="tab-content">
+            <h3>Transaction History</h3>
+            <div id="tx-history" class="list-group">
+                </div>
+            <br>
+            <button id="withdraw-btn" class="action-btn withdraw"><i class="ri-bank-card-line"></i> Request Withdrawal</button>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
