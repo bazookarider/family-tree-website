@@ -1,4 +1,4 @@
- // USING STABLE FIREBASE 10.7.1
+// USING STABLE FIREBASE 10.7.1
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -15,7 +15,8 @@ const firebaseConfig = {
 };
 
 const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn"; 
-const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; // PASTE YOUR KEY
+// PASTE YOUR LIVE PAYSTACK KEY BELOW
+const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; 
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -39,8 +40,7 @@ window.adjustBet = (val) => {
 };
 window.closeBetslip = () => document.getElementById('betslip-modal').style.display = 'none';
 
-// --- AUTH LOGIC (LOGIN / REGISTER / FORGOT) ---
-// Toggle Forms
+// --- AUTH UI LOGIC ---
 document.getElementById('show-register').addEventListener('click', () => {
     document.getElementById('login-form').classList.add('hidden');
     document.getElementById('register-form').classList.remove('hidden');
@@ -67,10 +67,10 @@ document.getElementById('email-login-btn').addEventListener('click', () => {
 document.getElementById('forgot-btn').addEventListener('click', () => {
     const email = document.getElementById('login-email').value;
     if(!email) return alert("Please enter your email address first.");
-    sendPasswordResetEmail(auth, email).then(() => alert("Reset Link Sent to " + email)).catch(err => alert(err.message));
+    sendPasswordResetEmail(auth, email).then(() => alert("Reset Link Sent!")).catch(err => alert(err.message));
 });
 
-// Register with Nickname Check
+// Register
 document.getElementById('email-register-btn').addEventListener('click', async () => {
     const nick = document.getElementById('reg-nickname').value;
     const email = document.getElementById('reg-email').value;
@@ -78,13 +78,12 @@ document.getElementById('email-register-btn').addEventListener('click', async ()
     
     if(!nick || !email || !pass) return alert("Fill all fields");
     
-    // Check Nickname Uniqueness
+    // Check Nickname
     const q = query(collection(db, "users"), where("nickname", "==", nick));
     const snap = await getDocs(q);
-    if(!snap.empty) return alert("Nickname taken! Choose another.");
+    if(!snap.empty) return alert("Nickname taken!");
     
     createUserWithEmailAndPassword(auth, email, pass).then(async (cred) => {
-        // Save Nickname
         await setDoc(doc(db, "users", cred.user.uid), { 
             nickname: nick, email: email, balance: 0, uid: cred.user.uid, history: [] 
         });
@@ -97,55 +96,73 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     signOut(auth).then(() => location.reload());
 });
 
-// --- AUTH STATE CHANGE (Fixes Blank Screen) ---
+// --- AUTH STATE & NICKNAME CHECK (THE FIX) ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        // Check if user has a profile doc
         const userRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // If they have nickname, Go to Dashboard
             if (data.nickname) {
                 showDashboard(data);
             } else {
-                // If Google Login but no Nickname yet -> Show Modal
+                // User exists but has no nickname (weird google login state)
                 document.getElementById('auth-screen').classList.remove('active');
                 document.getElementById('nickname-modal').style.display = 'flex';
             }
         } else {
-            // New Google User -> Create Doc -> Show Nickname Modal
-            await setDoc(userRef, { email: user.email, balance: 0, uid: user.uid, history: [] });
+            // New Google User -> Show Nickname Modal
             document.getElementById('auth-screen').classList.remove('active');
             document.getElementById('nickname-modal').style.display = 'flex';
         }
     } else {
-        // Not Logged In -> Show Auth Screen
         document.getElementById('dashboard-screen').classList.remove('active');
         document.getElementById('auth-screen').classList.add('active');
     }
 });
 
-// Save Nickname for Google Users
+// SAVE NICKNAME BUTTON (ROBUST FIX)
 document.getElementById('save-nickname-btn').addEventListener('click', async () => {
-    const nick = document.getElementById('google-nickname-input').value;
+    const nick = document.getElementById('google-nickname-input').value.trim();
     if(!nick) return alert("Enter a nickname");
     
-    const q = query(collection(db, "users"), where("nickname", "==", nick));
-    const snap = await getDocs(q);
-    if(!snap.empty) return alert("Nickname taken!");
+    const btn = document.getElementById('save-nickname-btn');
+    btn.innerText = "Saving...";
+    
+    try {
+        // 1. Check Uniqueness
+        const q = query(collection(db, "users"), where("nickname", "==", nick));
+        const snap = await getDocs(q);
+        if(!snap.empty) {
+            btn.innerText = "Start Playing";
+            return alert("Nickname taken!");
+        }
 
-    await updateDoc(doc(db, "users", currentUser.uid), { nickname: nick });
-    document.getElementById('nickname-modal').style.display = 'none';
-    const updatedSnap = await getDoc(doc(db, "users", currentUser.uid));
-    showDashboard(updatedSnap.data());
+        // 2. Force Save Profile (using merge to be safe)
+        await setDoc(doc(db, "users", currentUser.uid), { 
+            nickname: nick, 
+            email: currentUser.email,
+            balance: 0, 
+            uid: currentUser.uid, 
+            history: [] 
+        }, { merge: true });
+
+        // 3. Show Dashboard
+        document.getElementById('nickname-modal').style.display = 'none';
+        showDashboard({ nickname: nick });
+
+    } catch (error) {
+        console.error(error);
+        alert("Error saving nickname: " + error.message);
+        btn.innerText = "Start Playing";
+    }
 });
 
 function showDashboard(userData) {
     document.getElementById('auth-screen').classList.remove('active');
-    document.getElementById('auth-screen').classList.add('hidden'); 
+    document.getElementById('auth-screen').classList.add('hidden'); // Force hide
     document.getElementById('dashboard-screen').classList.add('active');
     document.getElementById('dashboard-screen').classList.remove('hidden');
 
@@ -159,7 +176,7 @@ function showDashboard(userData) {
     startAviatorEngine();
 }
 
-// --- USER DATA ---
+// --- DATA & WALLET ---
 function loadUserData() {
     onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
         if (docSnap.exists()) {
@@ -186,7 +203,7 @@ function loadUserData() {
     });
 }
 
-// --- DEPOSIT ---
+// DEPOSIT
 document.getElementById('open-deposit-modal').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'flex');
 document.getElementById('cancel-deposit').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'none');
 document.getElementById('confirm-deposit').addEventListener('click', () => {
@@ -194,6 +211,8 @@ document.getElementById('confirm-deposit').addEventListener('click', () => {
     if (!amount || amount < 100) return alert("Min deposit ₦100");
     document.getElementById('deposit-modal').style.display = 'none';
     
+    if(PAYSTACK_PUB_KEY.includes("cb7d")) return alert("Wrong Paystack Key! You used your RapidAPI key.");
+
     let handler = PaystackPop.setup({
         key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amount * 100, currency: "NGN",
         callback: function(res) {
@@ -206,7 +225,7 @@ document.getElementById('confirm-deposit').addEventListener('click', () => {
     handler.openIframe();
 });
 
-// --- WITHDRAWAL (WHATSAPP APPROVAL) ---
+// WITHDRAW (WHATSAPP)
 document.getElementById('open-withdraw-modal').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'flex');
 document.getElementById('cancel-withdraw').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'none');
 
@@ -218,7 +237,6 @@ document.getElementById('confirm-withdraw').addEventListener('click', async () =
     if (amount > currentBalance) return alert("Insufficient funds");
     if (!bank || !acctName) return alert("Enter bank details");
 
-    // 1. Deduct Balance Immediately
     await updateDoc(doc(db, "users", currentUser.uid), {
         balance: currentBalance - amount,
         history: arrayUnion({type: "Withdrawal", amount: -amount, date: new Date().toISOString()})
@@ -226,20 +244,11 @@ document.getElementById('confirm-withdraw').addEventListener('click', async () =
 
     document.getElementById('withdraw-modal').style.display = 'none';
 
-    // 2. Generate WhatsApp Message
-    const msg = `*NEW WITHDRAWAL REQUEST*%0A%0A` +
-                `🆔 User ID: ${currentUser.uid.slice(0,5).toUpperCase()}%0A` +
-                `👤 Nickname: ${document.getElementById('user-nickname').innerText}%0A` +
-                `💰 Amount: ₦${amount}%0A` +
-                `🏦 Bank: ${bank}%0A` +
-                `📛 Name: ${acctName}%0A%0A` +
-                `Please approve and transfer.`;
-
-    // 3. Open WhatsApp
+    const msg = `*NEW WITHDRAWAL REQUEST*%0A%0A🆔 User ID: ${currentUser.uid.slice(0,5).toUpperCase()}%0A👤 Nickname: ${document.getElementById('user-nickname').innerText}%0A💰 Amount: ₦${amount}%0A🏦 Bank: ${bank}%0A📛 Name: ${acctName}%0A%0APlease approve.`;
     window.open(`https://wa.me/2347056353236?text=${msg}`, '_blank');
 });
 
-// --- SPORTS FEED ---
+// SPORTS FEED
 async function loadMatches() {
     const list = document.getElementById('fixtures-list');
     list.innerHTML = '<div class="loader"><i class="ri-loader-4-line spin"></i> Loading Games...</div>';
@@ -282,7 +291,6 @@ function generateVirtualMatches() {
     }
 }
 
-// Betslip
 window.openBetslip = (m, o) => { document.getElementById('betslip-match').innerText = m; document.getElementById('betslip-odds').innerText = o; document.getElementById('betslip-modal').style.display = 'flex'; };
 document.getElementById('place-sports-bet').addEventListener('click', () => {
     if(100 > currentBalance) return alert("Low Balance");
@@ -290,7 +298,7 @@ document.getElementById('place-sports-bet').addEventListener('click', () => {
     document.getElementById('betslip-modal').style.display = 'none';
 });
 
-// --- AVIATOR ---
+// AVIATOR
 let gameActive=false, userBet=0, hasCashedOut=false, currentMultiplier=1.00;
 function startAviatorEngine() {
     setInterval(() => {
