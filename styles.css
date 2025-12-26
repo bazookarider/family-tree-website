@@ -1,10 +1,11 @@
-:root {
+ :root {
     --bg-dark: #0a192f;
     --bg-card: #112240;
     --text-main: #ccd6f6;
     --neon-green: #64ffda;
     --neon-red: #ff5f56;
     --purple: #bd34fe;
+    --blue: #00baff;
 }
 
 body {
@@ -12,75 +13,80 @@ body {
     color: var(--text-main);
     font-family: 'Segoe UI', Roboto, sans-serif;
     margin: 0; padding: 0; overflow-x: hidden;
+    padding-bottom: 70px; /* Space for bottom nav */
 }
 
-.screen { display: none; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+/* === CRITICAL FIX FOR TABS === */
+.screen { display: none; min-height: 100vh; padding: 15px; box-sizing: border-box; }
 .screen.active { display: block; }
-.hidden { display: none !important; }
+
+.tab-content { display: none !important; animation: fadeIn 0.3s; }
+.tab-content.active { display: block !important; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* ============================= */
 
 /* Auth Forms */
-#login-form, #register-form { max-width: 320px; margin: 0 auto; background: var(--bg-card); padding: 25px; border-radius: 15px; border: 1px solid #233554; }
+#auth-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+#login-form, #register-form { width: 100%; max-width: 320px; background: var(--bg-card); padding: 25px; border-radius: 15px; border: 1px solid #233554; }
 input { width: 100%; padding: 12px; margin-bottom: 15px; background: #020c1b; border: 1px solid #233554; color: white; border-radius: 8px; box-sizing: border-box; }
 
 /* Header */
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.balance-area h2 { margin: 0; color: var(--neon-green); font-size: 26px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-card); padding: 15px; border-radius: 12px; }
+.balance-area h2 { margin: 0; color: var(--neon-green); font-size: 24px; }
 
-/* Nav */
-.game-nav { display: flex; background: var(--bg-card); padding: 5px; border-radius: 15px; margin-bottom: 20px; }
-.nav-btn { flex: 1; background: none; border: none; color: #8892b0; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; }
-.nav-btn.active { background: var(--neon-green); color: var(--bg-dark); }
-.nav-btn i { font-size: 18px; }
+/* Bottom Navigation (App Style) */
+.game-nav { 
+    position: fixed; bottom: 0; left: 0; width: 100%; 
+    background: var(--bg-card); display: flex; justify-content: space-around; 
+    padding: 10px 0; border-top: 1px solid #233554; z-index: 100;
+}
+.nav-btn { background: none; border: none; color: #8892b0; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nav-btn.active { color: var(--neon-green); }
+.nav-btn i { font-size: 20px; }
 
-/* Buttons */
-.neon-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; margin-bottom: 10px; }
-.neon-btn.large { background: var(--neon-green); color: var(--bg-dark); margin-top: 15px; }
-
-/* Aviator */
-.round-history-bar { display: flex; gap: 5px; overflow-x: auto; padding: 5px 0; margin-bottom: 15px; }
-.history-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; background: #233554; white-space: nowrap; }
-.history-pill.purple { color: var(--purple); border: 1px solid var(--purple); }
-.history-pill.blue { color: #00baff; border: 1px solid #00baff; }
-.history-pill.red { color: var(--neon-red); border: 1px solid var(--neon-red); }
-
-.game-stage-pro { height: 220px; background: #020c1b; border-radius: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #233554; }
-#multiplier-display { font-size: 56px; font-weight: 800; color: white; }
-
-.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 15px; }
-.quick-chips { display: flex; gap: 8px; margin-bottom: 15px; }
-.quick-chips button { flex: 1; background: #020c1b; border: 1px solid var(--neon-green); color: var(--neon-green); padding: 8px; border-radius: 20px; cursor: pointer; }
-
-.input-group-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-.input-group-row input { text-align: center; font-size: 18px; }
-.adjust-btn { width: 45px; height: 45px; background: #233554; color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; }
-
-/* Sports */
+/* Sports Feed */
 .match-card { background: var(--bg-card); padding: 15px; margin-bottom: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--neon-green); }
-.live-badge { background: var(--neon-red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+.live-badge { background: var(--neon-red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
 .time-badge { background: #233554; color: #ccc; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 
-/* Profile & Wallet */
+/* Betslip Sidebar */
+.betslip-panel {
+    position: fixed; top: 0; right: -300px; width: 280px; height: 100%;
+    background: #020c1b; border-left: 1px solid var(--neon-green);
+    transition: 0.3s; z-index: 2000; padding: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+}
+.betslip-panel.open { right: 0; }
+
+/* Aviator Section */
+.round-history-bar { 
+    display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: 10px; 
+    background: #0b1016; border-radius: 8px; padding-left: 5px;
+}
+.history-pill { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #1f2937; white-space: nowrap; min-width: 40px; text-align: center; }
+.history-pill.purple { color: #d946ef; border: 1px solid #d946ef; background: rgba(217, 70, 239, 0.1); }
+.history-pill.blue { color: #3b82f6; border: 1px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
+.history-pill.red { color: var(--neon-red); border: 1px solid var(--neon-red); background: rgba(255, 95, 86, 0.1); }
+
+.game-stage-pro {
+    height: 240px; background: radial-gradient(circle, #1a222e 0%, #000000 100%);
+    border-radius: 16px; margin-bottom: 15px; border: 1px solid #333;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+}
+#multiplier-display { font-size: 64px; font-weight: 800; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+.rocket-animation { font-size: 40px; color: var(--neon-red); animation: shake 0.5s infinite; display: none; margin-top: 10px; }
+
+/* Profile */
 .profile-card { text-align: center; margin-bottom: 20px; background: var(--bg-card); padding: 20px; border-radius: 10px; }
-.avatar { width: 60px; height: 60px; background: var(--neon-green); color: var(--bg-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
-.wallet-actions { display: flex; gap: 10px; margin-bottom: 20px; }
+.avatar { width: 70px; height: 70px; background: var(--neon-green); color: var(--bg-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
+.wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .action-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .deposit { background: var(--neon-green); color: var(--bg-dark); }
-.withdraw { background: #233554; color: white; border: 1px solid #444; }
-.whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #25D366; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 20px; }
+.withdraw { background: #1e293b; color: white; border: 1px solid #334155; }
 .logout-btn { background: var(--neon-red); color: white; margin-top: 20px; }
 
-/* Modals */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; }
-.modal-box { background: var(--bg-card); padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; border: 1px solid var(--neon-green); }
-.modal-actions { display: flex; gap: 10px; }
-.confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: var(--bg-dark); }
-.cancel-btn { flex: 1; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 12px; border-radius: 8px; cursor: pointer; }
+/* Utilities */
+.neon-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 8px; }
+.neon-btn.large { background: var(--neon-green); color: var(--bg-dark); margin-top: 10px; font-size: 18px; }
 
-/* Switch */
-.switch { position: relative; display: inline-block; width: 40px; height: 20px; vertical-align: middle; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
-.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--neon-green); }
-input:checked + .slider:before { transform: translateX(20px); }
-.small-input { width: 50px !important; padding: 5px !important; margin: 0 5px !important; }
+@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
