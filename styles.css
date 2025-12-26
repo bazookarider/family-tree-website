@@ -1,4 +1,4 @@
-:root {
+ :root {
     --bg-dark: #0b0e11;
     --bg-card: #151a21;
     --text-main: #ffffff;
@@ -11,11 +11,10 @@
 body {
     background-color: var(--bg-dark);
     color: var(--text-main);
-    font-family: 'Inter', sans-serif;
+    font-family: sans-serif;
     margin: 0; padding: 0; overflow-x: hidden;
 }
 
-/* Base Classes */
 .screen { display: none; padding: 15px; min-height: 100vh; box-sizing: border-box; }
 .screen.active { display: block; }
 .hidden { display: none !important; }
@@ -31,42 +30,34 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px;
 }
-.nav-btn i { font-size: 18px; }
-.nav-btn.active { background: #233554; color: var(--text-main); border-bottom: 2px solid var(--neon-green); }
+.nav-btn.active { background: #233554; color: white; border-bottom: 2px solid var(--neon-green); }
 
-/* --- AVIATOR PRO STYLES --- */
-.round-history-bar {
-    display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px;
-}
-.history-pill {
-    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background: #2a2a2a; white-space: nowrap;
-}
-.history-pill.purple { background: rgba(157, 0, 255, 0.2); color: var(--purple); border: 1px solid var(--purple); }
-.history-pill.blue { background: rgba(0, 186, 255, 0.2); color: var(--blue); border: 1px solid var(--blue); }
-.history-pill.red { background: rgba(255, 45, 85, 0.2); color: var(--neon-red); border: 1px solid var(--neon-red); }
+/* --- AVIATOR PRO --- */
+.round-history-bar { display: flex; gap: 5px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; }
+.history-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; background: #2a2a2a; white-space: nowrap; }
+.history-pill.purple { color: var(--purple); border: 1px solid var(--purple); }
+.history-pill.blue { color: var(--blue); border: 1px solid var(--blue); }
+.history-pill.red { color: var(--neon-red); border: 1px solid var(--neon-red); }
 
 .game-stage-pro {
     height: 240px; background: radial-gradient(circle, #1a222e 0%, #000000 100%);
     border-radius: 16px; margin-bottom: 15px; border: 1px solid #333;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-#multiplier-display { font-size: 64px; font-weight: 800; color: white; letter-spacing: -2px; }
-#status-text { color: #888; font-size: 10px; letter-spacing: 2px; margin-top: 5px; }
+#multiplier-display { font-size: 56px; font-weight: 800; color: white; }
 
-.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 16px; border: 1px solid #333; }
+.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 16px; }
 .quick-chips { display: flex; gap: 5px; margin-bottom: 15px; }
-.quick-chips button { flex: 1; background: #232a35; border: none; color: #ccc; padding: 8px; border-radius: 20px; font-size: 12px; }
+.quick-chips button { flex: 1; background: #232a35; border: 1px solid #444; color: white; padding: 8px; border-radius: 20px; font-size: 12px; }
 
-.input-group { display: flex; align-items: center; background: black; border-radius: 30px; padding: 2px; border: 1px solid #444; }
-.input-group input { background: transparent; border: none; color: white; text-align: center; font-size: 18px; font-weight: bold; flex: 1; }
-.minus-btn, .plus-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #333; color: white; font-size: 20px; font-weight: bold; }
+.input-group-row { display: flex; gap: 10px; margin-bottom: 15px; }
+.input-group-row input { flex: 1; background: black; border: 1px solid #444; color: white; text-align: center; font-size: 18px; border-radius: 8px; padding: 10px; }
+.adjust-btn { width: 45px; background: #333; color: white; border: none; border-radius: 8px; font-size: 20px; }
 
 .neon-btn.large {
     width: 100%; padding: 18px; font-size: 18px; font-weight: 900; 
     background: var(--neon-green); color: black; border: none; border-radius: 12px; margin-top: 15px;
-    box-shadow: 0 0 15px rgba(0, 231, 1, 0.4);
 }
-.neon-btn.large.cashout { background: #ffa500; box-shadow: 0 0 15px rgba(255, 165, 0, 0.4); }
 
 /* --- SPORTS --- */
 .match-card {
@@ -74,8 +65,9 @@ header { display: flex; justify-content: space-between; align-items: center; mar
     display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--neon-green);
 }
 .live-badge { background: var(--neon-red); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+.time-badge { background: #333; color: #ccc; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
 
-/* --- WALLET & PROFILE --- */
+/* --- WALLET --- */
 .wallet-actions { display: flex; gap: 10px; margin-bottom: 20px; }
 .action-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .deposit { background: var(--neon-green); color: black; }
@@ -84,9 +76,16 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 .logout-btn { background: var(--neon-red); color: white; margin-top: 20px; }
 
 /* Modals */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
 .modal-box { background: #1a222e; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; border: 1px solid #444; }
 .modal-box input { width: 90%; padding: 12px; margin: 15px 0; background: black; border: 1px solid #333; color: white; text-align: center; font-size: 18px; border-radius: 8px; }
 .modal-actions { display: flex; gap: 10px; }
 .confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 .cancel-btn { flex: 1; background: transparent; border: 1px solid #555; color: #aaa; padding: 12px; border-radius: 8px; cursor: pointer; }
+.switch { position: relative; display: inline-block; width: 34px; height: 20px; vertical-align: middle; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--neon-green); }
+input:checked + .slider:before { transform: translateX(14px); }
+.small-input { width: 50px !important; padding: 5px !important; font-size: 14px !important; margin: 0 5px !important; }
