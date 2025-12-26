@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeloBet | High Velocity Gaming</title>
+    <title>VeloBet | Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://js.paystack.co/v1/inline.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -21,40 +21,42 @@
     </div>
 
     <div id="dashboard-screen" class="screen hidden">
+        
         <header>
             <div class="user-info">
-                <span id="user-name">Player</span>
-                <div class="balance-box">
-                    <small>Balance</small>
-                    <h2 id="wallet-balance">₦0.00</h2>
-                </div>
+                <span id="user-name">Guest</span>
+                <small id="user-id" style="font-size: 10px; color: #8892b0;">ID: ---</small>
             </div>
-            <button id="deposit-btn" class="action-btn deposit"><i class="ri-add-circle-line"></i> Deposit</button>
+            <div class="balance-area">
+                <small>Balance</small>
+                <h2 id="wallet-balance">₦0.00</h2>
+            </div>
         </header>
 
         <div class="stats-row">
             <div class="stat-card">
-                <i class="ri-funds-line"></i>
+                <i class="ri-line-chart-line"></i>
                 <span>Profit Today</span>
                 <b id="daily-profit" class="text-green">+₦0.00</b>
             </div>
-            <div class="stat-card">
-                <i class="ri-hand-coin-line"></i>
-                <span>Withdrawable</span>
-                <b id="safe-withdraw">₦0.00</b>
-            </div>
+            <button id="open-deposit-modal" class="stat-card action-card">
+                <i class="ri-add-circle-fill"></i>
+                <span>Deposit</span>
+            </button>
         </div>
 
         <nav class="game-nav">
             <button class="nav-btn active" onclick="switchTab('sports')"><i class="ri-football-line"></i> Sports</button>
             <button class="nav-btn" onclick="switchTab('aviator')"><i class="ri-rocket-2-line"></i> Aviator</button>
-            <button class="nav-btn" onclick="switchTab('profile')"><i class="ri-user-settings-line"></i> Wallet</button>
+            <button class="nav-btn" onclick="switchTab('profile')"><i class="ri-user-3-line"></i> Profile</button>
         </nav>
 
         <div id="tab-sports" class="tab-content active">
-            <div class="section-title">Live Fixtures <span class="live-dot"></span></div>
+            <div class="section-title">
+                Today's Fixtures <span id="date-display"></span>
+            </div>
             <div id="fixtures-list" class="scroll-list">
-                <div class="loader"><i class="ri-loader-4-line spin"></i> Loading Matches...</div>
+                <div class="loader"><i class="ri-loader-4-line spin"></i> Loading Schedule...</div>
             </div>
         </div>
 
@@ -67,18 +69,63 @@
                     <i id="rocket-icon" class="ri-rocket-fill"></i>
                 </div>
             </div>
-            <div class="controls">
-                <input type="number" id="bet-amount" placeholder="Amount (e.g. 1000)" value="1000">
-                <button id="bet-btn" class="neon-btn">PLACE BET</button>
+
+            <div class="aviator-controls">
+                <div class="quick-chips">
+                    <button onclick="setBet(50)">₦50</button>
+                    <button onclick="setBet(100)">₦100</button>
+                    <button onclick="setBet(200)">₦200</button>
+                    <button onclick="setBet(500)">₦500</button>
+                </div>
+
+                <div class="bet-input-row">
+                    <input type="number" id="bet-amount" placeholder="Stake" value="100">
+                </div>
+
+                <div class="auto-cashout-row">
+                    <label class="switch">
+                        <input type="checkbox" id="auto-cashout-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Auto Cashout @</span>
+                    <input type="number" id="auto-cashout-val" value="2.00" step="0.1" style="width:60px; padding:5px;"> x
+                </div>
+
+                <button id="bet-btn" class="neon-btn large">PLACE BET</button>
             </div>
         </div>
 
         <div id="tab-profile" class="tab-content">
+            <div class="profile-header">
+                <div class="avatar"><i class="ri-user-smile-line"></i></div>
+                <h3 id="profile-name">Player Name</h3>
+                <small id="profile-email">email@example.com</small>
+            </div>
+
+            <a href="https://wa.me/2347056353236" target="_blank" class="whatsapp-btn">
+                <i class="ri-whatsapp-line"></i> Contact Support (WhatsApp)
+            </a>
+
             <h3>Transaction History</h3>
             <div id="tx-history" class="list-group">
-                </div>
-            <br>
-            <button id="withdraw-btn" class="action-btn withdraw"><i class="ri-bank-card-line"></i> Request Withdrawal</button>
+                <p style="text-align:center; opacity:0.5;">No transactions yet.</p>
+            </div>
+
+            <button id="logout-btn" class="action-btn logout">
+                <i class="ri-logout-box-r-line"></i> Log Out
+            </button>
+        </div>
+    </div>
+
+    <div id="deposit-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3><i class="ri-bank-card-line"></i> Fund Wallet</h3>
+            <p>Enter amount to deposit via Paystack</p>
+            <input type="number" id="deposit-input" placeholder="Amount (e.g. 1000)">
+            <div class="modal-actions">
+                <button id="cancel-deposit" class="cancel-btn">Cancel</button>
+                <button id="confirm-deposit" class="confirm-btn">Pay Now</button>
+            </div>
         </div>
     </div>
 
