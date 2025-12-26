@@ -15,13 +15,9 @@ const firebaseConfig = {
     measurementId: "G-T66B50HFJ8"
 };
 
-// --- KEYS (VERIFY THESE) ---
-// I checked your screenshot. This is the correct RapidAPI key.
+// --- KEYS ---
 const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn"; 
-
-// ⚠️ PASTE YOUR PUBLIC KEY HERE CAREFULLY ⚠️
-// It must start with 'pk_live_' or 'pk_test_'. No spaces inside the quotes.
-const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; 
+const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; // PASTE YOUR KEY HERE
 
 // Init
 const app = initializeApp(firebaseConfig);
@@ -30,10 +26,31 @@ const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
-// --- AUTH & PROFILE ---
-document.getElementById('login-btn').addEventListener('click', () => {
-    signInWithPopup(auth, new GoogleAuthProvider()).catch(err => alert(err.message));
-});
+// --- GLOBAL FUNCTIONS (Fix for Buttons) ---
+// We attach these to 'window' so HTML buttons can see them
+window.switchTab = (tabName) => {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.add('active');
+    document.getElementById('btn-' + tabName).classList.add('active');
+
+    if (tabName === 'sports') loadMatches();
+};
+
+window.setBet = (val) => { 
+    document.getElementById('bet-amount').value = val; 
+};
+
+// --- AUTH & LOAD ---
+const loginBtn = document.getElementById('login-btn');
+if(loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        signInWithPopup(auth, new GoogleAuthProvider()).catch(err => alert(err.message));
+    });
+}
 
 document.getElementById('logout-btn').addEventListener('click', () => {
     signOut(auth).then(() => location.reload());
@@ -43,15 +60,18 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('auth-screen').classList.remove('active');
+        document.getElementById('auth-screen').classList.add('hidden'); // Ensure it hides
         document.getElementById('dashboard-screen').classList.add('active');
-        
-        // Populate Profile Info
-        document.getElementById('user-name').innerText = user.displayName.split(' ')[0]; // First name only
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+
+        // Update Header Info
+        document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
         document.getElementById('user-id').innerText = "ID: " + user.uid.slice(0, 6).toUpperCase();
         document.getElementById('profile-name').innerText = user.displayName;
         document.getElementById('profile-email').innerText = user.email;
 
         loadUserData();
+        loadMatches(); // Load sports by default
     }
 });
 
@@ -64,18 +84,20 @@ function loadUserData() {
             currentBalance = data.balance || 0;
             document.getElementById('wallet-balance').innerText = "₦" + currentBalance.toLocaleString();
             
-            // Load Transaction History
+            // Transaction History
             const historyList = document.getElementById('tx-history');
-            historyList.innerHTML = ""; // Clear old
+            historyList.innerHTML = ""; 
             if (data.history && data.history.length > 0) {
-                // Show last 5 transactions (reversed)
                 data.history.slice(-5).reverse().forEach(tx => {
                     const item = document.createElement('div');
-                    item.className = 'match-card'; // Reuse card style
                     item.style.padding = "10px";
+                    item.style.borderBottom = "1px solid #233554";
                     item.innerHTML = `
-                        <div><small>${new Date(tx.date).toLocaleDateString()}</small><br><b>${tx.type}</b></div>
-                        <div class="text-green">₦${tx.amount}</div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <small style="color:#8892b0">${new Date(tx.date).toLocaleDateString()}</small>
+                            <b class="${tx.amount > 0 ? 'text-green' : 'text-red'}">₦${tx.amount}</b>
+                        </div>
+                        <div style="font-size:12px;">${tx.type}</div>
                     `;
                     historyList.appendChild(item);
                 });
@@ -88,7 +110,7 @@ function loadUserData() {
     });
 }
 
-// --- DEPOSITS (CUSTOM MODAL + PAYSTACK) ---
+// --- DEPOSITS ---
 const depositModal = document.getElementById('deposit-modal');
 document.getElementById('open-deposit-modal').addEventListener('click', () => {
     depositModal.style.display = 'flex';
@@ -101,12 +123,6 @@ document.getElementById('confirm-deposit').addEventListener('click', () => {
     const amount = document.getElementById('deposit-input').value;
     if (!amount || amount < 100) { alert("Minimum deposit is ₦100"); return; }
     
-    // Safety Check for Key
-    if (PAYSTACK_PUB_KEY.includes("xxx") || PAYSTACK_PUB_KEY.length < 10) {
-        alert("ERROR: Invalid Paystack Key. Please update script.js with your pk_live_ key.");
-        return;
-    }
-
     depositModal.style.display = 'none';
 
     let handler = PaystackPop.setup({
@@ -115,40 +131,25 @@ document.getElementById('confirm-deposit').addEventListener('click', () => {
         amount: amount * 100,
         currency: "NGN",
         callback: function(response) {
-            // Success
             const newBal = currentBalance + parseInt(amount);
             const tx = { type: "Deposit", amount: parseInt(amount), date: new Date().toISOString() };
-            
             updateDoc(doc(db, "users", currentUser.uid), { 
                 balance: newBal,
                 history: arrayUnion(tx)
             });
             alert("Deposit Successful!");
         },
-        onClose: function() {
-            alert("Transaction cancelled.");
-        }
+        onClose: function() { alert("Transaction cancelled."); }
     });
     handler.openIframe();
 });
 
-// --- SPORTS FEED (TODAY'S GAMES) ---
-window.switchTab = (tab) => {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
-    
-    if (tab === 'sports') loadMatches();
-};
-
+// --- SPORTS FEED ---
 async function loadMatches() {
     const list = document.getElementById('fixtures-list');
     list.innerHTML = '<div class="loader"><i class="ri-loader-4-line spin"></i> Loading Schedule...</div>';
     
-    // Get Today's Date in YYYY-MM-DD
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date-display').innerText = today;
-
     const options = {
         method: 'GET',
         headers: {
@@ -158,70 +159,54 @@ async function loadMatches() {
     };
 
     try {
-        // Fetch TODAY's fixtures (not just live)
         const response = await fetch(`https://api-football-v1.p.rapidapi.com/v3/fixtures?date=${today}`, options);
         const data = await response.json();
         
         list.innerHTML = '';
-        
         if (!data.response || data.response.length === 0) {
-            list.innerHTML = '<p style="text-align:center;">No games scheduled for today.</p>';
+            list.innerHTML = '<p style="text-align:center; padding:20px;">No live games right now. Check back later.</p>';
             return;
         }
 
-        // Show top 20 matches (Priority: Live > Not Started > Finished)
-        const matches = data.response.slice(0, 20); 
-
-        matches.forEach(match => {
+        data.response.slice(0, 15).forEach(match => { 
             const home = match.teams.home.name;
             const away = match.teams.away.name;
-            const status = match.fixture.status.short; // "1H", "FT", "NS"
             const score = match.goals.home !== null ? `${match.goals.home} - ${match.goals.away}` : "vs";
+            const time = new Date(match.fixture.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
-            let badgeClass = "time-badge";
-            let badgeText = new Date(match.fixture.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-            if (['1H','2H','HT','ET'].includes(status)) {
-                badgeClass = "live-badge";
-                badgeText = "LIVE " + match.fixture.status.elapsed + "'";
-            } else if (status === 'FT') {
-                badgeText = "Finished";
-            }
-
-            const card = document.createElement('div');
-            card.className = 'match-card';
-            card.innerHTML = `
+            const item = document.createElement('div');
+            item.className = 'stat-card'; // Reuse card style
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.style.alignItems = 'center';
+            item.style.textAlign = 'left';
+            item.innerHTML = `
                 <div>
-                    <div style="font-weight:bold; margin-bottom:4px;">${home} <br> ${away}</div>
-                    <span class="${badgeClass}">${badgeText}</span>
+                    <div style="font-weight:bold;">${home} <br> ${away}</div>
+                    <small style="color:#8892b0">${time}</small>
                 </div>
-                <div style="font-size:18px; font-weight:bold; color:var(--neon-green);">${score}</div>
+                <div style="font-size:18px; color:var(--neon-green); font-weight:bold;">${score}</div>
             `;
-            list.appendChild(card);
+            list.appendChild(item);
         });
     } catch (error) {
-        console.error(error);
-        list.innerHTML = '<p style="color:red; text-align:center;">API Error. Limit Reached?</p>';
+        list.innerHTML = '<p style="text-align:center;">No live games right now. Check back later.</p>';
     }
 }
 
-// --- AVIATOR (AUTO CASHOUT + CHIPS) ---
-window.setBet = (val) => { document.getElementById('bet-amount').value = val; };
-
+// --- AVIATOR LOGIC ---
 let multiplier = 1.00;
 let gameRunning = false;
 let gameInterval;
 
 document.getElementById('bet-btn').addEventListener('click', () => {
     if (gameRunning) {
-        // MANUAL CASH OUT
         cashOut();
     } else {
-        // PLACE BET
         const betAmount = parseInt(document.getElementById('bet-amount').value);
-        if (betAmount > currentBalance) { alert("Low Balance!"); return; }
+        if (betAmount > currentBalance) { alert("Insufficient Balance!"); return; }
         
-        // Deduct
+        // Deduct Bet
         const tx = { type: "Bet (Aviator)", amount: -betAmount, date: new Date().toISOString() };
         updateDoc(doc(db, "users", currentUser.uid), { 
             balance: currentBalance - betAmount,
@@ -239,7 +224,7 @@ function startGame(betAmount) {
     btn.style.background = "var(--neon-red)";
     
     multiplier = 1.00;
-    const crashPoint = (Math.random() * 5) + 1.1; // Min 1.1x
+    const crashPoint = (Math.random() * 5) + 1.1; 
     const autoCashVal = parseFloat(document.getElementById('auto-cashout-val').value);
     const useAuto = document.getElementById('auto-cashout-toggle').checked;
 
@@ -247,12 +232,8 @@ function startGame(betAmount) {
         multiplier += 0.01;
         document.getElementById('multiplier-display').innerText = multiplier.toFixed(2) + "x";
 
-        // Auto Cash Out Check
-        if (useAuto && multiplier >= autoCashVal) {
-            cashOut(betAmount); // Force cashout
-        }
+        if (useAuto && multiplier >= autoCashVal) cashOut();
 
-        // Crash Check
         if (multiplier >= crashPoint) {
             clearInterval(gameInterval);
             gameRunning = false;
@@ -261,16 +242,14 @@ function startGame(betAmount) {
             btn.innerText = "PLACE BET";
             btn.style.background = "var(--neon-green)";
         }
-    }, 80); // Speed
+    }, 80);
 }
 
-function cashOut(originalBet) {
+function cashOut() {
     if (!gameRunning) return;
     clearInterval(gameInterval);
     gameRunning = false;
     
-    // Calculate Win
-    // If called by auto, we use the current multiplier
     const betAmount = parseInt(document.getElementById('bet-amount').value);
     const winAmount = Math.floor(betAmount * multiplier);
     
@@ -280,9 +259,10 @@ function cashOut(originalBet) {
         history: arrayUnion(tx)
     });
 
-    document.getElementById('multiplier-display').style.color = "var(--neon-green)";
     const btn = document.getElementById('bet-btn');
-    btn.innerText = "WIN: ₦" + winAmount;
+    btn.innerText = "WON ₦" + winAmount;
+    document.getElementById('multiplier-display').style.color = "var(--neon-green)";
+    
     setTimeout(() => {
         btn.innerText = "PLACE BET";
         btn.style.background = "var(--neon-green)";
