@@ -1,18 +1,87 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap');
-
-body { font-family: 'Inter', sans-serif; }
-.font-playfair { font-family: 'Playfair Display', serif; }
-
-.bg-teal-700 { background-color: #006677; }
-.hover\:bg-teal-800:hover { background-color: #00565c; }
-.text-teal-700 { color: #006677; }
-.border-teal-700 { border-color: #006677; }
-
-.card {
-  background: white;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-  transition: all 0.3s;
+/* VeloBet Theme: Dark Mode + Neon */
+:root {
+    --bg-dark: #0a192f;
+    --bg-card: #112240;
+    --text-main: #ccd6f6;
+    --neon-green: #64ffda;
+    --neon-red: #ff5f56;
+    --font-fam: 'Courier New', monospace;
 }
-.card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(0,102,119,0.2); }
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.screen { display: none; padding: 20px; height: 100vh; box-sizing: border-box; }
+.screen.active { display: block; }
+
+/* Header & Balance */
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.balance-box h2 { margin: 0; color: var(--neon-green); font-size: 28px; }
+.user-info small { opacity: 0.7; }
+
+/* Buttons */
+.neon-btn {
+    width: 100%;
+    padding: 15px;
+    background: transparent;
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: 0.2s;
+}
+.neon-btn:active { background: var(--neon-green); color: var(--bg-dark); }
+
+.action-btn { padding: 8px 16px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+.deposit { background: var(--neon-green); color: var(--bg-dark); }
+.withdraw { background: var(--neon-red); color: white; width: 100%; padding: 15px; margin-top: 20px; }
+
+/* Stats Row */
+.stats-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.stat-card {
+    flex: 1; background: var(--bg-card); padding: 15px; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.stat-card i { font-size: 24px; margin-bottom: 5px; color: var(--neon-green); }
+
+/* Navigation */
+.game-nav { display: flex; margin-bottom: 20px; border-bottom: 1px solid #233554; }
+.nav-btn {
+    flex: 1; background: none; border: none; color: #8892b0; padding: 15px; font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.nav-btn.active { color: var(--neon-green); border-bottom: 2px solid var(--neon-green); }
+
+/* Tabs */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+/* Sports List */
+.match-card {
+    background: var(--bg-card); padding: 15px; margin-bottom: 10px; border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--neon-green);
+}
+.teams { font-weight: bold; }
+.odds { color: var(--neon-green); font-family: var(--font-fam); }
+
+/* Aviator Game */
+.game-stage {
+    height: 200px; background: #020c1b; border-radius: 10px; margin-bottom: 20px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;
+}
+#multiplier-display { font-size: 48px; font-weight: bold; color: white; }
+#rocket-icon { font-size: 40px; color: var(--neon-red); margin-top: 10px; transition: transform 0.1s; }
+
+/* Utilities */
+.text-green { color: var(--neon-green); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
