@@ -1,6 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn"; 
-const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; // <--- YOUR KEY HERE
+const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -22,25 +22,20 @@ const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
-// SOUNDS
-const sfxFly = document.getElementById('sfx-fly');
-const sfxCrash = document.getElementById('sfx-crash');
-const sfxWin = document.getElementById('sfx-win');
-
-// GLOBAL FUNCTIONS
+// --- UTILS ---
 window.switchTab = (tab) => {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     
     document.getElementById('tab-' + tab).classList.remove('hidden');
     document.getElementById('tab-' + tab).classList.add('active');
     
-    // Highlight Nav
-    const navs = document.querySelectorAll('.nav-btn');
-    if(tab==='sports') navs[0].classList.add('active');
-    if(tab==='aviator') navs[1].classList.add('active');
-    if(tab==='profile') navs[2].classList.add('active');
+    // Nav Active State
+    const btns = document.querySelectorAll('.nav-btn');
+    if(tab==='sports') btns[0].classList.add('active');
+    if(tab==='aviator') btns[1].classList.add('active');
+    if(tab==='profile') btns[2].classList.add('active');
 
     if(tab === 'sports') loadMatches();
 };
@@ -50,27 +45,15 @@ window.adjustBet = (val) => {
     let el = document.getElementById('bet-amount');
     el.value = Math.max(50, parseInt(el.value) + val);
 };
-window.toggleAuth = () => {
-    document.getElementById('login-form').classList.toggle('hidden');
-    document.getElementById('register-form').classList.toggle('hidden');
+window.toggleAuth = (mode) => {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+    if(mode === 'register') document.getElementById('register-form').classList.remove('hidden');
+    else document.getElementById('login-form').classList.remove('hidden');
 };
+window.closeBetslip = () => document.getElementById('betslip-modal').style.display = 'none';
 
-// --- AUTH LOGIC ---
-document.getElementById('google-login-btn').addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()));
-document.getElementById('email-login-btn').addEventListener('click', () => {
-    const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
-    if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
-});
-document.getElementById('email-register-btn').addEventListener('click', () => {
-    const n = document.getElementById('reg-nick').value, e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value;
-    if(!n) return alert("Nickname required");
-    createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
-        await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
-        location.reload();
-    }).catch(err => alert(err.message));
-});
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth).then(()=>location.reload()));
-
+// --- AUTH ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -83,7 +66,7 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('nickname-modal').style.display = 'flex';
         } else {
-            initDashboard(user, snap.data());
+            initDashboard(snap.data());
         }
     } else {
         document.getElementById('dashboard-screen').classList.add('hidden');
@@ -92,52 +75,69 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// Auth Buttons
+document.getElementById('google-login-btn').addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()));
+document.getElementById('email-login-btn').addEventListener('click', () => {
+    const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
+    if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
+});
+document.getElementById('email-register-btn').addEventListener('click', () => {
+    const n = document.getElementById('reg-nick').value, e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value;
+    if(n && e && p) {
+        createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
+            await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
+            location.reload();
+        }).catch(err => alert(err.message));
+    }
+});
 document.getElementById('save-nickname-btn').addEventListener('click', async () => {
     const nick = document.getElementById('google-nickname-input').value;
-    if(!nick) return alert("Required");
-    await updateDoc(doc(db, "users", currentUser.uid), { nickname: nick });
-    document.getElementById('nickname-modal').style.display = 'none';
-    location.reload();
+    if(nick) {
+        await updateDoc(doc(db, "users", currentUser.uid), { nickname: nick });
+        location.reload();
+    }
 });
+document.getElementById('logout-btn').addEventListener('click', () => signOut(auth).then(()=>location.reload()));
 
-function initDashboard(user, data) {
+function initDashboard(data) {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('dashboard-screen').classList.remove('hidden');
-    document.getElementById('header-nick').innerText = data.nickname || "Player";
-    document.getElementById('header-id').innerText = "ID: " + user.uid.slice(0,5).toUpperCase();
-    document.getElementById('profile-name').innerText = data.nickname;
-    document.getElementById('profile-email').innerText = user.email;
     
-    // Listen to Wallet
-    onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+    document.getElementById('header-nick').innerText = data.nickname;
+    document.getElementById('profile-name').innerText = data.nickname;
+    document.getElementById('profile-email').innerText = currentUser.email;
+    document.getElementById('profile-id').innerText = "ID: " + currentUser.uid.slice(0,6).toUpperCase();
+
+    // Wallet Listener
+    onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
         if(docSnap.exists()) {
             currentBalance = docSnap.data().balance;
-            document.getElementById('wallet-balance').innerText = "₦" + currentBalance.toLocaleString();
-            renderTxHistory(docSnap.data().history);
+            document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
+            renderHistory(docSnap.data().history);
         }
     });
-    
+
     startAviator();
     startBotSimulation();
-    startRainPromo();
+    loadMatches(); // Load sports immediately
 }
 
-function renderTxHistory(hist) {
+function renderHistory(hist) {
     const list = document.getElementById('tx-history');
     list.innerHTML = "";
     if(!hist) return;
-    hist.slice(-5).reverse().forEach(tx => {
-        list.innerHTML += `<div class="match-card" style="padding:10px; font-size:12px;">
+    hist.slice(-10).reverse().forEach(tx => {
+        list.innerHTML += `<div class="match-card" style="font-size:12px; padding:10px;">
             <div style="display:flex; justify-content:space-between;">
                 <span>${tx.type}</span>
-                <b style="color:${tx.amount>0?'#64ffda':'#ff5f56'}">${tx.amount}</b>
+                <span style="color:${tx.amount>0?'var(--neon-green)':'var(--neon-red)'}">${tx.amount}</span>
             </div>
         </div>`;
     });
 }
 
-// --- AVIATOR GAME (PROVABLY FAIR) ---
-let avState = "WAITING"; // WAITING, FLYING, CRASHED
+// --- AVIATOR (SILENT, 10s ROUNDS) ---
+let avState = "WAITING";
 let avMult = 1.00;
 let avBet = 0;
 let avCash = false;
@@ -145,71 +145,52 @@ let avCash = false;
 function startAviator() {
     setInterval(() => {
         const now = Date.now();
-        const cycle = now % 10000; // 10s Cycle
+        const loop = now % 10000; // 10 Seconds Loop
         
-        if (cycle < 3000) { // WAITING PHASE
+        if (loop < 3000) { // WAITING (3s)
             if(avState !== "WAITING") {
                 avState = "WAITING";
-                generateProvablyFairHash(); // New Hash
-                document.getElementById('status-text').innerText = "NEXT ROUND STARTING...";
+                document.getElementById('status-text').innerText = "NEXT ROUND...";
                 document.getElementById('multiplier-display').innerText = "1.00x";
                 document.getElementById('multiplier-display').style.color = "white";
-                document.querySelector('.rocket-animation').style.display = 'none';
-                sfxFly.pause(); sfxFly.currentTime = 0;
+                document.getElementById('rocket-icon').style.transform = "rotate(0deg)";
                 
                 const btn = document.getElementById('bet-btn');
-                if(avBet > 0 && !avCash) { 
-                    avBet = 0; // Lost last round
+                if(avBet > 0 && !avCash) {
+                    avBet = 0; // Lost
                     btn.innerText = "LOST";
                     btn.style.background = "#333";
-                    setTimeout(() => resetBtn(), 1000);
+                    setTimeout(() => { btn.innerText = "BET"; btn.style.background = "var(--neon-green)"; }, 1500);
                 } else {
-                    resetBtn();
+                    btn.innerText = "BET";
+                    btn.style.background = "var(--neon-green)";
                 }
             }
-            document.getElementById('status-text').innerText = "STARTING IN " + ((3000-cycle)/1000).toFixed(1) + "s";
-            
-        } else { // FLYING PHASE
-            if(avState === "WAITING") {
-                avState = "FLYING";
-                sfxFly.play();
-                document.querySelector('.rocket-animation').style.display = 'block';
-                document.getElementById('status-text').innerText = "FLYING...";
-            }
-            
-            // Calculate Curve
-            const flyTime = cycle - 3000;
-            avMult = (1 + (flyTime/1000) * 0.15).toFixed(2);
-            
-            // Deterministic Crash (Simulated Fair)
-            const seed = Math.floor(now/10000);
-            const crashPoint = ((seed % 7) + 1.1).toFixed(2);
-            
-            if (parseFloat(avMult) >= parseFloat(crashPoint)) {
-                // CRASH
-                if(avState !== "CRASHED") {
-                    avState = "CRASHED";
-                    sfxFly.pause(); sfxCrash.play();
-                    document.getElementById('multiplier-display').innerText = "CRASH @ " + crashPoint + "x";
-                    document.getElementById('multiplier-display').style.color = "#ff5f56";
-                    document.querySelector('.rocket-animation').style.display = 'none';
-                    addHistoryPill(crashPoint);
-                }
+        } else { // FLYING (7s)
+            avState = "FLYING";
+            const flyTime = loop - 3000;
+            // Faster curve for 10s rounds
+            avMult = (1 + (flyTime/1000) * 0.3).toFixed(2);
+            document.getElementById('status-text').innerText = "FLYING";
+            document.getElementById('rocket-icon').style.transform = "translate(5px, -5px)";
+
+            const seed = Math.floor(now / 10000);
+            const crash = ((seed % 6) + 1.1).toFixed(2);
+
+            if (parseFloat(avMult) >= parseFloat(crash)) {
+                avState = "CRASHED";
+                document.getElementById('multiplier-display').innerText = crash + "x";
+                document.getElementById('multiplier-display').style.color = "var(--neon-red)";
+                document.getElementById('status-text').innerText = "CRASHED";
             } else {
-                // UPDATE SCREEN
                 document.getElementById('multiplier-display').innerText = avMult + "x";
-                
-                // Active Bet Logic
-                if (avBet > 0 && !avCash) {
+                if(avBet > 0 && !avCash) {
                     const btn = document.getElementById('bet-btn');
-                    const win = Math.floor(avBet * avMult);
-                    btn.innerText = "CASHOUT ₦" + win;
-                    btn.style.background = "#ff5f56";
-                    
+                    btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
+                    btn.style.background = "var(--neon-red)";
                     // Auto Cashout
-                    const auto = parseFloat(document.getElementById('auto-cashout-val').value);
-                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= auto) {
-                        cashOut();
+                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) {
+                        doCashout();
                     }
                 }
             }
@@ -219,149 +200,152 @@ function startAviator() {
 
 document.getElementById('bet-btn').addEventListener('click', () => {
     if(avState === "WAITING" && avBet === 0) {
-        const val = parseInt(document.getElementById('bet-amount').value);
-        if(val > currentBalance) return alert("Low Balance");
-        avBet = val; avCash = false;
-        updateDoc(doc(db, "users", currentUser.uid), {
-            balance: currentBalance - val,
-            history: arrayUnion({type: "Bet Aviator", amount: -val, date: new Date().toISOString()})
-        });
+        const amt = parseInt(document.getElementById('bet-amount').value);
+        if(amt > currentBalance) return alert("Low Funds");
+        avBet = amt; avCash = false;
+        updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
         document.getElementById('bet-btn').innerText = "BET PLACED";
-        document.getElementById('bet-btn').style.background = "#ff9900"; // Orange
-    } else if(avState === "FLYING" && avBet > 0 && !avCash) {
-        cashOut();
+        document.getElementById('bet-btn').style.background = "#ff9900";
+    } else if (avState === "FLYING" && avBet > 0 && !avCash) {
+        doCashout();
     }
 });
 
-function cashOut() {
+function doCashout() {
     avCash = true;
     const win = Math.floor(avBet * avMult);
-    sfxWin.play();
-    updateDoc(doc(db, "users", currentUser.uid), {
-        balance: currentBalance + win,
-        history: arrayUnion({type: "Win Aviator", amount: win, date: new Date().toISOString()})
-    });
-    document.getElementById('bet-btn').innerText = "WON ₦" + win;
-    document.getElementById('bet-btn').style.background = "#64ffda";
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
+    document.getElementById('bet-btn').innerText = "WON " + win;
+    document.getElementById('bet-btn').style.background = "var(--neon-green)";
 }
 
-function resetBtn() {
-    const btn = document.getElementById('bet-btn');
-    avBet = 0; avCash = false;
-    btn.innerText = "BET NEXT ROUND";
-    btn.style.background = "#64ffda";
-}
-
-// --- PROVABLY FAIR SIMULATION ---
-function generateProvablyFairHash() {
-    // Creates a random hash-looking string to display "Fairness"
-    const chars = "abcdef0123456789";
-    let hash = "sha256:";
-    for(let i=0; i<20; i++) hash += chars[Math.floor(Math.random()*16)];
-    document.getElementById('hash-display').innerText = hash + "...";
-}
-
-function addHistoryPill(val) {
-    const box = document.getElementById('round-history');
-    const pill = document.createElement('span');
-    pill.innerText = val + "x";
-    pill.className = val >= 10 ? "history-pill red" : (val >= 2 ? "history-pill purple" : "history-pill blue");
-    box.prepend(pill);
-    if(box.children.length > 15) box.removeChild(box.lastChild);
-}
-
-// --- BOT SIMULATION (SOCIAL PROOF) ---
+// --- BOT SIMULATION (GENERIC NAMES) ---
 function startBotSimulation() {
-    const bots = ["Chinedu", "Musa", "Tunde", "Emeka", "Blessing", "Ngozi"];
+    const names = ["User882", "Winner99", "Player_X", "Speedy", "Lucky77", "ProGamer", "BetKing01"];
     const list = document.getElementById('live-bets-list');
+    
     setInterval(() => {
         if(avState === "FLYING") {
-            // Randomly add a bot bet or win
-            const bot = bots[Math.floor(Math.random()*bots.length)];
-            const action = Math.random() > 0.7 ? "won" : "bet";
+            const name = names[Math.floor(Math.random()*names.length)];
             const amt = [100, 200, 500, 1000][Math.floor(Math.random()*4)];
+            const action = Math.random() > 0.6 ? "win" : "bet";
             
             const div = document.createElement('div');
-            div.className = action === "won" ? "bet-row win" : "bet-row";
-            div.innerHTML = `<span>${bot}</span> <span>${action==="won" ? "+" : ""}₦${amt}</span>`;
+            div.className = "bot-row " + (action === "win" ? "win" : "");
+            div.innerHTML = `<span>${name}</span> <span>${action==="win"?"+":""}${amt}</span>`;
             list.prepend(div);
-            if(list.children.length > 10) list.removeChild(list.lastChild);
+            if(list.children.length > 8) list.removeChild(list.lastChild);
         }
-    }, 2000);
+    }, 1500);
 }
 
-// --- RAIN PROMO ---
-function startRainPromo() {
-    setInterval(() => {
-        const el = document.getElementById('rain-alert');
-        el.classList.remove('hidden');
-        setTimeout(() => el.classList.add('hidden'), 5000);
-    }, 60000); // Every 60s
-}
-
-// --- SPORTS ---
+// --- SPORTS (FORCE VIRTUAL FALLBACK) ---
 async function loadMatches() {
     const list = document.getElementById('fixtures-list');
     list.innerHTML = '<div class="loader">Loading Matches...</div>';
-    const today = new Date().toISOString().split('T')[0];
     
+    // We try the API, but if it fails OR returns 0 matches, we FORCE Virtuals
+    const today = new Date().toISOString().split('T')[0];
     try {
         const res = await fetch(`https://api-football-v1.p.rapidapi.com/v3/fixtures?date=${today}`, {
             headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' }
         });
         const data = await res.json();
-        if(data.response && data.response.length > 0) renderMatches(data.response);
-        else renderVirtual();
-    } catch(e) { renderVirtual(); }
+        
+        if(data.response && data.response.length > 0) {
+            renderMatches(data.response);
+        } else {
+            renderVirtuals(); // Force virtuals if empty
+        }
+    } catch(e) {
+        renderVirtuals(); // Force virtuals on error
+    }
+}
+
+function renderVirtuals() {
+    const list = document.getElementById('fixtures-list');
+    list.innerHTML = `<div style="text-align:center; padding:10px; color:#888;">Simulated Live League (24/7)</div>`;
+    
+    const teams = [
+        ["Man City", "Liverpool"], ["Arsenal", "Chelsea"], ["Real Madrid", "Barca"],
+        ["Bayern", "Dortmund"], ["Juventus", "Milan"], ["PSG", "Lyon"]
+    ];
+    
+    teams.forEach(pair => {
+        const odds = (Math.random()*2+1.2).toFixed(2);
+        const div = document.createElement('div');
+        div.className = "match-card";
+        div.innerHTML = `
+            <div><b>${pair[0]}</b> vs <b>${pair[1]}</b><br><span class="live-badge">V-LIVE</span></div>
+            <button class="neon-btn" style="width:auto; padding:5px 15px;" onclick="openBetslip('${pair[0]} v ${pair[1]}', ${odds})">${odds}</button>
+        `;
+        list.appendChild(div);
+    });
 }
 
 function renderMatches(matches) {
     const list = document.getElementById('fixtures-list');
     list.innerHTML = "";
-    matches.sort((a,b) => (['1H','2H'].includes(a.fixture.status.short) ? -1 : 1));
     matches.slice(0,20).forEach(m => {
         const home = m.teams.home.name;
         const away = m.teams.away.name;
-        const isLive = ['1H','2H'].includes(m.fixture.status.short);
-        list.innerHTML += `<div class="match-card">
-            <div><b>${home}</b> v <b>${away}</b><br>${isLive?'<span class="live-badge">LIVE</span>':'<span class="time-badge">UPCOMING</span>'}</div>
-            <button class="neon-btn" style="width:auto; padding:5px 10px;">1.85x</button>
-        </div>`;
+        const odds = (Math.random()*2+1.2).toFixed(2);
+        const div = document.createElement('div');
+        div.className = "match-card";
+        div.innerHTML = `
+            <div><b>${home}</b> vs <b>${away}</b><br><span class="live-badge" style="background:#222; color:#ccc;">UPCOMING</span></div>
+            <button class="neon-btn" style="width:auto; padding:5px 15px;" onclick="openBetslip('${home} v ${away}', ${odds})">${odds}</button>
+        `;
+        list.appendChild(div);
     });
 }
 
-function renderVirtual() {
-    document.getElementById('fixtures-list').innerHTML = `<div class="match-card" style="text-align:center; color:var(--neon-green)">Showing Virtual Games (24/7)</div>` + 
-    `<div class="match-card"><div><b>Man City</b> v <b>Liverpool</b><br><span class="live-badge" style="background:purple">V-LEAGUE</span></div><button class="neon-btn" style="width:auto">1.90x</button></div>`;
-}
+// Betslip
+window.openBetslip = (m, o) => {
+    document.getElementById('betslip-match').innerText = m;
+    document.getElementById('betslip-odds').innerText = o;
+    document.getElementById('betslip-modal').style.display = 'flex';
+};
+document.getElementById('place-sports-bet').addEventListener('click', () => {
+    const amt = 100; 
+    if(amt > currentBalance) return alert("Low Funds");
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Sports", amount:-amt, date:new Date().toISOString()}) });
+    document.getElementById('betslip-modal').style.display = 'none';
+    alert("Bet Placed!");
+});
 
-// DEPOSIT
-document.getElementById('open-deposit-modal').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'flex');
-document.getElementById('cancel-deposit').addEventListener('click', () => document.getElementById('deposit-modal').style.display = 'none');
+// PAYMENTS
+document.getElementById('open-deposit-modal').addEventListener('click', () => document.getElementById('deposit-modal').style.display='flex');
+document.getElementById('cancel-deposit').addEventListener('click', () => document.getElementById('deposit-modal').style.display='none');
 document.getElementById('confirm-deposit').addEventListener('click', () => {
     const amt = parseInt(document.getElementById('deposit-input').value);
-    if(!amt || amt < 100) return alert("Min ₦100");
-    document.getElementById('deposit-modal').style.display = 'none';
+    if(amt < 100) return alert("Min 100");
+    document.getElementById('deposit-modal').style.display='none';
+    
+    // Safety check
+    if(PAYSTACK_PUB_KEY.startsWith("cb7d")) return alert("Wrong Key! You used RapidAPI key in Paystack slot.");
+
     let h = PaystackPop.setup({
         key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
         callback: function(r) {
-            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type: "Deposit", amount: amt, date: new Date().toISOString()}) });
+            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) });
         }
     });
     h.openIframe();
 });
 
-// WITHDRAW
-document.getElementById('open-withdraw-modal').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'flex');
-document.getElementById('cancel-withdraw').addEventListener('click', () => document.getElementById('withdraw-modal').style.display = 'none');
+document.getElementById('open-withdraw-modal').addEventListener('click', () => document.getElementById('withdraw-modal').style.display='flex');
+document.getElementById('cancel-withdraw').addEventListener('click', () => document.getElementById('withdraw-modal').style.display='none');
 document.getElementById('confirm-withdraw').addEventListener('click', async () => {
     const amt = parseInt(document.getElementById('withdraw-amount').value);
-    const bank = document.getElementById('withdraw-bank').value;
-    const name = document.getElementById('withdraw-name').value;
     if(amt > currentBalance) return alert("Low Funds");
-    if(!bank || !name) return alert("Enter details");
-    
-    await updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type: "Withdraw", amount: -amt, date: new Date().toISOString()}) });
-    document.getElementById('withdraw-modal').style.display = 'none';
-    window.open(`https://wa.me/2347056353236?text=Withdraw: ₦${amt} | Bank: ${bank} | Name: ${name} | ID: ${currentUser.uid.slice(0,5)}`, '_blank');
+    await updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdraw", amount:-amt, date:new Date().toISOString()}) });
+    document.getElementById('withdraw-modal').style.display='none';
+    const bank = document.getElementById('withdraw-bank').value;
+    window.open(`https://wa.me/2347056353236?text=Withdraw ${amt} to ${bank}`, '_blank');
 });
+```[How to Create Aviator Game using HTML, CSS & JavaScript | Full Tutorial 🚀](https://www.youtube.com/watch?v=yvGvavtwq3w)
+This video is relevant because it provides a tutorial on creating a similar Aviator game using HTML, CSS, and JavaScript, which can help in understanding and customizing the game logic and design.
+http://googleusercontent.com/youtube_content/24 *YouTube video views will be stored in your YouTube History, and your data will be stored and used by YouTube according to its [Terms of Service](https://www.youtube.com/static?template=terms)*
+
+
