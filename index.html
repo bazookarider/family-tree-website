@@ -33,28 +33,28 @@
             </div>
         </header>
 
-        <div class="stats-row">
-            <div class="stat-card">
-                <i class="ri-line-chart-line"></i>
-                <span>Profit Today</span>
-                <b id="daily-profit" class="text-green">+₦0.00</b>
-            </div>
-            <button id="open-deposit-modal" class="stat-card action-card">
-                <i class="ri-add-circle-fill"></i>
-                <span>Deposit</span>
-            </button>
-        </div>
-
         <nav class="game-nav">
-            <button class="nav-btn active" onclick="switchTab('sports')"><i class="ri-football-line"></i> Sports</button>
-            <button class="nav-btn" onclick="switchTab('aviator')"><i class="ri-rocket-2-line"></i> Aviator</button>
-            <button class="nav-btn" onclick="switchTab('profile')"><i class="ri-user-3-line"></i> Profile</button>
+            <button class="nav-btn active" id="btn-sports" onclick="window.switchTab('sports')">
+                <i class="ri-football-line"></i> Sports
+            </button>
+            <button class="nav-btn" id="btn-aviator" onclick="window.switchTab('aviator')">
+                <i class="ri-rocket-2-line"></i> Aviator
+            </button>
+            <button class="nav-btn" id="btn-profile" onclick="window.switchTab('profile')">
+                <i class="ri-user-3-line"></i> Profile
+            </button>
         </nav>
 
         <div id="tab-sports" class="tab-content active">
-            <div class="section-title">
-                Today's Fixtures <span id="date-display"></span>
+            <div class="stats-row">
+                 <div class="stat-card">
+                    <i class="ri-line-chart-line"></i>
+                    <span>Profit Today</span>
+                    <b id="daily-profit" class="text-green">+₦0.00</b>
+                </div>
             </div>
+            
+            <div class="section-title">Today's Fixtures</div>
             <div id="fixtures-list" class="scroll-list">
                 <div class="loader"><i class="ri-loader-4-line spin"></i> Loading Schedule...</div>
             </div>
@@ -72,10 +72,10 @@
 
             <div class="aviator-controls">
                 <div class="quick-chips">
-                    <button onclick="setBet(50)">₦50</button>
-                    <button onclick="setBet(100)">₦100</button>
-                    <button onclick="setBet(200)">₦200</button>
-                    <button onclick="setBet(500)">₦500</button>
+                    <button onclick="window.setBet(50)">₦50</button>
+                    <button onclick="window.setBet(100)">₦100</button>
+                    <button onclick="window.setBet(200)">₦200</button>
+                    <button onclick="window.setBet(500)">₦500</button>
                 </div>
 
                 <div class="bet-input-row">
@@ -96,10 +96,15 @@
         </div>
 
         <div id="tab-profile" class="tab-content">
-            <div class="profile-header">
+            
+            <button id="open-deposit-modal" class="action-btn deposit large-btn">
+                <i class="ri-add-circle-fill"></i> Deposit Funds
+            </button>
+
+            <div class="profile-card">
                 <div class="avatar"><i class="ri-user-smile-line"></i></div>
-                <h3 id="profile-name">Player Name</h3>
-                <small id="profile-email">email@example.com</small>
+                <h3 id="profile-name">Loading...</h3>
+                <small id="profile-email">...</small>
             </div>
 
             <a href="https://wa.me/2347056353236" target="_blank" class="whatsapp-btn">
@@ -115,9 +120,8 @@
                 <i class="ri-logout-box-r-line"></i> Log Out
             </button>
         </div>
-    </div>
 
-    <div id="deposit-modal" class="modal-overlay">
+    </div> <div id="deposit-modal" class="modal-overlay">
         <div class="modal-box">
             <h3><i class="ri-bank-card-line"></i> Fund Wallet</h3>
             <p>Enter amount to deposit via Paystack</p>
