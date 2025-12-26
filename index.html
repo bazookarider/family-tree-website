@@ -20,11 +20,11 @@
             <input type="password" id="login-pass" placeholder="Password">
             <button id="email-login-btn" class="neon-btn">Log In</button>
             <div class="divider">OR</div>
-            <button id="google-login-btn" class="neon-btn white-btn"><i class="ri-google-fill"></i> Google Sign In</button>
-            <p class="switch-auth" id="goto-register">New here? <b>Create Account</b></p>
+            <button id="google-login-btn" class="neon-btn white-btn"><i class="ri-google-fill"></i> Google</button>
+            <p class="switch-auth" id="goto-register">New? <b>Register</b></p>
         </div>
         <div id="register-form" class="auth-box hidden">
-            <input type="text" id="reg-nick" placeholder="Username (e.g. Winner24)">
+            <input type="text" id="reg-nick" placeholder="Username">
             <input type="email" id="reg-email" placeholder="Email">
             <input type="password" id="reg-pass" placeholder="Password">
             <button id="email-register-btn" class="neon-btn">Register</button>
@@ -80,20 +80,20 @@
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
-            <div class="profile-header-card">
+            <div class="profile-card">
                 <div class="avatar-circle"><i class="ri-user-smile-line"></i></div>
                 <h2 id="profile-name">User</h2>
                 <p id="profile-email">email</p>
-                <div id="profile-id" style="color:#888; font-size:12px; margin-top:5px;">ID: ---</div>
+                <div id="profile-id" style="color:#888; font-size:12px;">ID: ---</div>
             </div>
             <div class="wallet-grid">
-                <button id="open-deposit-modal" class="wallet-btn deposit"><i class="ri-add-circle-fill"></i> Deposit</button>
-                <button id="open-withdraw-modal" class="wallet-btn withdraw"><i class="ri-bank-card-2-line"></i> Withdraw</button>
+                <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
+                <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
             </div>
-            <a href="https://wa.me/2347056353236" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
+            <a href="https://wa.me/2347056353236" class="neon-btn white-btn" style="text-decoration:none;">Contact Support</a>
             <h3 style="margin-top:20px; border-bottom:1px solid #333;">Transactions</h3>
             <div id="tx-history"></div>
-            <button id="logout-btn" class="logout-btn">Log Out</button>
+            <button id="logout-btn" class="neon-btn" style="border-color:red; color:red; margin-top:20px;">Log Out</button>
         </div>
 
         <nav class="game-nav">
@@ -107,23 +107,17 @@
         <div class="modal-box">
             <h3>Set Username</h3>
             <input type="text" id="google-nickname-input" placeholder="Username">
-            <button id="save-nickname-btn" class="neon-btn">Start Playing</button>
+            <button id="save-nickname-btn" class="neon-btn">Start</button>
         </div>
     </div>
     <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Deposit</h3>
-            <input type="number" id="deposit-input" placeholder="Amount">
-            <div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div>
-        </div>
+        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Amount"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="confirm-btn">Pay</button></div></div>
     </div>
     <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Withdraw</h3>
-            <input type="number" id="withdraw-amount" placeholder="Amount">
-            <input type="text" id="withdraw-bank" placeholder="Bank Details">
-            <div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div>
-        </div>
+        <div class="modal-box"><h3>Withdraw</h3><input type="number" id="withdraw-amount" placeholder="Amount"><input type="text" id="withdraw-bank" placeholder="Bank"><div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="confirm-btn">Request</button></div></div>
+    </div>
+    <div id="betslip-modal" class="modal-overlay">
+        <div class="modal-box"><h3>Confirm</h3><p id="betslip-match">Match</p><h1 id="betslip-odds" style="color:var(--neon-green)">1.90x</h1><div class="modal-actions"><button onclick="closeBetslip()" class="cancel-btn">Cancel</button><button id="place-sports-bet" class="confirm-btn">Bet</button></div></div>
     </div>
 
     <script type="module" src="script.js"></script>
