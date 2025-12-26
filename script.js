@@ -21,7 +21,7 @@ const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn";
 
 // ⚠️ PASTE YOUR PUBLIC KEY HERE CAREFULLY ⚠️
 // It must start with 'pk_live_' or 'pk_test_'. No spaces inside the quotes.
-const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; 
+const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; 
 
 // Init
 const app = initializeApp(firebaseConfig);
