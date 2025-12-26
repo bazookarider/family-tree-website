@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeloBet | Pro Platform</title>
+    <title>VeloBet | Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -58,120 +57,14 @@
         <div id="tab-aviator" class="tab-content">
             
             <div class="round-history-bar" id="round-history">
-                <span class="history-pill purple">12.5x</span>
-                <span class="history-pill blue">1.10x</span>
-                <span class="history-pill purple">4.20x</span>
-            </div>
+                </div>
 
             <div class="game-stage-pro">
                 <div class="multiplier-box">
                     <span id="multiplier-display">1.00x</span>
-                    <small id="status-text">WAITING FOR NEXT ROUND</small>
+                    <small id="status-text">WAITING</small>
                 </div>
-                </div>
+            </div>
 
             <div class="aviator-controls">
                 <div class="quick-chips">
-                    <button onclick="window.setBet(100)">100</button>
-                    <button onclick="window.setBet(200)">200</button>
-                    <button onclick="window.setBet(500)">500</button>
-                    <button onclick="window.setBet(1000)">1k</button>
-                </div>
-
-                <div class="bet-input-row">
-                    <div class="input-group">
-                        <button class="minus-btn" onclick="adjustBet(-50)">-</button>
-                        <input type="number" id="bet-amount" value="100">
-                        <button class="plus-btn" onclick="adjustBet(50)">+</button>
-                    </div>
-                </div>
-
-                <div class="auto-row">
-                    <label class="switch">
-                        <input type="checkbox" id="auto-cashout-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <span>Auto Cashout</span>
-                    <input type="number" id="auto-cashout-val" value="2.00" class="small-input"> 
-                </div>
-
-                <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
-            </div>
-        </div>
-
-        <div id="tab-profile" class="tab-content">
-            
-            <div class="profile-card">
-                <div class="avatar"><i class="ri-user-smile-line"></i></div>
-                <h3 id="profile-name">Loading...</h3>
-                <small id="profile-email">...</small>
-            </div>
-
-            <div class="wallet-actions">
-                <button id="open-deposit-modal" class="action-btn deposit">
-                    <i class="ri-add-circle-fill"></i> Deposit
-                </button>
-                <button id="open-withdraw-modal" class="action-btn withdraw">
-                    <i class="ri-bank-card-fill"></i> Withdraw
-                </button>
-            </div>
-
-            <a href="https://wa.me/2347056353236" target="_blank" class="whatsapp-btn">
-                <i class="ri-whatsapp-line"></i> Contact Support (WhatsApp)
-            </a>
-
-            <h3>Transaction History</h3>
-            <div class="filter-tabs">
-                <span class="active">All</span>
-                <span>Wins</span>
-                <span>Deposits</span>
-            </div>
-            <div id="tx-history" class="list-group">
-                <p style="text-align:center; opacity:0.5;">No transactions yet.</p>
-            </div>
-
-            <button id="logout-btn" class="action-btn logout-btn">Log Out</button>
-        </div>
-
-    </div>
-
-    <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Fund Wallet</h3>
-            <input type="number" id="deposit-input" placeholder="Amount (e.g. 1000)">
-            <div class="modal-actions">
-                <button id="cancel-deposit" class="cancel-btn">Cancel</button>
-                <button id="confirm-deposit" class="confirm-btn">Pay Now</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Withdraw Funds</h3>
-            <p style="font-size:12px; opacity:0.7;">To Bank Account</p>
-            <input type="number" id="withdraw-amount" placeholder="Amount">
-            <input type="text" id="withdraw-bank" placeholder="Bank Name & Acct No">
-            <div class="modal-actions">
-                <button id="cancel-withdraw" class="cancel-btn">Cancel</button>
-                <button id="confirm-withdraw" class="confirm-btn">Request</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="betslip-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Confirm Bet</h3>
-            <p id="betslip-match">Man City vs Liverpool</p>
-            <h1 id="betslip-odds" class="text-green">1.50x</h1>
-            <input type="number" id="sports-bet-amount" value="100">
-            <div class="modal-actions">
-                <button onclick="closeBetslip()" class="cancel-btn">Cancel</button>
-                <button id="place-sports-bet" class="confirm-btn">Place Bet</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="script.js"></script>
-</body>
-</html>
