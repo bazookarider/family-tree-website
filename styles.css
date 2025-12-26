@@ -1,8 +1,8 @@
-:root {
+ :root {
     --bg-dark: #090b10;
     --bg-card: #14181f;
     --text-main: #ffffff;
-    --neon-green: #00e701;
+    --neon-green: #00e701; 
     --neon-blue: #00baff;
     --neon-red: #ff2d55;
     --purple: #9d00ff;
@@ -22,18 +22,20 @@ body {
 .hidden { display: none !important; }
 
 /* AUTH */
-.auth-box { max-width: 320px; margin: 50px auto; text-align: center; }
+.auth-box { max-width: 320px; margin: 40px auto; text-align: center; background: var(--bg-card); padding: 25px; border-radius: 12px; }
+.logo-area { text-align: center; margin-top: 40px; margin-bottom: 20px; }
 input { width: 100%; padding: 15px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+.divider { margin: 15px 0; color: #555; font-size: 12px; }
 .switch-auth { margin-top: 20px; color: #888; cursor: pointer; }
-.switch-auth b { color: var(--neon-blue); }
+.switch-auth b { color: var(--neon-green); }
 
 /* HEADER */
 header { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px 0; }
-.user-pill { display: flex; align-items: center; gap: 5px; font-weight: bold; }
+.user-pill { display: flex; align-items: center; gap: 5px; font-weight: bold; background: var(--bg-card); padding: 5px 15px; border-radius: 20px; }
 .balance-pill { text-align: right; }
 .balance-pill h2 { margin: 0; color: var(--neon-green); font-size: 20px; }
 
-/* AVIATOR GALAXY THEME */
+/* AVIATOR (SUPER HERO THEME) */
 .round-history-bar { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; }
 .history-pill { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #232a35; min-width: 40px; text-align: center; }
 .history-pill.purple { color: #d946ef; background: rgba(217, 70, 239, 0.1); border: 1px solid #d946ef; }
@@ -52,7 +54,7 @@ header { display: flex; justify-content: space-between; margin-bottom: 20px; pad
 #rocket-icon { font-size: 40px; color: var(--neon-red); margin-top: 10px; z-index: 2; transition: transform 0.1s; }
 #status-text { color: #aaa; margin-top: 10px; font-size: 12px; letter-spacing: 2px; z-index: 2; }
 
-/* LIVE BETS OVERLAY */
+/* LIVE BETS (SIDE PANEL) */
 .live-bets-overlay {
     position: absolute; left: 0; top: 0; bottom: 0; width: 110px;
     background: rgba(0,0,0,0.6); border-right: 1px solid #333;
@@ -72,25 +74,24 @@ header { display: flex; justify-content: space-between; margin-bottom: 20px; pad
 .adjust-btn { width: 50px; background: #222; border: none; color: white; font-size: 20px; border-radius: 8px; }
 .auto-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: #ccc; font-size: 14px; }
 
-.neon-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: black; background: var(--neon-green); }
+/* BUTTONS */
+.neon-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: black; background: var(--neon-green); font-size: 16px; }
+.neon-btn.white-btn { background: white; color: #333; margin-top: 10px; }
 .neon-btn.large { font-size: 20px; box-shadow: 0 0 15px rgba(0, 231, 1, 0.3); }
-.neon-btn.google-btn { background: white; color: #333; margin-top: 10px; }
 
-/* PROFILE (FIXED) */
+/* PROFILE */
 .profile-header-card { text-align: center; background: var(--bg-card); padding: 30px 20px; border-radius: 12px; margin-bottom: 20px; }
 .avatar-circle { width: 80px; height: 80px; background: var(--neon-green); color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 15px; }
 .wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
 .wallet-btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; }
 .wallet-btn.deposit { background: var(--neon-green); color: black; }
 .wallet-btn.withdraw { background: #222; color: white; border: 1px solid #444; }
+.menu-item { display: block; background: #25D366; color: white; padding: 15px; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 20px; }
+.logout-btn { width: 100%; padding: 15px; background: var(--neon-red); border: none; color: white; font-weight: bold; border-radius: 8px; }
 
-.menu-list { background: var(--bg-card); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-.menu-item { padding: 15px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 10px; color: white; text-decoration: none; cursor: pointer; }
-.menu-item.highlight { color: #25D366; } /* WhatsApp Green */
-
-/* SPORTS MATCH CARD */
+/* SPORTS */
 .match-card { background: var(--bg-card); padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--neon-blue); }
-.live-badge { background: var(--neon-red); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+.live-badge { background: var(--neon-red); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; }
 
 /* NAV */
 .game-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid #222; display: flex; padding: 10px 0; z-index: 100; }
@@ -110,3 +111,4 @@ header { display: flex; justify-content: space-between; margin-bottom: 20px; pad
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
 input:checked + .slider { background-color: var(--neon-green); }
 input:checked + .slider:before { content: ""; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(20px); }
+.small-input { width: 50px !important; padding: 5px !important; margin: 0 !important; text-align: center; }
