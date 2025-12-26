@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,15 +15,38 @@
             <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
             <p>High Velocity Trading</p>
         </div>
-        <button id="login-btn" class="neon-btn">
-            <i class="ri-google-fill"></i> Sign in with Google
-        </button>
+
+        <div id="login-form">
+            <input type="email" id="login-email" placeholder="Email Address">
+            <input type="password" id="login-pass" placeholder="Password">
+            <div style="text-align:right; margin-bottom:15px;">
+                <span id="forgot-btn" style="color:var(--neon-green); font-size:12px; cursor:pointer;">Forgot Password?</span>
+            </div>
+            <button id="email-login-btn" class="neon-btn">Log In</button>
+            <div style="text-align:center; margin:15px; color:#555;">OR</div>
+            <button id="google-login-btn" class="neon-btn" style="border-color:#4285F4; color:#4285F4;">
+                <i class="ri-google-fill"></i> Sign in with Google
+            </button>
+            <p style="text-align:center; margin-top:20px; font-size:14px;">
+                Don't have an account? <span id="show-register" style="color:var(--neon-green); cursor:pointer;">Register</span>
+            </p>
+        </div>
+
+        <div id="register-form" class="hidden">
+            <input type="text" id="reg-nickname" placeholder="Choose Nickname (Unique)">
+            <input type="email" id="reg-email" placeholder="Email Address">
+            <input type="password" id="reg-pass" placeholder="Password">
+            <button id="email-register-btn" class="neon-btn">Create Account</button>
+            <p style="text-align:center; margin-top:20px; font-size:14px;">
+                Already have an account? <span id="show-login" style="color:var(--neon-green); cursor:pointer;">Log In</span>
+            </p>
+        </div>
     </div>
 
     <div id="dashboard-screen" class="screen hidden">
         <header>
             <div class="user-info">
-                <span id="user-name">Guest</span>
+                <span id="user-nickname" style="font-size:18px; font-weight:bold; color:white;">Guest</span>
                 <small id="user-id">ID: ---</small>
             </div>
             <div class="balance-area">
@@ -70,62 +93,78 @@
                     <input type="number" id="bet-amount" value="100">
                     <button class="adjust-btn" onclick="window.adjustBet(50)">+</button>
                 </div>
-                <div class="auto-row" style="display:flex; align-items:center; gap:10px; margin-bottom:15px; justify-content:center;">
+                <div class="auto-row">
                     <label class="switch">
                         <input type="checkbox" id="auto-cashout-toggle">
                         <span class="slider round"></span>
                     </label>
                     <span>Auto Cashout @</span>
-                    <input type="number" id="auto-cashout-val" value="2.00" style="width:60px; padding:5px; text-align:center;"> 
+                    <input type="number" id="auto-cashout-val" value="2.00" class="small-input"> 
                 </div>
-                <button id="bet-btn" class="neon-btn">BET NEXT ROUND</button>
+                <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
             </div>
         </div>
 
         <div id="tab-profile" class="tab-content">
-            <div class="logo-area" style="margin:20px 0;">
+            <div class="profile-card">
+                <div class="avatar"><i class="ri-user-smile-line"></i></div>
                 <h3 id="profile-name">Loading...</h3>
                 <small id="profile-email">...</small>
             </div>
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
+
+            <div class="wallet-actions">
                 <button id="open-deposit-modal" class="action-btn deposit"><i class="ri-add-circle-fill"></i> Deposit</button>
                 <button id="open-withdraw-modal" class="action-btn withdraw"><i class="ri-bank-card-fill"></i> Withdraw</button>
             </div>
+
             <a href="https://wa.me/2347056353236" target="_blank" class="whatsapp-btn">
                 <i class="ri-whatsapp-line"></i> Contact Support
             </a>
+
             <h3>Transaction History</h3>
             <div id="tx-history" class="list-group"></div>
             <button id="logout-btn" class="action-btn logout-btn">Log Out</button>
         </div>
     </div>
 
+    <div id="nickname-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Set Your Nickname</h3>
+            <p>Choose a unique username to continue.</p>
+            <input type="text" id="google-nickname-input" placeholder="Nickname">
+            <button id="save-nickname-btn" class="confirm-btn">Start Playing</button>
+        </div>
+    </div>
+
     <div id="deposit-modal" class="modal-overlay">
         <div class="modal-box">
             <h3>Fund Wallet</h3>
-            <input type="number" id="deposit-input" placeholder="Amount">
+            <input type="number" id="deposit-input" placeholder="Amount (e.g. 1000)">
             <div class="modal-actions">
                 <button id="cancel-deposit" class="cancel-btn">Cancel</button>
                 <button id="confirm-deposit" class="confirm-btn">Pay Now</button>
             </div>
         </div>
     </div>
+
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-box">
             <h3>Withdraw Funds</h3>
             <input type="number" id="withdraw-amount" placeholder="Amount">
-            <input type="text" id="withdraw-bank" placeholder="Bank Details">
+            <input type="text" id="withdraw-bank" placeholder="Bank Name & Acct No">
+            <input type="text" id="withdraw-name" placeholder="Account Name">
             <div class="modal-actions">
                 <button id="cancel-withdraw" class="cancel-btn">Cancel</button>
-                <button id="confirm-withdraw" class="confirm-btn">Request</button>
+                <button id="confirm-withdraw" class="confirm-btn">Process</button>
             </div>
         </div>
     </div>
+
     <div id="betslip-modal" class="modal-overlay">
         <div class="modal-box">
             <h3>Confirm Bet</h3>
             <p id="betslip-match">Match</p>
-            <h1 id="betslip-odds" style="color:var(--neon-green)">1.50x</h1>
+            <h1 id="betslip-odds" class="text-green">1.50x</h1>
             <div class="modal-actions">
                 <button onclick="window.closeBetslip()" class="cancel-btn">Cancel</button>
                 <button id="place-sports-bet" class="confirm-btn">Place Bet</button>
