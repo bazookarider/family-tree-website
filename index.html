@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,95 +11,74 @@
 <body>
 
     <div id="auth-screen" class="screen active">
-        <div class="logo-area">
+        <div class="logo-area" style="text-align:center; margin-bottom:30px;">
             <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
-            <p>High Velocity Trading</p>
+            <p style="color:var(--neon-green)">High Velocity Trading</p>
         </div>
-
         <div id="login-form">
-            <input type="email" id="login-email" placeholder="Email Address">
+            <input type="email" id="login-email" placeholder="Email">
             <input type="password" id="login-pass" placeholder="Password">
-            <div style="text-align:right; margin-bottom:15px;">
-                <span id="forgot-btn" style="color:var(--neon-green); font-size:12px; cursor:pointer;">Forgot Password?</span>
-            </div>
             <button id="email-login-btn" class="neon-btn">Log In</button>
             <div style="text-align:center; margin:15px; color:#555;">OR</div>
-            <button id="google-login-btn" class="neon-btn" style="border-color:#4285F4; color:#4285F4;">
-                <i class="ri-google-fill"></i> Sign in with Google
-            </button>
-            <p style="text-align:center; margin-top:20px; font-size:14px;">
-                Don't have an account? <span id="show-register" style="color:var(--neon-green); cursor:pointer;">Register</span>
-            </p>
+            <button id="google-login-btn" class="neon-btn" style="border-color:#4285F4; color:#4285F4;">Google Sign In</button>
+            <p style="text-align:center; margin-top:15px; cursor:pointer;" onclick="toggleAuth()">Need Account? <b>Register</b></p>
         </div>
-
-        <div id="register-form" class="hidden">
-            <input type="text" id="reg-nickname" placeholder="Choose Nickname">
-            <input type="email" id="reg-email" placeholder="Email Address">
+        <div id="register-form" style="display:none;">
+            <input type="text" id="reg-nick" placeholder="Nickname">
+            <input type="email" id="reg-email" placeholder="Email">
             <input type="password" id="reg-pass" placeholder="Password">
-            <button id="email-register-btn" class="neon-btn">Create Account</button>
-            <p style="text-align:center; margin-top:20px; font-size:14px;">
-                Already have an account? <span id="show-login" style="color:var(--neon-green); cursor:pointer;">Log In</span>
-            </p>
+            <button id="email-register-btn" class="neon-btn">Register</button>
+            <p style="text-align:center; margin-top:15px; cursor:pointer;" onclick="toggleAuth()">Have Account? <b>Log In</b></p>
         </div>
     </div>
 
-    <div id="dashboard-screen" class="screen hidden">
+    <div id="dashboard-screen" class="screen">
         <header>
-            <div class="user-info">
-                <span id="user-nickname" style="font-size:18px; font-weight:bold; color:white;">Guest</span>
-                <small id="user-id">ID: ---</small>
+            <div>
+                <b id="header-nick" style="font-size:18px;">Guest</b><br>
+                <small id="header-id" style="color:#888;">ID: ---</small>
             </div>
             <div class="balance-area">
-                <small>Balance</small>
+                <small>Wallet</small>
                 <h2 id="wallet-balance">₦0.00</h2>
             </div>
         </header>
 
-        <nav class="game-nav">
-            <button class="nav-btn active" id="btn-sports" onclick="window.switchTab('sports')">
-                <i class="ri-football-line"></i> Sports
-            </button>
-            <button class="nav-btn" id="btn-aviator" onclick="window.switchTab('aviator')">
-                <i class="ri-rocket-2-line"></i> Aviator
-            </button>
-            <button class="nav-btn" id="btn-profile" onclick="window.switchTab('profile')">
-                <i class="ri-user-3-line"></i> Profile
-            </button>
-        </nav>
-
         <div id="tab-sports" class="tab-content active">
-            <div id="fixtures-list" class="scroll-list">
-                <div class="loader"><i class="ri-loader-4-line spin"></i> Loading Games...</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0;">Live & Virtual</h3>
+                <span class="live-badge" style="background:#222; color:#888;">AUTO-SWITCH ON</span>
+            </div>
+            <div id="fixtures-list">
+                <div style="text-align:center; padding:20px; color:#888;">Loading Matches...</div>
             </div>
         </div>
 
         <div id="tab-aviator" class="tab-content">
             <div class="round-history-bar" id="round-history"></div>
+            
             <div class="game-stage-pro">
                 <div class="multiplier-box">
                     <span id="multiplier-display">1.00x</span>
-                    <small id="status-text">WAITING</small>
+                    <i id="rocket-icon" class="ri-rocket-fill rocket-animation"></i>
+                    <small id="status-text" style="display:block; margin-top:10px; color:#888; letter-spacing:2px;">WAITING</small>
                 </div>
             </div>
-            <div class="aviator-controls">
-                <div class="quick-chips">
-                    <button onclick="window.setBet(100)">100</button>
-                    <button onclick="window.setBet(200)">200</button>
-                    <button onclick="window.setBet(500)">500</button>
-                    <button onclick="window.setBet(1000)">1k</button>
+
+            <div style="background:var(--bg-card); padding:15px; border-radius:12px;">
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button onclick="setBet(100)" style="flex:1; background:#111; border:1px solid #333; color:white; padding:8px; border-radius:20px;">100</button>
+                    <button onclick="setBet(200)" style="flex:1; background:#111; border:1px solid #333; color:white; padding:8px; border-radius:20px;">200</button>
+                    <button onclick="setBet(500)" style="flex:1; background:#111; border:1px solid #333; color:white; padding:8px; border-radius:20px;">500</button>
+                    <button onclick="setBet(1000)" style="flex:1; background:#111; border:1px solid #333; color:white; padding:8px; border-radius:20px;">1k</button>
                 </div>
-                <div class="input-group-row">
-                    <button class="adjust-btn" onclick="window.adjustBet(-50)">-</button>
-                    <input type="number" id="bet-amount" value="100">
-                    <button class="adjust-btn" onclick="window.adjustBet(50)">+</button>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                     <input type="number" id="bet-amount" value="100" style="text-align:center; font-size:20px; font-weight:bold; margin:0;">
                 </div>
-                <div class="auto-row">
-                    <label class="switch">
-                        <input type="checkbox" id="auto-cashout-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <span>Auto Cashout @</span>
-                    <input type="number" id="auto-cashout-val" value="2.00" class="small-input"> 
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                    <span>Auto Cashout</span>
+                    <input type="checkbox" id="auto-cashout-toggle">
+                    <input type="number" id="auto-cashout-val" value="2.00" style="width:60px; padding:5px; margin:0;">
                 </div>
                 <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
             </div>
@@ -107,69 +86,43 @@
 
         <div id="tab-profile" class="tab-content">
             <div class="profile-card">
-                <div class="avatar"><i class="ri-user-smile-line"></i></div>
-                <h3 id="profile-name">Loading...</h3>
-                <small id="profile-email">...</small>
+                <div class="avatar"><i class="ri-user-3-fill"></i></div>
+                <h2 id="profile-name">User</h2>
+                <p id="profile-email" style="color:#888;">...</p>
             </div>
-
             <div class="wallet-actions">
-                <button id="open-deposit-modal" class="action-btn deposit"><i class="ri-add-circle-fill"></i> Deposit</button>
-                <button id="open-withdraw-modal" class="action-btn withdraw"><i class="ri-bank-card-fill"></i> Withdraw</button>
+                <button id="btn-deposit" class="action-btn deposit"><i class="ri-add-circle-fill"></i> Deposit</button>
+                <button id="btn-withdraw" class="action-btn withdraw"><i class="ri-bank-card-fill"></i> Withdraw</button>
             </div>
-
-            <a href="https://wa.me/2347056353236" target="_blank" class="whatsapp-btn">
+            <a href="https://wa.me/2347056353236" class="action-btn" style="background:#25D366; color:white; text-decoration:none; margin-bottom:20px;">
                 <i class="ri-whatsapp-line"></i> Contact Support
             </a>
-
-            <h3>Transaction History</h3>
-            <div id="tx-history" class="list-group"></div>
+            <h3 style="border-bottom:1px solid #333; padding-bottom:10px;">Transaction History</h3>
+            <div id="tx-history" style="font-size:12px;"></div>
             <button id="logout-btn" class="action-btn logout-btn">Log Out</button>
         </div>
+
     </div>
 
-    <div id="nickname-modal" class="modal-overlay" style="z-index: 9999;">
-        <div class="modal-box">
-            <h3>Set Your Nickname</h3>
-            <p>Choose a unique username to continue.</p>
-            <input type="text" id="google-nickname-input" placeholder="Nickname">
-            <button id="save-nickname-btn" class="confirm-btn">Start Playing</button>
-        </div>
-    </div>
+    <nav class="game-nav hidden" id="bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('sports')">
+            <i class="ri-football-line"></i><span>Sports</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('aviator')">
+            <i class="ri-rocket-2-fill"></i><span>Aviator</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('profile')">
+            <i class="ri-user-3-line"></i><span>Profile</span>
+        </button>
+    </nav>
 
-    <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Fund Wallet</h3>
-            <input type="number" id="deposit-input" placeholder="Amount (e.g. 1000)">
-            <div class="modal-actions">
-                <button id="cancel-deposit" class="cancel-btn">Cancel</button>
-                <button id="confirm-deposit" class="confirm-btn">Pay Now</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Withdraw Funds</h3>
-            <input type="number" id="withdraw-amount" placeholder="Amount">
-            <input type="text" id="withdraw-bank" placeholder="Bank Name & Acct No">
-            <input type="text" id="withdraw-name" placeholder="Account Name">
-            <div class="modal-actions">
-                <button id="cancel-withdraw" class="cancel-btn">Cancel</button>
-                <button id="confirm-withdraw" class="confirm-btn">Process</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="betslip-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Confirm Bet</h3>
-            <p id="betslip-match">Match</p>
-            <h1 id="betslip-odds" class="text-green">1.50x</h1>
-            <div class="modal-actions">
-                <button onclick="window.closeBetslip()" class="cancel-btn">Cancel</button>
-                <button id="place-sports-bet" class="confirm-btn">Place Bet</button>
-            </div>
-        </div>
+    <div id="betslip-panel" class="betslip-panel">
+        <h3 style="color:var(--neon-green)">BETSLIP</h3>
+        <p id="betslip-match-name" style="color:white; margin-top:20px;">-</p>
+        <h1 id="betslip-odds" style="color:white;">-</h1>
+        <input type="number" id="sports-stake" value="100" placeholder="Stake">
+        <button id="place-sports-bet" class="neon-btn" style="margin-top:20px;">PLACE BET</button>
+        <button onclick="toggleBetslip()" style="width:100%; background:none; border:none; color:#ff5f56; margin-top:10px;">Cancel</button>
     </div>
 
     <script type="module" src="script.js"></script>
