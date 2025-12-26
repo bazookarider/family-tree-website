@@ -1,88 +1,92 @@
- :root {
-    --bg-dark: #0a192f;
-    --bg-card: #112240;
-    --text-main: #ccd6f6;
-    --neon-green: #64ffda;
-    --neon-red: #ff5f56;
+:root {
+    --bg-dark: #0b0e11;
+    --bg-card: #151a21;
+    --text-main: #ffffff;
+    --neon-green: #00e701;
+    --neon-red: #ff2d55;
+    --purple: #9d00ff;
+    --blue: #00baff;
 }
 
 body {
     background-color: var(--bg-dark);
     color: var(--text-main);
-    font-family: 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif;
     margin: 0; padding: 0; overflow-x: hidden;
 }
 
-/* Screen Management */
-.screen { display: none; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+/* Base Classes */
+.screen { display: none; padding: 15px; min-height: 100vh; box-sizing: border-box; }
 .screen.active { display: block; }
 .hidden { display: none !important; }
 
-/* TABS - CRITICAL FIX */
-.tab-content { display: none; } 
-.tab-content.active { display: block; animation: fadeIn 0.3s; }
-
 /* Header */
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.balance-area h2 { margin: 0; color: var(--neon-green); font-size: 24px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: var(--bg-card); border-radius: 12px; }
+.balance-area h2 { margin: 0; color: var(--neon-green); font-size: 22px; }
 
-/* Navigation Bar */
-.game-nav { 
-    display: flex; background: var(--bg-card); padding: 5px; border-radius: 15px; 
-    margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
+/* Nav */
+.game-nav { display: flex; gap: 10px; margin-bottom: 20px; }
 .nav-btn {
-    flex: 1; background: none; border: none; color: #8892b0; padding: 12px;
-    border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;
+    flex: 1; background: var(--bg-card); border: none; color: #8892b0; 
+    padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px;
 }
-.nav-btn.active { background: var(--neon-green); color: var(--bg-dark); }
+.nav-btn i { font-size: 18px; }
+.nav-btn.active { background: #233554; color: var(--text-main); border-bottom: 2px solid var(--neon-green); }
 
-/* Buttons & Inputs */
-.neon-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 8px; }
-.neon-btn.large { font-size: 18px; background: var(--neon-green); color: var(--bg-dark); }
-
-.action-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-.deposit { background: var(--neon-green); color: var(--bg-dark); }
-.logout { background: var(--neon-red); color: white; margin-top: 20px; }
-
-/* Aviator Game Area */
-.game-stage {
-    height: 220px; background: #020c1b; border-radius: 15px; margin-bottom: 20px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    border: 1px solid #233554;
+/* --- AVIATOR PRO STYLES --- */
+.round-history-bar {
+    display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px;
 }
-#multiplier-display { font-size: 56px; font-weight: 800; color: white; }
-#rocket-icon { font-size: 40px; color: var(--neon-red); margin-top: 10px; }
-
-/* Quick Chips */
-.quick-chips { display: flex; gap: 8px; margin-bottom: 15px; }
-.quick-chips button {
-    flex: 1; background: #233554; border: 1px solid var(--neon-green); color: var(--neon-green);
-    padding: 8px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 12px;
+.history-pill {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background: #2a2a2a; white-space: nowrap;
 }
+.history-pill.purple { background: rgba(157, 0, 255, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+.history-pill.blue { background: rgba(0, 186, 255, 0.2); color: var(--blue); border: 1px solid var(--blue); }
+.history-pill.red { background: rgba(255, 45, 85, 0.2); color: var(--neon-red); border: 1px solid var(--neon-red); }
 
-/* Stats & Profile */
-.stat-card { background: var(--bg-card); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
-.profile-card { text-align: center; margin-bottom: 20px; background: var(--bg-card); padding: 20px; border-radius: 10px; }
-.avatar { width: 60px; height: 60px; background: var(--neon-green); color: var(--bg-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
-
-/* WhatsApp */
-.whatsapp-btn {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    background: #25D366; color: white; padding: 15px; border-radius: 10px;
-    text-decoration: none; font-weight: bold; margin-bottom: 20px;
+.game-stage-pro {
+    height: 240px; background: radial-gradient(circle, #1a222e 0%, #000000 100%);
+    border-radius: 16px; margin-bottom: 15px; border: 1px solid #333;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
 }
+#multiplier-display { font-size: 64px; font-weight: 800; color: white; letter-spacing: -2px; }
+#status-text { color: #888; font-size: 10px; letter-spacing: 2px; margin-top: 5px; }
 
-/* Modal */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
-.modal-box { background: var(--bg-card); padding: 25px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; border: 1px solid var(--neon-green); }
-.modal-box input { width: 80%; padding: 12px; margin: 20px 0; background: #020c1b; border: 1px solid #233554; color: white; text-align: center; font-size: 18px; border-radius: 5px;}
+.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 16px; border: 1px solid #333; }
+.quick-chips { display: flex; gap: 5px; margin-bottom: 15px; }
+.quick-chips button { flex: 1; background: #232a35; border: none; color: #ccc; padding: 8px; border-radius: 20px; font-size: 12px; }
+
+.input-group { display: flex; align-items: center; background: black; border-radius: 30px; padding: 2px; border: 1px solid #444; }
+.input-group input { background: transparent; border: none; color: white; text-align: center; font-size: 18px; font-weight: bold; flex: 1; }
+.minus-btn, .plus-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #333; color: white; font-size: 20px; font-weight: bold; }
+
+.neon-btn.large {
+    width: 100%; padding: 18px; font-size: 18px; font-weight: 900; 
+    background: var(--neon-green); color: black; border: none; border-radius: 12px; margin-top: 15px;
+    box-shadow: 0 0 15px rgba(0, 231, 1, 0.4);
+}
+.neon-btn.large.cashout { background: #ffa500; box-shadow: 0 0 15px rgba(255, 165, 0, 0.4); }
+
+/* --- SPORTS --- */
+.match-card {
+    background: var(--bg-card); padding: 12px; margin-bottom: 10px; border-radius: 10px;
+    display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--neon-green);
+}
+.live-badge { background: var(--neon-red); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+
+/* --- WALLET & PROFILE --- */
+.wallet-actions { display: flex; gap: 10px; margin-bottom: 20px; }
+.action-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.deposit { background: var(--neon-green); color: black; }
+.withdraw { background: #333; color: white; border: 1px solid #555; }
+.whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #25D366; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 20px; }
+.logout-btn { background: var(--neon-red); color: white; margin-top: 20px; }
+
+/* Modals */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+.modal-box { background: #1a222e; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; border: 1px solid #444; }
+.modal-box input { width: 90%; padding: 12px; margin: 15px 0; background: black; border: 1px solid #333; color: white; text-align: center; font-size: 18px; border-radius: 8px; }
 .modal-actions { display: flex; gap: 10px; }
-.confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; }
-.cancel-btn { flex: 1; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 12px; border-radius: 8px; }
-
-/* Utilities */
-.text-green { color: var(--neon-green); }
-.spin { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.cancel-btn { flex: 1; background: transparent; border: 1px solid #555; color: #aaa; padding: 12px; border-radius: 8px; cursor: pointer; }
