@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VeloBet | Casino</title>
+    <title>VeloBet</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -13,7 +13,7 @@
     <div id="auth-screen" class="screen active">
         <div class="logo-area">
             <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
-            <p>Casino & Trading</p>
+            <p>High Velocity Trading</p>
         </div>
         <div id="login-form" class="auth-box">
             <input type="email" id="login-email" placeholder="Email">
@@ -24,7 +24,7 @@
             <p class="switch-auth" id="goto-register">New? <b>Create Account</b></p>
         </div>
         <div id="register-form" class="auth-box hidden">
-            <input type="text" id="reg-nick" placeholder="Username">
+            <input type="text" id="reg-nick" placeholder="Username (e.g. Winner24)">
             <input type="email" id="reg-email" placeholder="Email">
             <input type="password" id="reg-pass" placeholder="Password">
             <button id="email-register-btn" class="neon-btn">Register</button>
@@ -40,25 +40,23 @@
 
         <div id="tab-aviator" class="tab-content active">
             <div class="round-history-bar" id="round-history"></div>
-            
             <div class="game-stage-galaxy">
-                <div class="flight-path">
-                    <i id="plane-icon" class="ri-plane-fill"></i>
-                    <div class="crash-text hidden" id="crash-msg">CRASHED</div>
-                </div>
-                
-                <div class="multiplier-overlay">
+                <div class="multiplier-box">
                     <span id="multiplier-display">1.00x</span>
+                    <i id="rocket-icon" class="ri-rocket-2-fill"></i>
                     <div id="status-text">WAITING</div>
                 </div>
+                <div class="live-bets-overlay">
+                    <div class="lb-header">LIVE BETS (84)</div>
+                    <div id="live-bets-list"></div>
+                </div>
             </div>
-
             <div class="aviator-controls">
                 <div class="quick-chips">
-                    <button class="chip-btn" data-val="50">50</button>
                     <button class="chip-btn" data-val="100">100</button>
                     <button class="chip-btn" data-val="200">200</button>
                     <button class="chip-btn" data-val="500">500</button>
+                    <button class="chip-btn" data-val="1000">1k</button>
                 </div>
                 <div class="bet-input-row">
                     <button class="adjust-btn" id="dec-bet">-</button>
@@ -73,7 +71,7 @@
                     </label>
                     <input type="number" id="auto-cashout-val" value="2.00" class="small-input">
                 </div>
-                <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
+                <button id="bet-btn" class="neon-btn large">BET</button>
             </div>
         </div>
 
@@ -83,14 +81,10 @@
                     <div class="front"><i class="ri-question-mark"></i></div>
                     <div class="back" id="spin-result-icon"></div>
                 </div>
-                <div class="spin-history" id="spin-history"></div>
             </div>
-
             <div class="aviator-controls">
-                <p style="text-align:center; color:#888; font-size:12px;">PICK A COLOR (Doubles your money)</p>
-                <div class="bet-input-row">
-                    <input type="number" id="spin-amount" value="100" placeholder="Stake">
-                </div>
+                <p style="text-align:center; color:#888; margin-bottom:10px;">DOUBLE YOUR MONEY</p>
+                <input type="number" id="spin-amount" value="100" style="text-align:center; font-weight:bold;">
                 <div class="spin-actions">
                     <button id="btn-lemon" class="spin-btn lemon">LEMON (x2)</button>
                     <button id="btn-navy" class="spin-btn navy">NAVY (x2)</button>
@@ -102,15 +96,22 @@
             <div class="profile-header-card">
                 <div class="avatar-circle"><i class="ri-user-smile-line"></i></div>
                 <h2 id="profile-name">User</h2>
+                <p id="profile-email">email@example.com</p>
                 <div class="id-badge" id="profile-id">ID: ---</div>
             </div>
+
             <div class="wallet-grid">
-                <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
-                <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
+                <button id="open-deposit-modal" class="wallet-btn deposit"><i class="ri-add-circle-fill"></i> Deposit</button>
+                <button id="open-withdraw-modal" class="wallet-btn withdraw"><i class="ri-bank-card-2-line"></i> Withdraw</button>
             </div>
-            <a href="https://wa.me/2347056353236" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
-            <h3 style="margin-top:20px; border-bottom:1px solid #333;">Transactions</h3>
-            <div id="tx-history"></div>
+
+            <a href="https://wa.me/2349125297720" class="menu-item highlight">
+                <i class="ri-whatsapp-line"></i> Contact Support (09125297720)
+            </a>
+
+            <h3 style="margin-top:20px; color:#888; font-size:14px; border-bottom:1px solid #333; padding-bottom:5px;">Transaction History</h3>
+            <div id="tx-history" class="history-list"></div>
+
             <button id="logout-btn" class="logout-btn">Log Out</button>
         </div>
 
@@ -124,11 +125,51 @@
     <div id="nickname-modal" class="modal-overlay" style="z-index:9999;">
         <div class="modal-box"><h3>Set Username</h3><input type="text" id="google-nickname-input" placeholder="Username"><button id="save-nickname-btn" class="neon-btn">Start</button></div>
     </div>
+
     <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Amount"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
+        <div class="modal-box"><h3>Deposit Funds</h3><input type="number" id="deposit-input" placeholder="Amount"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
     </div>
+
     <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box"><h3>Withdraw</h3><input type="number" id="withdraw-amount" placeholder="Amount"><input type="text" id="withdraw-bank" placeholder="Bank"><div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div></div>
+        <div class="modal-box">
+            <h3>Withdraw Funds</h3>
+            <p style="font-size:12px; color:#888; margin-bottom:15px;">Funds sent to bank via Admin</p>
+            <input type="number" id="withdraw-amount" placeholder="Amount (Min 1000)">
+            
+            <select id="withdraw-bank" class="bank-select">
+                <option value="">Select Bank</option>
+                <option value="OPay">OPay</option>
+                <option value="PalmPay">PalmPay</option>
+                <option value="Kuda Bank">Kuda Bank</option>
+                <option value="Moniepoint">Moniepoint</option>
+                <option value="GTBank">GTBank</option>
+                <option value="Zenith Bank">Zenith Bank</option>
+                <option value="UBA">UBA</option>
+                <option value="Access Bank">Access Bank</option>
+                <option value="First Bank">First Bank</option>
+            </select>
+
+            <input type="text" id="withdraw-acct" placeholder="Account Number">
+            <input type="text" id="withdraw-name" placeholder="Account Name">
+            
+            <div class="modal-actions">
+                <button id="cancel-withdraw" class="cancel-btn">Cancel</button>
+                <button id="confirm-withdraw" class="neon-btn">Request</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="modal-overlay">
+        <div class="modal-box receipt-box">
+            <i class="ri-checkbox-circle-fill" style="font-size:50px; color:var(--neon-green);"></i>
+            <h2 style="margin:10px 0;">Transaction Receipt</h2>
+            <div class="receipt-row"><span>Type</span> <b id="rcpt-type">Deposit</b></div>
+            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt" style="color:white;">₦5,000</b></div>
+            <div class="receipt-row"><span>Date</span> <small id="rcpt-date">Dec 28, 10:30 PM</small></div>
+            <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green);">SUCCESS</b></div>
+            <div class="receipt-row"><span>Ref ID</span> <small id="rcpt-id">#837492</small></div>
+            <button onclick="document.getElementById('receipt-modal').style.display='none'" class="neon-btn" style="margin-top:20px;">Close</button>
+        </div>
     </div>
 
     <script type="module" src="script.js"></script>
