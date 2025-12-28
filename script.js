@@ -1,345 +1,111 @@
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDJFQnwOs-fetKVy0Ow43vktz8xwefZMks",
-    authDomain: "cyou-db8f0.firebaseapp.com",
-    databaseURL: "https://cyou-db8f0-default-rtdb.firebaseio.com",
-    projectId: "cyou-db8f0",
-    storageBucket: "cyou-db8f0.firebasestorage.app",
-    messagingSenderId: "873569975141",
-    appId: "1:873569975141:web:147eb7b7b4043a38c9bf8c",
-    measurementId: "G-T66B50HFJ8"
-};
-
-const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-let currentUser = null;
-let currentBalance = 0;
-
-// === SAFETY LOAD ===
-document.addEventListener('DOMContentLoaded', () => {
-    // AUTH
-    const googleBtn = document.getElementById('google-login-btn');
-    if(googleBtn) googleBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
-
-    const regBtn = document.getElementById('email-register-btn');
-    if(regBtn) regBtn.onclick = () => {
-        const n = document.getElementById('reg-nick').value;
-        const e = document.getElementById('reg-email').value;
-        const p = document.getElementById('reg-pass').value;
-        if(!n) return alert("Username required");
-        createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
-            await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
-            window.location.reload();
-        }).catch(err => alert(err.message));
-    };
-
-    const loginBtn = document.getElementById('email-login-btn');
-    if(loginBtn) loginBtn.onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
-        .catch(err => alert(err.message));
-    };
-
-    // NAV
-    document.getElementById('goto-register').onclick = () => toggleForms(true);
-    document.getElementById('goto-login').onclick = () => toggleForms(false);
-    document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>window.location.reload());
-
-    document.getElementById('nav-aviator').onclick = () => switchTab('aviator');
-    document.getElementById('nav-spin').onclick = () => switchTab('spin');
-    document.getElementById('nav-profile').onclick = () => switchTab('profile');
-
-    // GAME
-    document.getElementById('bet-btn').onclick = placeAviatorBet;
-    document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
-    document.getElementById('inc-bet').onclick = () => adjustBet(50);
-    document.getElementById('dec-bet').onclick = () => adjustBet(-50);
-    
-    // SPIN
-    document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
-    document.getElementById('btn-navy').onclick = () => spinColor('navy');
-
-    // MODALS
-    document.getElementById('open-deposit-modal').onclick = () => document.getElementById('deposit-modal').style.display='flex';
-    document.getElementById('cancel-deposit').onclick = () => document.getElementById('deposit-modal').style.display='none';
-    document.getElementById('confirm-deposit').onclick = processDeposit;
-
-    document.getElementById('open-withdraw-modal').onclick = () => document.getElementById('withdraw-modal').style.display='flex';
-    document.getElementById('cancel-withdraw').onclick = () => document.getElementById('withdraw-modal').style.display='none';
-    document.getElementById('confirm-withdraw').onclick = processWithdraw;
-    
-    document.getElementById('save-nickname-btn').onclick = saveNick;
-});
-
-function toggleForms(showReg) {
-    document.getElementById('login-form').classList.toggle('hidden', showReg);
-    document.getElementById('register-form').classList.toggle('hidden', !showReg);
+:root {
+    --bg-dark: #0a192f;
+    --bg-card: #112240;
+    --text-main: #ccd6f6;
+    --neon-green: #64ffda; /* YOUR LEMON GREEN */
+    --neon-red: #ff5f56;
+    --navy-btn: #0f172a;
+    --input-bg: #000000;
 }
 
-// === AUTH STATE ===
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        const userRef = doc(db, "users", user.uid);
-        try {
-            const snap = await getDoc(userRef);
-            if (snap.exists() && snap.data().nickname) {
-                initDashboard(snap.data());
-            } else {
-                if(!snap.exists()) await setDoc(userRef, { email: user.email, balance: 0, uid: user.uid, history: [] }, {merge:true});
-                document.getElementById('auth-screen').classList.remove('active');
-                document.getElementById('nickname-modal').style.display = 'flex';
-            }
-        } catch (e) {
-            initDashboard({ nickname: "Guest", balance: 0 });
-        }
-    } else {
-        document.getElementById('dashboard-screen').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('auth-screen').classList.add('active');
-    }
-});
+body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+.screen { display: none; min-height: 100vh; padding: 15px; box-sizing: border-box; }
+.screen.active { display: block !important; }
+.hidden { display: none !important; }
 
-async function saveNick() {
-    const n = document.getElementById('google-nickname-input').value;
-    if(n) { await updateDoc(doc(db, "users", currentUser.uid), { nickname: n }); window.location.reload(); }
+/* AUTH */
+.auth-box { max-width: 320px; margin: 50px auto; padding: 25px; background: var(--bg-card); border-radius: 12px; text-align: center; border: 1px solid #233554; }
+.logo-area { text-align: center; margin-top: 40px; }
+input, select { width: 100%; padding: 15px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
+select { text-align: left; }
+
+/* HEADER */
+header { display: flex; justify-content: space-between; margin-bottom: 20px; padding: 10px; background: var(--bg-card); border-radius: 10px; }
+.user-pill { display: flex; gap: 5px; align-items: center; font-weight: bold; } 
+.balance-pill h2 { margin: 0; color: var(--neon-green); }
+
+/* --- AVIATOR STAGE --- */
+.game-stage-galaxy {
+    height: 280px; background: radial-gradient(circle at bottom left, #1a222e 0%, #000 100%);
+    border-radius: 15px; margin-bottom: 15px; position: relative; border: 1px solid #333; overflow: hidden;
 }
-
-function initDashboard(data) {
-    document.getElementById('auth-screen').classList.remove('active');
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('nickname-modal').style.display = 'none';
-    
-    document.getElementById('dashboard-screen').classList.remove('hidden');
-    document.getElementById('dashboard-screen').classList.add('active');
-
-    document.getElementById('header-nick').innerText = data.nickname || "Player";
-    document.getElementById('profile-name').innerText = data.nickname || "Player";
-    document.getElementById('profile-email').innerText = currentUser.email;
-    document.getElementById('profile-id').innerText = "ID: " + currentUser.uid.slice(0,6).toUpperCase();
-
-    onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-        if(docSnap.exists()) {
-            currentBalance = docSnap.data().balance;
-            document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
-            renderTxHistory(docSnap.data().history);
-        }
-    });
-
-    startAviatorEngine();
-    startBotSimulation();
+.flight-area { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+#plane-icon { 
+    position: absolute; bottom: 20px; left: 20px; font-size: 50px; color: var(--neon-red); 
+    /* Smooth movement handled by JS */
+    z-index: 5;
 }
+.multiplier-overlay { position: absolute; top: 30px; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 10; }
+#multiplier-display { font-size: 64px; font-weight: 900; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+#status-text { letter-spacing: 2px; color: #888; font-size: 12px; font-weight: bold; margin-top: 5px; }
 
-// === TRANSACTION HISTORY & RECEIPTS ===
-function renderTxHistory(hist) {
-    const list = document.getElementById('tx-history');
-    list.innerHTML = "";
-    if(!hist) return;
-    
-    // Sort Newest First
-    const sorted = [...hist].reverse();
-    
-    sorted.forEach((tx, index) => {
-        // Create Transaction Item
-        const div = document.createElement('div');
-        div.className = 'tx-item';
-        div.innerHTML = `
-            <div>
-                <div style="font-weight:bold;">${tx.type}</div>
-                <div class="tx-type">${new Date(tx.date).toLocaleDateString()}</div>
-            </div>
-            <div class="tx-amount ${tx.amount > 0 ? 'pos' : 'neg'}">
-                ${tx.amount > 0 ? '+' : ''}₦${Math.abs(tx.amount).toLocaleString()}
-            </div>
-        `;
-        
-        // ADD CLICK EVENT FOR RECEIPT
-        div.onclick = () => showReceipt(tx, index);
-        list.appendChild(div);
-    });
+/* --- SPIN STAGE --- */
+.spin-stage { height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; }
+.spin-card-container { perspective: 1000px; width: 140px; height: 200px; }
+.spin-card { 
+    width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; 
+    border-radius: 12px; border: 2px solid #333;
 }
-
-function showReceipt(tx, index) {
-    document.getElementById('rcpt-type').innerText = tx.type;
-    document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount).toLocaleString();
-    document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
-    document.getElementById('rcpt-id').innerText = "#" + (currentUser.uid.slice(0,4) + index).toUpperCase();
-    document.getElementById('receipt-modal').style.display = 'flex';
+.spin-card.flip { transform: rotateY(180deg); }
+.spin-card .front, .spin-card .back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+    display: flex; align-items: center; justify-content: center; font-size: 60px; border-radius: 10px;
 }
+.spin-card .front { background: #111; color: #555; }
+.spin-card .back { transform: rotateY(180deg); background: #222; }
 
-// === DEPOSIT & WITHDRAW (WHATSAPP) ===
-function processDeposit() {
-    const amt = parseInt(document.getElementById('deposit-input').value);
-    if(amt < 100) return alert("Min 100");
-    document.getElementById('deposit-modal').style.display='none';
-    
-    let h = PaystackPop.setup({
-        key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
-        callback: function(r) { 
-            updateDoc(doc(db, "users", currentUser.uid), { 
-                balance: currentBalance + amt, 
-                history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) 
-            }); 
-        }
-    });
-    h.openIframe();
-}
+/* CARD COLORS */
+.bg-lemon { background-color: var(--neon-green) !important; color: #0a192f !important; border: 4px solid white; }
+.bg-navy { background-color: #0a192f !important; color: var(--neon-green) !important; border: 4px solid var(--neon-green); }
 
-function processWithdraw() {
-    const amt = parseInt(document.getElementById('withdraw-amount').value);
-    const bank = document.getElementById('withdraw-bank').value;
-    const acct = document.getElementById('withdraw-acct').value;
-    const name = document.getElementById('withdraw-name').value;
+/* RECEIPTS */
+.receipt-mini { background: #111; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--neon-green); font-size: 12px; display: flex; justify-content: space-between; }
+.receipt-mini b { color: white; }
 
-    if(amt > currentBalance) return alert("Insufficient Balance");
-    if(!bank || !acct || !name) return alert("Please fill all bank details");
+/* CONTROLS */
+.aviator-controls { background: var(--bg-card); padding: 15px; border-radius: 12px; }
+.quick-chips { display: flex; gap: 5px; margin-bottom: 10px; }
+.chip-btn { flex: 1; background: #0a192f; border: 1px solid #233554; color: white; padding: 8px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+.bet-input-row { display: flex; gap: 10px; margin-bottom: 15px; }
+.bet-input-row input { margin: 0; background: black; }
+.adjust-btn { width: 50px; background: #233554; border: none; color: white; font-size: 20px; border-radius: 8px; }
+.auto-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: #888; }
 
-    // 1. Deduct Balance & Record
-    updateDoc(doc(db, "users", currentUser.uid), { 
-        balance: currentBalance - amt, 
-        history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) 
-    });
+.neon-btn { width: 100%; padding: 15px; border-radius: 8px; border: 1px solid var(--neon-green); font-weight: bold; cursor: pointer; color: var(--neon-green); background: transparent; font-size: 16px; }
+.neon-btn:active, .neon-btn.large { background: var(--neon-green); color: #0a192f; }
+.neon-btn.white-btn { background: white; color: #333; border: none; }
 
-    document.getElementById('withdraw-modal').style.display='none';
+.spin-actions { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
+.spin-btn { flex: 1; padding: 20px; border: none; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer; color: white; }
+.spin-btn.lemon { background: var(--neon-green); color: black; }
+.spin-btn.navy { background: var(--bg-dark); border: 2px solid var(--neon-green); color: var(--neon-green); }
 
-    // 2. Open WhatsApp
-    const msg = `*WITHDRAWAL REQUEST*%0A%0A` +
-                `🆔 User ID: ${currentUser.uid.slice(0,5).toUpperCase()}%0A` +
-                `💰 Amount: ₦${amt.toLocaleString()}%0A` +
-                `🏦 Bank: ${bank}%0A` +
-                `🔢 Acct: ${acct}%0A` +
-                `👤 Name: ${name}%0A%0A` +
-                `Please process this payment.`;
-    
-    window.open(`https://wa.me/2349125297720?text=${msg}`, '_blank');
-}
+/* HISTORY */
+.round-history-bar { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; }
+.history-pill { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #232a35; min-width: 35px; text-align: center; }
+.history-pill.purple { color: #d946ef; border: 1px solid #d946ef; }
+.history-pill.blue { color: #3b82f6; border: 1px solid #3b82f6; }
+.history-pill.red { color: var(--neon-red); border: 1px solid var(--neon-red); }
 
-// === AVIATOR LOGIC ===
-let avState="WAITING", avMult=1.00, avBet=0, avCash=false;
+/* PROFILE & MODALS */
+.profile-header-card { text-align: center; background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+.avatar-circle { width: 60px; height: 60px; background: var(--neon-green); color: #0a192f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
+.wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+.wallet-btn { padding: 15px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+.wallet-btn.deposit { background: var(--neon-green); color: #0a192f; }
+.wallet-btn.withdraw { background: #222; color: white; border: 1px solid #444; }
+.match-card { background: var(--bg-card); padding: 10px; margin-bottom: 8px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; border-left: 2px solid var(--neon-green); }
 
-function startAviatorEngine() {
-    setInterval(() => {
-        const now = Date.now(), loop = now % 12000;
-        if (loop < 4000) { 
-            if(avState !== "WAITING") {
-                avState = "WAITING";
-                document.getElementById('status-text').innerText = "NEXT ROUND...";
-                document.getElementById('multiplier-display').innerText = "1.00x";
-                document.getElementById('multiplier-display').style.color = "white";
-                document.getElementById('rocket-icon').style.transform = "rotate(0deg)";
-                const btn = document.getElementById('bet-btn');
-                if(avBet > 0 && !avCash) { avBet = 0; btn.innerText = "LOST"; btn.style.background = "#333"; }
-                else { btn.innerText = "BET"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; }
-            }
-        } else { 
-            avState = "FLYING";
-            const flyTime = loop - 4000;
-            avMult = (1 + (flyTime/1000) * 0.3).toFixed(2);
-            document.getElementById('status-text').innerText = "FLYING";
-            document.getElementById('rocket-icon').style.transform = "translate(5px, -5px)";
-            const crash = ((Math.floor(now/12000) % 6) + 1.1).toFixed(2);
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; }
+.modal-box { background: var(--bg-card); width: 85%; padding: 25px; border-radius: 12px; text-align: center; border: 1px solid var(--neon-green); }
+.modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+.confirm-btn { flex: 1; background: var(--neon-green); border: none; padding: 12px; border-radius: 8px; font-weight: bold; color: #0a192f; }
+.cancel-btn { flex: 1; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 12px; border-radius: 8px; }
 
-            if (parseFloat(avMult) >= parseFloat(crash)) {
-                avState = "CRASHED";
-                document.getElementById('multiplier-display').innerText = crash + "x";
-                document.getElementById('multiplier-display').style.color = "var(--neon-red)";
-                document.getElementById('status-text').innerText = "CRASHED";
-                const hist = document.getElementById('round-history');
-                if(!hist.firstChild || hist.firstChild.innerText !== crash+"x") {
-                    let c = crash >= 10 ? 'red' : (crash >= 2 ? 'purple' : 'blue');
-                    hist.innerHTML = `<span class="history-pill ${c}">${crash}x</span>` + hist.innerHTML;
-                }
-            } else {
-                document.getElementById('multiplier-display').innerText = avMult + "x";
-                if(avBet > 0 && !avCash) {
-                    const btn = document.getElementById('bet-btn');
-                    btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
-                    btn.style.background = "var(--neon-red)"; btn.style.color = "white";
-                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) doCashout();
-                }
-            }
-        }
-    }, 100);
-}
+/* NAV */
+.game-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid #222; display: flex; padding: 10px 0; z-index: 100; justify-content: space-around; }
+.nav-btn { flex: 1; background: none; border: none; color: #8892b0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; }
+.nav-btn.active { color: var(--neon-green); }
+.nav-btn i { font-size: 20px; }
 
-function placeAviatorBet() {
-    if(avState === "WAITING" && avBet === 0) {
-        const amt = parseInt(document.getElementById('bet-amount').value);
-        if(amt > currentBalance) return alert("Low Funds");
-        avBet = amt; avCash = false;
-        updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
-        document.getElementById('bet-btn').innerText = "BET PLACED";
-        document.getElementById('bet-btn').style.background = "#ff9900";
-    } else if (avState === "FLYING" && avBet > 0 && !avCash) doCashout();
-}
-
-function doCashout() {
-    avCash = true;
-    const win = Math.floor(avBet * avMult);
-    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
-    document.getElementById('bet-btn').innerText = "WON " + win;
-    document.getElementById('bet-btn').style.background = "var(--neon-green)";
-    document.getElementById('bet-btn').style.color = "#0a192f";
-}
-
-// === SPIN GAME ===
-function spinColor(choice) {
-    const amt = parseInt(document.getElementById('spin-amount').value);
-    if(amt > currentBalance) return alert("Low Funds");
-    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
-
-    const card = document.getElementById('spin-card');
-    const resultIcon = document.getElementById('spin-result-icon');
-    card.classList.add('flip');
-    
-    setTimeout(() => {
-        const rand = Math.random();
-        let outcome = rand <= 0.5 ? 'lemon' : 'navy';
-        resultIcon.style.backgroundColor = outcome === 'lemon' ? '#64ffda' : '#0a192f';
-        
-        if(choice === outcome) {
-            const win = amt * 2;
-            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
-            alert("WIN! " + win);
-        } else {
-            alert("LOST!");
-        }
-        setTimeout(() => card.classList.remove('flip'), 1000);
-    }, 600);
-}
-
-// UTILS
-function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.remove('hidden');
-    document.getElementById('tab-' + tab).classList.add('active');
-    document.getElementById('nav-' + tab).classList.add('active');
-}
-
-function adjustBet(val) {
-    let el = document.getElementById('bet-amount');
-    el.value = Math.max(50, parseInt(el.value) + val);
-}
-
-function startBotSimulation() {
-    const names = ["Winner22", "Player_X", "Speedy", "Lucky77", "ProGamer", "King01"];
-    const list = document.getElementById('live-bets-list');
-    setInterval(() => {
-        if(avState === "FLYING") {
-            const name = names[Math.floor(Math.random()*names.length)];
-            const amt = [100, 200, 500, 1000][Math.floor(Math.random()*4)];
-            const div = document.createElement('div');
-            div.className = "bot-row win";
-            div.innerHTML = `<span>${name}</span> <span>+${amt}</span>`;
-            list.prepend(div);
-            if(list.children.length > 8) list.removeChild(list.lastChild);
-        }
-    }, 1500);
-}
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; } .switch input { opacity: 0; width: 0; height: 0; } .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; } input:checked + .slider { background-color: var(--neon-green); } input:checked + .slider:before { content: ""; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(20px); } .small-input { width: 50px !important; padding: 5px !important; margin: 0 !important; text-align: center; font-weight: bold; }
