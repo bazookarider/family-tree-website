@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -23,11 +23,15 @@ let currentBalance = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     // AUTH
-    const googleBtn = document.getElementById('google-login-btn');
-    if(googleBtn) googleBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+    document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+    
+    document.getElementById('email-login-btn').onclick = () => {
+        const e = document.getElementById('login-email').value;
+        const p = document.getElementById('login-pass').value;
+        if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
+    };
 
-    const regBtn = document.getElementById('email-register-btn');
-    if(regBtn) regBtn.onclick = () => {
+    document.getElementById('email-register-btn').onclick = () => {
         const n = document.getElementById('reg-nick').value;
         const e = document.getElementById('reg-email').value;
         const p = document.getElementById('reg-pass').value;
@@ -38,23 +42,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(err => alert(err.message));
     };
 
-    const loginBtn = document.getElementById('email-login-btn');
-    if(loginBtn) loginBtn.onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
-        .catch(err => alert(err.message));
-    };
-
+    // FORGOT PASSWORD
     document.getElementById('forgot-btn').onclick = () => {
-        const e = document.getElementById('login-email').value;
-        if(!e) return alert("Enter email first");
-        sendPasswordResetEmail(auth, e).then(()=>alert("Reset link sent!")).catch(e=>alert(e.message));
+        const email = document.getElementById('login-email').value;
+        if(!email) return alert("Enter email in the box first");
+        sendPasswordResetEmail(auth, email).then(() => alert("Reset link sent!")).catch(e => alert(e.message));
     };
 
+    // NAV
     document.getElementById('goto-register').onclick = () => toggleForms(true);
     document.getElementById('goto-login').onclick = () => toggleForms(false);
     document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>window.location.reload());
 
-    // NAV
     document.getElementById('nav-aviator').onclick = () => switchTab('aviator');
     document.getElementById('nav-spin').onclick = () => switchTab('spin');
     document.getElementById('nav-profile').onclick = () => switchTab('profile');
@@ -100,7 +99,7 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById('nickname-modal').style.display = 'flex';
             }
         } catch (e) {
-            initDashboard({ nickname: "Guest", balance: 0 }); 
+            initDashboard({ nickname: "Guest", balance: 0 });
         }
     } else {
         document.getElementById('dashboard-screen').classList.add('hidden');
@@ -130,4 +129,193 @@ function initDashboard(data) {
     onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
         if(docSnap.exists()) {
             currentBalance = docSnap.data().balance;
-            document.getElementById('wallet-balance').innerText
+            document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
+            renderHistory(docSnap.data().history);
+        }
+    });
+
+    startAviatorEngine();
+}
+
+function renderHistory(hist) {
+    const list = document.getElementById('tx-history');
+    list.innerHTML = "";
+    if(!hist) return;
+    hist.slice(-10).reverse().forEach(tx => {
+        list.innerHTML += `<div class="match-card">
+            <span>${tx.type}</span>
+            <span style="color:${tx.amount>0?'#64ffda':'#ff5f56'}">${tx.amount}</span>
+        </div>`;
+    });
+}
+
+// === AVIATOR LOGIC ===
+function generateCrashPoint() {
+    const random = Math.random();
+    const houseEdge = 0.96; 
+    let crashPoint = Math.floor((houseEdge / (1 - random)) * 100) / 100;
+    if (crashPoint < 1.00) return 1.00;
+    if (crashPoint > 1000) return 1000.00;
+    return crashPoint;
+}
+
+let avState="WAITING", avMult=1.00, avBet=0, avCash=false, crashPoint=1.00;
+
+function startAviatorEngine() {
+    setInterval(() => {
+        const now = Date.now(), loop = now % 12000;
+        
+        if (loop < 4000) { // WAITING
+            if(avState !== "WAITING") {
+                avState = "WAITING";
+                crashPoint = generateCrashPoint();
+                document.getElementById('status-text').innerText = "NEXT ROUND...";
+                document.getElementById('multiplier-display').innerText = "1.00x";
+                document.getElementById('multiplier-display').style.color = "white";
+                
+                document.getElementById('plane-icon').style.transform = "translate(0,0)";
+                document.getElementById('plane-icon').style.color = "#ff5f56";
+                document.getElementById('av-receipt').classList.add('hidden'); // Hide old receipt
+                
+                const btn = document.getElementById('bet-btn');
+                if(avBet > 0 && !avCash) { 
+                    avBet = 0; 
+                    btn.innerText = "LOST"; btn.style.background = "#333";
+                    showReceipt("av", "LOST", 0);
+                } else { 
+                    btn.innerText = "BET NEXT ROUND"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; 
+                }
+            }
+        } else { // FLYING
+            avState = "FLYING";
+            const flyTime = loop - 4000;
+            // Smooth Curve Logic: x moves linear, y moves ease-in
+            const x = (flyTime / 8000) * 260; // 260px right
+            const y = (flyTime / 8000) * -180; // 180px up
+            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
+            
+            avMult = (1 + (flyTime/1000) * 0.15 * crashPoint).toFixed(2);
+            if(avMult > crashPoint) avMult = crashPoint;
+
+            if (parseFloat(avMult) >= crashPoint) {
+                avState = "CRASHED";
+                document.getElementById('multiplier-display').innerText = crashPoint + "x";
+                document.getElementById('multiplier-display').style.color = "var(--neon-red)";
+                document.getElementById('status-text').innerText = "CRASHED";
+                
+                const hist = document.getElementById('round-history');
+                if(!hist.firstChild || hist.firstChild.innerText !== crashPoint+"x") {
+                    let c = crashPoint >= 10 ? 'red' : (crashPoint >= 2 ? 'purple' : 'blue');
+                    hist.innerHTML = `<span class="history-pill ${c}">${crashPoint}x</span>` + hist.innerHTML;
+                }
+            } else {
+                document.getElementById('multiplier-display').innerText = avMult + "x";
+                document.getElementById('status-text').innerText = "FLYING";
+                if(avBet > 0 && !avCash) {
+                    const btn = document.getElementById('bet-btn');
+                    btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
+                    btn.style.background = "var(--neon-red)"; btn.style.color = "white";
+                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) doCashout();
+                }
+            }
+        }
+    }, 100);
+}
+
+function placeAviatorBet() {
+    if(avState === "WAITING" && avBet === 0) {
+        const amt = parseInt(document.getElementById('bet-amount').value);
+        if(amt > currentBalance) return alert("Low Funds");
+        avBet = amt; avCash = false;
+        updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
+        document.getElementById('bet-btn').innerText = "BET PLACED";
+        document.getElementById('bet-btn').style.background = "#ff9900";
+    } else if (avState === "FLYING" && avBet > 0 && !avCash) doCashout();
+}
+
+function doCashout() {
+    avCash = true;
+    const win = Math.floor(avBet * avMult);
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
+    document.getElementById('bet-btn').innerText = "WON " + win;
+    document.getElementById('bet-btn').style.background = "var(--neon-green)";
+    document.getElementById('bet-btn').style.color = "#0a192f";
+    showReceipt("av", "WON", win);
+}
+
+// === SPIN GAME ===
+function spinColor(choice) {
+    const amt = parseInt(document.getElementById('spin-amount').value);
+    if(amt > currentBalance) return alert("Low Funds");
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
+
+    const card = document.getElementById('spin-card');
+    const resultIcon = document.getElementById('spin-result-icon');
+    card.classList.add('flip');
+    document.getElementById('spin-receipt').classList.add('hidden'); // hide old
+    
+    setTimeout(() => {
+        const rand = Math.random();
+        let outcome = rand <= 0.5 ? 'lemon' : 'navy';
+        resultIcon.className = "back " + (outcome === 'lemon' ? "bg-lemon" : "bg-navy");
+        resultIcon.innerText = outcome === 'lemon' ? "L" : "N";
+        
+        if(choice === outcome) {
+            const win = amt * 2;
+            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
+            showReceipt("spin", "WON", win);
+        } else {
+            showReceipt("spin", "LOST", amt);
+        }
+        setTimeout(() => card.classList.remove('flip'), 1500);
+    }, 600);
+}
+
+function showReceipt(game, status, amt) {
+    const id = game + "-receipt";
+    const el = document.getElementById(id);
+    el.classList.remove('hidden');
+    document.getElementById(game + '-res-text').innerText = status;
+    document.getElementById(game + '-res-amt').innerText = "₦" + amt;
+    document.getElementById(game + '-res-text').style.color = status === "WON" ? "var(--neon-green)" : "var(--neon-red)";
+}
+
+// UTILS
+function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('nav-' + tab).classList.add('active');
+}
+
+function adjustBet(val) {
+    let el = document.getElementById('bet-amount');
+    el.value = Math.max(50, parseInt(el.value) + val);
+}
+
+function processDeposit() {
+    const amt = parseInt(document.getElementById('deposit-input').value);
+    if(amt < 100) return alert("Min 100");
+    document.getElementById('deposit-modal').style.display='none';
+    let h = PaystackPop.setup({
+        key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
+        callback: function(r) { updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) }); }
+    });
+    h.openIframe();
+}
+
+function processWithdraw() {
+    const amt = parseInt(document.getElementById('withdraw-amount').value);
+    const bank = document.getElementById('withdraw-bank').value;
+    const acct = document.getElementById('withdraw-acct').value;
+    const name = document.getElementById('withdraw-name').value;
+    if(amt > currentBalance) return alert("Insufficient Balance");
+    if(!bank) return alert("Select Bank");
+    
+    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) });
+    document.getElementById('withdraw-modal').style.display='none';
+    const msg = `*WITHDRAW REQUEST*%0AUser: ${currentUser.uid.slice(0,5)}%0AAmt: ₦${amt}%0ABank: ${bank}%0AAcct: ${acct}%0AName: ${name}`;
+    window.open(`https://wa.me/2349125297720?text=${msg}`, '_blank');
+}
