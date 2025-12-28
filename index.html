@@ -15,14 +15,19 @@
             <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
             <p>High Velocity Trading</p>
         </div>
+        
         <div id="login-form" class="auth-box">
             <input type="email" id="login-email" placeholder="Email">
             <input type="password" id="login-pass" placeholder="Password">
+            <div style="text-align:right; margin-bottom:15px;">
+                <span id="forgot-btn" style="color:var(--neon-green); font-size:12px; cursor:pointer;">Forgot Password?</span>
+            </div>
             <button id="email-login-btn" class="neon-btn">Log In</button>
             <div class="divider">OR</div>
             <button id="google-login-btn" class="neon-btn white-btn"><i class="ri-google-fill"></i> Google Sign In</button>
             <p class="switch-auth" id="goto-register">New? <b>Create Account</b></p>
         </div>
+
         <div id="register-form" class="auth-box hidden">
             <input type="text" id="reg-nick" placeholder="Username">
             <input type="email" id="reg-email" placeholder="Email">
@@ -42,24 +47,26 @@
             <div class="round-history-bar" id="round-history"></div>
             
             <div class="game-stage-galaxy">
-                <div class="flight-area">
-                    <i id="plane-icon" class="ri-plane-fill"></i>
-                    <svg class="flight-trail">
-                        <path id="trail-path" d="M0,200 Q100,200 200,50" fill="none" stroke="#ff2d55" stroke-width="2" />
-                    </svg>
-                </div>
+                <svg class="flight-svg" width="100%" height="100%" preserveAspectRatio="none">
+                    <path id="flight-line" d="M0,280 Q150,280 300,50" fill="none" stroke="#ff2d55" stroke-width="3" stroke-dasharray="0,1000"/>
+                </svg>
                 
+                <div id="plane-container">
+                    <i id="plane-icon" class="ri-plane-fill"></i>
+                </div>
+
                 <div class="multiplier-overlay">
                     <span id="multiplier-display">1.00x</span>
                     <div id="status-text">WAITING</div>
                 </div>
             </div>
 
-            <div class="aviator-controls">
-                <div id="aviator-receipt" class="receipt-mini hidden">
-                    <span>Last Round:</span> <b id="av-rcpt-stat">WON</b> <span id="av-rcpt-amt">₦0</span>
-                </div>
+            <div id="aviator-receipt" class="receipt-mini hidden">
+                <div class="rcpt-row"><span>Result:</span> <b id="av-rcpt-stat">WON</b></div>
+                <div class="rcpt-row"><span>Profit:</span> <b id="av-rcpt-amt" style="color:var(--neon-green)">₦0</b></div>
+            </div>
 
+            <div class="aviator-controls">
                 <div class="quick-chips">
                     <button class="chip-btn" data-val="50">50</button>
                     <button class="chip-btn" data-val="100">100</button>
@@ -87,21 +94,19 @@
             <div class="spin-stage">
                 <div class="spin-card-container">
                     <div id="spin-card" class="spin-card">
-                        <div class="front">
-                            <i class="ri-question-mark"></i>
-                        </div>
-                        <div class="back" id="spin-card-back">
-                            </div>
+                        <div class="front"><i class="ri-question-mark"></i></div>
+                        <div class="back" id="spin-card-back"></div>
                     </div>
                 </div>
             </div>
 
             <div class="aviator-controls">
                 <div id="spin-receipt" class="receipt-mini hidden">
-                    <span>Last Spin:</span> <b id="spin-rcpt-stat">LOST</b> <span id="spin-rcpt-amt">₦100</span>
+                    <div class="rcpt-row"><span>Result:</span> <b id="spin-rcpt-stat">LOST</b></div>
+                    <div class="rcpt-row"><span>Return:</span> <b id="spin-rcpt-amt">₦0</b></div>
                 </div>
 
-                <p style="text-align:center; color:#888; font-size:12px; margin-bottom:10px;">PICK A COLOR (x2 WIN)</p>
+                <p style="text-align:center; color:#888; font-size:12px; margin-bottom:10px;">DOUBLE YOUR MONEY (x2)</p>
                 <div class="bet-input-row">
                     <input type="number" id="spin-amount" value="100" placeholder="Stake">
                 </div>
@@ -116,17 +121,25 @@
             <div class="profile-header-card">
                 <div class="avatar-circle"><i class="ri-user-smile-line"></i></div>
                 <h2 id="profile-name">User</h2>
-                <p id="profile-email">email</p>
+                <p id="profile-email">email@example.com</p>
                 <div class="id-badge" id="profile-id">ID: ---</div>
             </div>
+
             <div class="wallet-grid">
                 <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
                 <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
             </div>
-            <a href="https://wa.me/2349125297720" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
-            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transactions</h3>
-            <div id="tx-history"></div>
-            <button id="logout-btn" class="logout-btn">Log Out</button>
+
+            <a href="https://wa.me/2349125297720" class="neon-btn white-btn" style="margin-bottom:15px; text-decoration:none;">
+                <i class="ri-whatsapp-line"></i> Contact Support
+            </a>
+            
+            <button id="logout-btn" class="neon-btn" style="border-color:var(--neon-red); color:var(--neon-red);">
+                <i class="ri-logout-box-r-line"></i> Log Out
+            </button>
+
+            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transaction History</h3>
+            <div id="tx-history" class="history-list"></div>
         </div>
 
         <nav class="game-nav">
@@ -148,14 +161,7 @@
             <input type="number" id="withdraw-amount" placeholder="Amount">
             <select id="withdraw-bank" class="bank-select">
                 <option value="">Select Bank</option>
-                <option value="OPay">OPay</option>
-                <option value="PalmPay">PalmPay</option>
-                <option value="Kuda">Kuda</option>
-                <option value="GTBank">GTBank</option>
-                <option value="Zenith">Zenith</option>
-                <option value="First Bank">First Bank</option>
-                <option value="Access Bank">Access Bank</option>
-                <option value="UBA">UBA</option>
+                <option value="OPay">OPay</option><option value="PalmPay">PalmPay</option><option value="Kuda">Kuda</option><option value="GTBank">GTBank</option><option value="Zenith">Zenith</option><option value="Access">Access</option><option value="UBA">UBA</option>
             </select>
             <input type="text" id="withdraw-acct" placeholder="Account Number">
             <input type="text" id="withdraw-name" placeholder="Account Name">
