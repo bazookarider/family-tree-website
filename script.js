@@ -13,19 +13,16 @@ const firebaseConfig = {
     measurementId: "G-T66B50HFJ8"
 };
 
-const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; 
+const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
 
-// Init
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
-// === 1. SAFETY LOAD ===
+// === SAFETY LOAD ===
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("APP LOADED");
-
     // AUTH
     const googleBtn = document.getElementById('google-login-btn');
     if(googleBtn) googleBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
@@ -48,30 +45,35 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => alert(err.message));
     };
 
+    // NAV
     document.getElementById('goto-register').onclick = () => toggleForms(true);
     document.getElementById('goto-login').onclick = () => toggleForms(false);
     document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>window.location.reload());
 
-    // NAV
     document.getElementById('nav-aviator').onclick = () => switchTab('aviator');
     document.getElementById('nav-spin').onclick = () => switchTab('spin');
     document.getElementById('nav-profile').onclick = () => switchTab('profile');
+
+    // GAME
+    document.getElementById('bet-btn').onclick = placeAviatorBet;
+    document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
+    document.getElementById('inc-bet').onclick = () => adjustBet(50);
+    document.getElementById('dec-bet').onclick = () => adjustBet(-50);
+    
+    // SPIN
+    document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
+    document.getElementById('btn-navy').onclick = () => spinColor('navy');
 
     // MODALS
     document.getElementById('open-deposit-modal').onclick = () => document.getElementById('deposit-modal').style.display='flex';
     document.getElementById('cancel-deposit').onclick = () => document.getElementById('deposit-modal').style.display='none';
     document.getElementById('confirm-deposit').onclick = processDeposit;
+
+    document.getElementById('open-withdraw-modal').onclick = () => document.getElementById('withdraw-modal').style.display='flex';
+    document.getElementById('cancel-withdraw').onclick = () => document.getElementById('withdraw-modal').style.display='none';
+    document.getElementById('confirm-withdraw').onclick = processWithdraw;
+    
     document.getElementById('save-nickname-btn').onclick = saveNick;
-
-    // AVIATOR CONTROLS
-    document.getElementById('bet-btn').onclick = placeAviatorBet;
-    document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
-    document.getElementById('inc-bet').onclick = () => adjustBet(50);
-    document.getElementById('dec-bet').onclick = () => adjustBet(-50);
-
-    // SPIN CONTROLS
-    document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
-    document.getElementById('btn-navy').onclick = () => spinColor('navy');
 });
 
 function toggleForms(showReg) {
@@ -79,7 +81,7 @@ function toggleForms(showReg) {
     document.getElementById('register-form').classList.toggle('hidden', !showReg);
 }
 
-// === 2. AUTH STATE & DASHBOARD ===
+// === AUTH STATE ===
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -94,7 +96,7 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById('nickname-modal').style.display = 'flex';
             }
         } catch (e) {
-            initDashboard({ nickname: "Guest", balance: 0 }); // Fallback
+            initDashboard({ nickname: "Guest", balance: 0 });
         }
     } else {
         document.getElementById('dashboard-screen').classList.add('hidden');
@@ -109,7 +111,7 @@ async function saveNick() {
 }
 
 function initDashboard(data) {
-    document.getElementById('auth-screen').classList.remove('active'); // Hide Auth
+    document.getElementById('auth-screen').classList.remove('active');
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('nickname-modal').style.display = 'none';
     
@@ -119,98 +121,146 @@ function initDashboard(data) {
     document.getElementById('header-nick').innerText = data.nickname || "Player";
     document.getElementById('profile-name').innerText = data.nickname || "Player";
     document.getElementById('profile-email').innerText = currentUser.email;
+    document.getElementById('profile-id').innerText = "ID: " + currentUser.uid.slice(0,6).toUpperCase();
 
     onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
         if(docSnap.exists()) {
             currentBalance = docSnap.data().balance;
             document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
-            renderHistory(docSnap.data().history);
+            renderTxHistory(docSnap.data().history);
         }
     });
 
     startAviatorEngine();
+    startBotSimulation();
 }
 
-function renderHistory(hist) {
+// === TRANSACTION HISTORY & RECEIPTS ===
+function renderTxHistory(hist) {
     const list = document.getElementById('tx-history');
     list.innerHTML = "";
     if(!hist) return;
-    hist.slice(-10).reverse().forEach(tx => {
-        list.innerHTML += `<div class="match-card">
-            <span>${tx.type}</span>
-            <span style="color:${tx.amount>0?'#64ffda':'#ff5f56'}">${tx.amount}</span>
-        </div>`;
+    
+    // Sort Newest First
+    const sorted = [...hist].reverse();
+    
+    sorted.forEach((tx, index) => {
+        // Create Transaction Item
+        const div = document.createElement('div');
+        div.className = 'tx-item';
+        div.innerHTML = `
+            <div>
+                <div style="font-weight:bold;">${tx.type}</div>
+                <div class="tx-type">${new Date(tx.date).toLocaleDateString()}</div>
+            </div>
+            <div class="tx-amount ${tx.amount > 0 ? 'pos' : 'neg'}">
+                ${tx.amount > 0 ? '+' : ''}₦${Math.abs(tx.amount).toLocaleString()}
+            </div>
+        `;
+        
+        // ADD CLICK EVENT FOR RECEIPT
+        div.onclick = () => showReceipt(tx, index);
+        list.appendChild(div);
     });
 }
 
-// === 3. YOUR EXACT AVIATOR LOGIC ===
-function generateCrashPoint() {
-    const random = Math.random();
-    const houseEdge = 0.96; 
-    let crashPoint = Math.floor((houseEdge / (1 - random)) * 100) / 100;
-    if (crashPoint < 1.00) return 1.00;
-    if (crashPoint > 1000) return 1000.00;
-    return crashPoint;
+function showReceipt(tx, index) {
+    document.getElementById('rcpt-type').innerText = tx.type;
+    document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount).toLocaleString();
+    document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
+    document.getElementById('rcpt-id').innerText = "#" + (currentUser.uid.slice(0,4) + index).toUpperCase();
+    document.getElementById('receipt-modal').style.display = 'flex';
 }
 
-let avState="WAITING", avMult=1.00, avBet=0, avCash=false, crashPoint=1.00;
+// === DEPOSIT & WITHDRAW (WHATSAPP) ===
+function processDeposit() {
+    const amt = parseInt(document.getElementById('deposit-input').value);
+    if(amt < 100) return alert("Min 100");
+    document.getElementById('deposit-modal').style.display='none';
+    
+    let h = PaystackPop.setup({
+        key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
+        callback: function(r) { 
+            updateDoc(doc(db, "users", currentUser.uid), { 
+                balance: currentBalance + amt, 
+                history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) 
+            }); 
+        }
+    });
+    h.openIframe();
+}
+
+function processWithdraw() {
+    const amt = parseInt(document.getElementById('withdraw-amount').value);
+    const bank = document.getElementById('withdraw-bank').value;
+    const acct = document.getElementById('withdraw-acct').value;
+    const name = document.getElementById('withdraw-name').value;
+
+    if(amt > currentBalance) return alert("Insufficient Balance");
+    if(!bank || !acct || !name) return alert("Please fill all bank details");
+
+    // 1. Deduct Balance & Record
+    updateDoc(doc(db, "users", currentUser.uid), { 
+        balance: currentBalance - amt, 
+        history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) 
+    });
+
+    document.getElementById('withdraw-modal').style.display='none';
+
+    // 2. Open WhatsApp
+    const msg = `*WITHDRAWAL REQUEST*%0A%0A` +
+                `🆔 User ID: ${currentUser.uid.slice(0,5).toUpperCase()}%0A` +
+                `💰 Amount: ₦${amt.toLocaleString()}%0A` +
+                `🏦 Bank: ${bank}%0A` +
+                `🔢 Acct: ${acct}%0A` +
+                `👤 Name: ${name}%0A%0A` +
+                `Please process this payment.`;
+    
+    window.open(`https://wa.me/2349125297720?text=${msg}`, '_blank');
+}
+
+// === AVIATOR LOGIC ===
+let avState="WAITING", avMult=1.00, avBet=0, avCash=false;
 
 function startAviatorEngine() {
     setInterval(() => {
-        const now = Date.now(), loop = now % 12000; // 12s loop
-        
-        if (loop < 4000) { // WAITING (4s)
+        const now = Date.now(), loop = now % 12000;
+        if (loop < 4000) { 
             if(avState !== "WAITING") {
                 avState = "WAITING";
-                crashPoint = generateCrashPoint(); // NEW CRASH POINT
                 document.getElementById('status-text').innerText = "NEXT ROUND...";
                 document.getElementById('multiplier-display').innerText = "1.00x";
                 document.getElementById('multiplier-display').style.color = "white";
-                document.getElementById('plane-icon').style.transform = "translate(0, 0)";
-                document.getElementById('plane-icon').style.color = "#ff5f56";
-                document.getElementById('crash-msg').classList.add('hidden');
-                
+                document.getElementById('rocket-icon').style.transform = "rotate(0deg)";
                 const btn = document.getElementById('bet-btn');
                 if(avBet > 0 && !avCash) { avBet = 0; btn.innerText = "LOST"; btn.style.background = "#333"; }
-                else { btn.innerText = "BET NEXT ROUND"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; }
+                else { btn.innerText = "BET"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; }
             }
-        } else { // FLYING
+        } else { 
             avState = "FLYING";
             const flyTime = loop - 4000;
-            // Animation: Move from Bottom-Left to Top-Right
-            const x = (flyTime / 8000) * 200; // Move Right
-            const y = (flyTime / 8000) * -150; // Move Up
-            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
-            
-            // Linear Growth for display
-            avMult = (1 + (flyTime/1000) * 0.15 * crashPoint).toFixed(2);
-            if(avMult > crashPoint) avMult = crashPoint; // Cap at crash
+            avMult = (1 + (flyTime/1000) * 0.3).toFixed(2);
+            document.getElementById('status-text').innerText = "FLYING";
+            document.getElementById('rocket-icon').style.transform = "translate(5px, -5px)";
+            const crash = ((Math.floor(now/12000) % 6) + 1.1).toFixed(2);
 
-            if (parseFloat(avMult) >= crashPoint) {
+            if (parseFloat(avMult) >= parseFloat(crash)) {
                 avState = "CRASHED";
-                document.getElementById('multiplier-display').innerText = crashPoint + "x";
+                document.getElementById('multiplier-display').innerText = crash + "x";
                 document.getElementById('multiplier-display').style.color = "var(--neon-red)";
                 document.getElementById('status-text').innerText = "CRASHED";
-                document.getElementById('crash-msg').classList.remove('hidden');
-                
-                // Add History
                 const hist = document.getElementById('round-history');
-                if(!hist.firstChild || hist.firstChild.innerText !== crashPoint+"x") {
-                    let color = crashPoint >= 10 ? 'red' : (crashPoint >= 2 ? 'purple' : 'blue');
-                    hist.innerHTML = `<span class="history-pill ${color}">${crashPoint}x</span>` + hist.innerHTML;
+                if(!hist.firstChild || hist.firstChild.innerText !== crash+"x") {
+                    let c = crash >= 10 ? 'red' : (crash >= 2 ? 'purple' : 'blue');
+                    hist.innerHTML = `<span class="history-pill ${c}">${crash}x</span>` + hist.innerHTML;
                 }
             } else {
                 document.getElementById('multiplier-display').innerText = avMult + "x";
-                document.getElementById('status-text').innerText = "FLYING";
-                
                 if(avBet > 0 && !avCash) {
                     const btn = document.getElementById('bet-btn');
                     btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
                     btn.style.background = "var(--neon-red)"; btn.style.color = "white";
-                    
-                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) {
-                        doCashout();
-                    }
+                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) doCashout();
                 }
             }
         }
@@ -234,32 +284,24 @@ function doCashout() {
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
     document.getElementById('bet-btn').innerText = "WON " + win;
     document.getElementById('bet-btn').style.background = "var(--neon-green)";
+    document.getElementById('bet-btn').style.color = "#0a192f";
 }
 
-// === 4. SPIN DA BOTTLE (RED/BLACK STYLE) ===
+// === SPIN GAME ===
 function spinColor(choice) {
     const amt = parseInt(document.getElementById('spin-amount').value);
     if(amt > currentBalance) return alert("Low Funds");
-    
-    // Deduct
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
 
     const card = document.getElementById('spin-card');
     const resultIcon = document.getElementById('spin-result-icon');
-    
-    // Animation
     card.classList.add('flip');
     
     setTimeout(() => {
-        // Logic: 0-0.5 = Lemon, 0.6-1 = Navy
         const rand = Math.random();
         let outcome = rand <= 0.5 ? 'lemon' : 'navy';
-        
-        // Show result
         resultIcon.style.backgroundColor = outcome === 'lemon' ? '#64ffda' : '#0a192f';
-        resultIcon.style.border = "4px solid white";
         
-        // Win/Loss
         if(choice === outcome) {
             const win = amt * 2;
             updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
@@ -267,8 +309,6 @@ function spinColor(choice) {
         } else {
             alert("LOST!");
         }
-        
-        // Reset
         setTimeout(() => card.classList.remove('flip'), 1000);
     }, 600);
 }
@@ -278,7 +318,6 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    
     document.getElementById('tab-' + tab).classList.remove('hidden');
     document.getElementById('tab-' + tab).classList.add('active');
     document.getElementById('nav-' + tab).classList.add('active');
@@ -289,13 +328,18 @@ function adjustBet(val) {
     el.value = Math.max(50, parseInt(el.value) + val);
 }
 
-function processDeposit() {
-    const amt = parseInt(document.getElementById('deposit-input').value);
-    if(amt < 100) return alert("Min 100");
-    document.getElementById('deposit-modal').style.display='none';
-    let h = PaystackPop.setup({
-        key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
-        callback: function(r) { updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) }); }
-    });
-    h.openIframe();
+function startBotSimulation() {
+    const names = ["Winner22", "Player_X", "Speedy", "Lucky77", "ProGamer", "King01"];
+    const list = document.getElementById('live-bets-list');
+    setInterval(() => {
+        if(avState === "FLYING") {
+            const name = names[Math.floor(Math.random()*names.length)];
+            const amt = [100, 200, 500, 1000][Math.floor(Math.random()*4)];
+            const div = document.createElement('div');
+            div.className = "bot-row win";
+            div.innerHTML = `<span>${name}</span> <span>+${amt}</span>`;
+            list.prepend(div);
+            if(list.children.length > 8) list.removeChild(list.lastChild);
+        }
+    }, 1500);
 }
