@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 const RAPID_API_KEY = "cb7d574582mshf8c7d0e5d409675p1f854fjsn"; 
-const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
+const PAYSTACK_PUB_KEY = "pk_live_114f32ca016af833aecc705ff519c58c499ecf59"; 
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
