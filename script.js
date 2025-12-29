@@ -1,4 +1,4 @@
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -21,32 +21,28 @@ const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
+// === SAFETY LOAD ===
 document.addEventListener('DOMContentLoaded', () => {
     // AUTH
     document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
-    
     document.getElementById('email-login-btn').onclick = () => {
-        const e = document.getElementById('login-email').value;
-        const p = document.getElementById('login-pass').value;
-        if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => alert(err.message));
+        signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
+        .catch(err => showToast(err.message, 'error'));
     };
-
     document.getElementById('email-register-btn').onclick = () => {
         const n = document.getElementById('reg-nick').value;
         const e = document.getElementById('reg-email').value;
         const p = document.getElementById('reg-pass').value;
-        if(!n) return alert("Username required");
+        if(!n) return showToast("Username Required", 'error');
         createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
             await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
             window.location.reload();
-        }).catch(err => alert(err.message));
+        }).catch(err => showToast(err.message, 'error'));
     };
-
-    // FORGOT PASSWORD
     document.getElementById('forgot-btn').onclick = () => {
         const email = document.getElementById('login-email').value;
-        if(!email) return alert("Enter email in the box first");
-        sendPasswordResetEmail(auth, email).then(() => alert("Reset link sent!")).catch(e => alert(e.message));
+        if(!email) return showToast("Enter email first", 'error');
+        sendPasswordResetEmail(auth, email).then(() => showToast("Reset link sent!", 'success')).catch(e => showToast(e.message, 'error'));
     };
 
     // NAV
@@ -58,13 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-spin').onclick = () => switchTab('spin');
     document.getElementById('nav-profile').onclick = () => switchTab('profile');
 
-    // GAME CONTROLS
+    // GAME
     document.getElementById('bet-btn').onclick = placeAviatorBet;
     document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
     document.getElementById('inc-bet').onclick = () => adjustBet(50);
     document.getElementById('dec-bet').onclick = () => adjustBet(-50);
-
-    // SPIN CONTROLS
+    
+    // SPIN
     document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
     document.getElementById('btn-navy').onclick = () => spinColor('navy');
 
@@ -79,6 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('save-nickname-btn').onclick = saveNick;
 });
 
+function showToast(msg, type) {
+    const box = document.getElementById('toast-box');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = msg;
+    box.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
 function toggleForms(showReg) {
     document.getElementById('login-form').classList.toggle('hidden', showReg);
     document.getElementById('register-form').classList.toggle('hidden', !showReg);
@@ -91,16 +96,13 @@ onAuthStateChanged(auth, async (user) => {
         const userRef = doc(db, "users", user.uid);
         try {
             const snap = await getDoc(userRef);
-            if (snap.exists() && snap.data().nickname) {
-                initDashboard(snap.data());
-            } else {
+            if (snap.exists() && snap.data().nickname) initDashboard(snap.data());
+            else {
                 if(!snap.exists()) await setDoc(userRef, { email: user.email, balance: 0, uid: user.uid, history: [] }, {merge:true});
                 document.getElementById('auth-screen').classList.remove('active');
                 document.getElementById('nickname-modal').style.display = 'flex';
             }
-        } catch (e) {
-            initDashboard({ nickname: "Guest", balance: 0 });
-        }
+        } catch (e) { initDashboard({ nickname: "Guest", balance: 0 }); }
     } else {
         document.getElementById('dashboard-screen').classList.add('hidden');
         document.getElementById('auth-screen').classList.remove('hidden');
@@ -114,10 +116,8 @@ async function saveNick() {
 }
 
 function initDashboard(data) {
-    document.getElementById('auth-screen').classList.remove('active'); 
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('nickname-modal').style.display = 'none';
-    
     document.getElementById('dashboard-screen').classList.remove('hidden');
     document.getElementById('dashboard-screen').classList.add('active');
 
@@ -130,26 +130,33 @@ function initDashboard(data) {
         if(docSnap.exists()) {
             currentBalance = docSnap.data().balance;
             document.getElementById('wallet-balance').innerText = currentBalance.toLocaleString();
-            renderHistory(docSnap.data().history);
+            renderTxHistory(docSnap.data().history);
         }
     });
-
     startAviatorEngine();
 }
 
-function renderHistory(hist) {
+function renderTxHistory(hist) {
     const list = document.getElementById('tx-history');
     list.innerHTML = "";
     if(!hist) return;
-    hist.slice(-10).reverse().forEach(tx => {
-        list.innerHTML += `<div class="match-card">
-            <span>${tx.type}</span>
-            <span style="color:${tx.amount>0?'#64ffda':'#ff5f56'}">${tx.amount}</span>
-        </div>`;
+    hist.slice(-20).reverse().forEach((tx, i) => {
+        const div = document.createElement('div');
+        div.className = 'tx-item';
+        div.innerHTML = `<div><b>${tx.type}</b><br><small>${new Date(tx.date).toLocaleDateString()}</small></div><div class="tx-amount ${tx.amount>0?'pos':'neg'}">${tx.amount>0?'+':''}₦${Math.abs(tx.amount)}</div>`;
+        div.onclick = () => showReceipt(tx, i);
+        list.appendChild(div);
     });
 }
 
-// === AVIATOR LOGIC ===
+function showReceipt(tx, i) {
+    document.getElementById('rcpt-type').innerText = tx.type;
+    document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount).toLocaleString();
+    document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
+    document.getElementById('receipt-modal').style.display = 'flex';
+}
+
+// === AVIATOR LOGIC (SLOWED DOWN) ===
 function generateCrashPoint() {
     const random = Math.random();
     const houseEdge = 0.96; 
@@ -165,33 +172,28 @@ function startAviatorEngine() {
     setInterval(() => {
         const now = Date.now(), loop = now % 12000;
         
-        if (loop < 4000) { // WAITING
+        if (loop < 4000) { 
             if(avState !== "WAITING") {
                 avState = "WAITING";
                 crashPoint = generateCrashPoint();
                 document.getElementById('status-text').innerText = "NEXT ROUND...";
                 document.getElementById('multiplier-display').innerText = "1.00x";
                 document.getElementById('multiplier-display').style.color = "white";
-                
                 document.getElementById('plane-icon').style.transform = "translate(0,0)";
-                document.getElementById('plane-icon').style.color = "#ff5f56";
-                document.getElementById('av-receipt').classList.add('hidden'); // Hide old receipt
                 
                 const btn = document.getElementById('bet-btn');
                 if(avBet > 0 && !avCash) { 
-                    avBet = 0; 
-                    btn.innerText = "LOST"; btn.style.background = "#333";
-                    showReceipt("av", "LOST", 0);
+                    avBet = 0; btn.innerText = "LOST"; btn.style.background = "#333";
                 } else { 
                     btn.innerText = "BET NEXT ROUND"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; 
                 }
             }
-        } else { // FLYING
+        } else { 
             avState = "FLYING";
             const flyTime = loop - 4000;
-            // Smooth Curve Logic: x moves linear, y moves ease-in
-            const x = (flyTime / 8000) * 260; // 260px right
-            const y = (flyTime / 8000) * -180; // 180px up
+            // SLOWER ANIMATION
+            const x = (flyTime / 8000) * 260; 
+            const y = (flyTime / 8000) * -180;
             document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
             
             avMult = (1 + (flyTime/1000) * 0.15 * crashPoint).toFixed(2);
@@ -202,12 +204,6 @@ function startAviatorEngine() {
                 document.getElementById('multiplier-display').innerText = crashPoint + "x";
                 document.getElementById('multiplier-display').style.color = "var(--neon-red)";
                 document.getElementById('status-text').innerText = "CRASHED";
-                
-                const hist = document.getElementById('round-history');
-                if(!hist.firstChild || hist.firstChild.innerText !== crashPoint+"x") {
-                    let c = crashPoint >= 10 ? 'red' : (crashPoint >= 2 ? 'purple' : 'blue');
-                    hist.innerHTML = `<span class="history-pill ${c}">${crashPoint}x</span>` + hist.innerHTML;
-                }
             } else {
                 document.getElementById('multiplier-display').innerText = avMult + "x";
                 document.getElementById('status-text').innerText = "FLYING";
@@ -219,13 +215,13 @@ function startAviatorEngine() {
                 }
             }
         }
-    }, 100);
+    }, 300); // 300ms UPDATE RATE (SLOWER)
 }
 
 function placeAviatorBet() {
     if(avState === "WAITING" && avBet === 0) {
         const amt = parseInt(document.getElementById('bet-amount').value);
-        if(amt > currentBalance) return alert("Low Funds");
+        if(amt > currentBalance) return showToast("Low Funds", 'error');
         avBet = amt; avCash = false;
         updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
         document.getElementById('bet-btn').innerText = "BET PLACED";
@@ -240,19 +236,17 @@ function doCashout() {
     document.getElementById('bet-btn').innerText = "WON " + win;
     document.getElementById('bet-btn').style.background = "var(--neon-green)";
     document.getElementById('bet-btn').style.color = "#0a192f";
-    showReceipt("av", "WON", win);
 }
 
-// === SPIN GAME ===
+// === SPIN ===
 function spinColor(choice) {
     const amt = parseInt(document.getElementById('spin-amount').value);
-    if(amt > currentBalance) return alert("Low Funds");
+    if(amt > currentBalance) return showToast("Low Funds", 'error');
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
 
     const card = document.getElementById('spin-card');
     const resultIcon = document.getElementById('spin-result-icon');
     card.classList.add('flip');
-    document.getElementById('spin-receipt').classList.add('hidden'); // hide old
     
     setTimeout(() => {
         const rand = Math.random();
@@ -263,27 +257,17 @@ function spinColor(choice) {
         if(choice === outcome) {
             const win = amt * 2;
             updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
-            showReceipt("spin", "WON", win);
+            showToast("YOU WON ₦" + win, 'success');
         } else {
-            showReceipt("spin", "LOST", amt);
+            showToast("YOU LOST", 'error');
         }
         setTimeout(() => card.classList.remove('flip'), 1500);
     }, 600);
 }
 
-function showReceipt(game, status, amt) {
-    const id = game + "-receipt";
-    const el = document.getElementById(id);
-    el.classList.remove('hidden');
-    document.getElementById(game + '-res-text').innerText = status;
-    document.getElementById(game + '-res-amt').innerText = "₦" + amt;
-    document.getElementById(game + '-res-text').style.color = status === "WON" ? "var(--neon-green)" : "var(--neon-red)";
-}
-
 // UTILS
 function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.remove('hidden');
     document.getElementById('tab-' + tab).classList.add('active');
@@ -297,7 +281,7 @@ function adjustBet(val) {
 
 function processDeposit() {
     const amt = parseInt(document.getElementById('deposit-input').value);
-    if(amt < 100) return alert("Min 100");
+    if(amt < 100) return showToast("Min Deposit 100", 'error');
     document.getElementById('deposit-modal').style.display='none';
     let h = PaystackPop.setup({
         key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
@@ -311,8 +295,10 @@ function processWithdraw() {
     const bank = document.getElementById('withdraw-bank').value;
     const acct = document.getElementById('withdraw-acct').value;
     const name = document.getElementById('withdraw-name').value;
-    if(amt > currentBalance) return alert("Insufficient Balance");
-    if(!bank) return alert("Select Bank");
+    
+    if(amt > currentBalance) return showToast("Insufficient Funds", 'error');
+    if(amt < 200) return showToast("Min Withdraw 200", 'error');
+    if(!bank || !acct) return showToast("Fill Bank Details", 'error');
     
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) });
     document.getElementById('withdraw-modal').style.display='none';
