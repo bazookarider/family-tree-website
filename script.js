@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -15,91 +15,86 @@ const firebaseConfig = {
 
 const PAYSTACK_PUB_KEY = "pk_live_xxxxxxxxxxxxxxxxxxxxxxxx"; 
 
+// Init
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // AUTH
-    document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
-    document.getElementById('email-login-btn').onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
-        .catch(err => showToast(err.message, 'error'));
-    };
-    document.getElementById('email-register-btn').onclick = () => {
-        const n = document.getElementById('reg-nick').value;
-        const e = document.getElementById('reg-email').value;
-        const p = document.getElementById('reg-pass').value;
-        if(!n) return showToast("Username Required", 'error');
-        createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
-            await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
-            window.location.reload();
-        }).catch(err => showToast(err.message, 'error'));
-    };
-    document.getElementById('forgot-btn').onclick = () => {
-        const email = document.getElementById('login-email').value;
-        if(email) sendPasswordResetEmail(auth, email).then(()=>showToast("Reset link sent!", 'success')).catch(e=>showToast(e.message, 'error'));
-        else showToast("Enter email first", 'error');
-    };
+console.log("SCRIPT LOADED - BUTTONS SHOULD WORK NOW");
 
-    // NAV
-    document.getElementById('goto-register').onclick = () => toggleForms(true);
-    document.getElementById('goto-login').onclick = () => toggleForms(false);
-    document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>window.location.reload());
+// ==========================================
+// 1. GLOBAL FUNCTIONS (So HTML can see them)
+// ==========================================
 
-    document.querySelectorAll('.nav-item').forEach(btn => btn.onclick = () => switchTab(btn.innerText.trim().toLowerCase()));
+window.handleGoogleLogin = () => {
+    console.log("Google Login Clicked");
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast(e.message, 'error'));
+};
 
-    // GAME
-    document.getElementById('bet-btn').onclick = placeAviatorBet;
-    document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
-    document.getElementById('inc-bet').onclick = () => adjustBet(50);
-    document.getElementById('dec-bet').onclick = () => adjustBet(-50);
-    document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
-    document.getElementById('btn-navy').onclick = () => spinColor('navy');
+window.handleEmailLogin = () => {
+    console.log("Email Login Clicked");
+    const e = document.getElementById('login-email').value;
+    const p = document.getElementById('login-pass').value;
+    if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => showToast(err.message, 'error'));
+    else showToast("Enter Email & Password", 'error');
+};
 
-    // MODALS
-    document.getElementById('open-deposit-modal').onclick = () => document.getElementById('deposit-modal').style.display='flex';
-    document.getElementById('cancel-deposit').onclick = () => document.getElementById('deposit-modal').style.display='none';
-    document.getElementById('confirm-deposit').onclick = processDeposit;
+window.handleRegister = () => {
+    console.log("Register Clicked");
+    const n = document.getElementById('reg-nick').value;
+    const e = document.getElementById('reg-email').value;
+    const p = document.getElementById('reg-pass').value;
+    if(!n) return showToast("Username Required", 'error');
+    
+    createUserWithEmailAndPassword(auth, e, p).then(async (c) => {
+        await setDoc(doc(db, "users", c.user.uid), { nickname: n, email: e, balance: 0, uid: c.user.uid, history: [] });
+        window.location.reload();
+    }).catch(err => showToast(err.message, 'error'));
+};
 
-    document.getElementById('open-withdraw-modal').onclick = () => document.getElementById('withdraw-modal').style.display='flex';
-    document.getElementById('cancel-withdraw').onclick = () => document.getElementById('withdraw-modal').style.display='none';
-    document.getElementById('confirm-withdraw').onclick = processWithdraw;
-    document.getElementById('save-nickname-btn').onclick = saveNick;
-});
+window.handleForgot = () => {
+    const email = document.getElementById('login-email').value;
+    if(email) sendPasswordResetEmail(auth, email).then(()=>showToast("Reset link sent!", 'success')).catch(e=>showToast(e.message, 'error'));
+    else showToast("Enter email in login box first", 'error');
+};
 
-function showToast(msg, type) {
-    const box = document.getElementById('toast-box');
-    const div = document.createElement('div');
-    div.className = `toast ${type}`;
-    div.innerText = msg;
-    box.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
-}
+window.handleLogout = () => {
+    signOut(auth).then(() => window.location.reload());
+};
 
-function toggleForms(showReg) {
+// Navigation
+window.toggleForms = (showReg) => {
     document.getElementById('login-form').classList.toggle('hidden', showReg);
     document.getElementById('register-form').classList.toggle('hidden', !showReg);
-}
+};
 
-function switchTab(tabName) {
+window.switchTab = (tabName) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
     
-    const id = "tab-" + (tabName.includes("aviator") ? "aviator" : tabName.includes("spin") ? "spin" : "profile");
-    document.getElementById(id).classList.remove('hidden');
-    document.getElementById(id).classList.add('active');
-    
-    const navs = document.querySelectorAll('.nav-item');
-    if(id.includes('aviator')) navs[0].classList.add('active');
-    else if(id.includes('spin')) navs[1].classList.add('active');
-    else navs[2].classList.add('active');
-}
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    document.getElementById('tab-' + tabName).classList.add('active');
+    document.getElementById('nav-' + tabName).classList.add('active');
+};
 
-// === AUTH STATE ===
+// Modals
+window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+// Game Inputs
+window.adjustBet = (val) => {
+    let el = document.getElementById('bet-amount');
+    el.value = Math.max(50, parseInt(el.value) + val);
+};
+window.setChip = (val) => document.getElementById('bet-amount').value = val;
+
+// ==========================================
+// 2. AUTH & DATA LOADING
+// ==========================================
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -119,15 +114,15 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-async function saveNick() {
+window.saveNick = async () => {
     const n = document.getElementById('google-nickname-input').value;
     if(n) { await updateDoc(doc(db, "users", currentUser.uid), { nickname: n }); window.location.reload(); }
-}
+};
 
 function initDashboard(data) {
-    document.getElementById('auth-screen').style.display = 'none'; // FORCE HIDE
+    document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('nickname-modal').style.display = 'none';
-    document.getElementById('dashboard-screen').style.display = 'block'; // FORCE SHOW
+    document.getElementById('dashboard-screen').style.display = 'block';
 
     document.getElementById('header-nick').innerText = data.nickname || "Player";
     document.getElementById('profile-name').innerText = data.nickname || "Player";
@@ -148,31 +143,42 @@ function renderTxHistory(hist) {
     const list = document.getElementById('tx-history');
     list.innerHTML = "";
     if(!hist) return;
-    hist.slice(-20).reverse().forEach((tx, i) => {
+    hist.slice(-15).reverse().forEach((tx, i) => {
         const div = document.createElement('div');
         div.className = 'tx-item';
         div.innerHTML = `<div><b>${tx.type}</b><br><small style="color:#888">${new Date(tx.date).toLocaleDateString()}</small></div>
                          <div class="tx-amt ${tx.amount>0?'pos':'neg'}">${tx.amount>0?'+':''}₦${Math.abs(tx.amount)}</div>`;
-        div.onclick = () => {
-            document.getElementById('rcpt-type').innerText = tx.type;
-            document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount);
-            document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
-            document.getElementById('receipt-modal').style.display = 'flex';
-        };
+        div.onclick = () => showReceipt(tx, i);
         list.appendChild(div);
     });
 }
 
-// === AVIATOR LOGIC (FAST + 15s WAIT) ===
+function showReceipt(tx, i) {
+    document.getElementById('rcpt-type').innerText = tx.type;
+    document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount);
+    document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
+    document.getElementById('receipt-modal').style.display = 'flex';
+}
+
+function showToast(msg, type) {
+    const box = document.getElementById('toast-box');
+    box.innerHTML = `<div class="toast ${type}">${msg}</div>`;
+    setTimeout(() => box.innerHTML = "", 3000);
+}
+
+// ==========================================
+// 3. AVIATOR ENGINE (VERY SLOW)
+// ==========================================
 let avState="WAITING", avMult=1.00, avBet=0, avCash=false, crashPoint=1.00;
 
 function startAviatorEngine() {
     setInterval(() => {
-        const now = Date.now(), loop = now % 15000; // 15s Round (5s wait + 10s fly)
+        const now = Date.now(), loop = now % 20000; // 20 Seconds Loop (Very Long)
         
-        if (loop < 5000) { // 5s COUNTDOWN
+        if (loop < 5000) { // 5s Waiting (Countdown)
             if(avState !== "WAITING") {
                 avState = "WAITING";
+                // 96% RTP
                 const r = Math.random();
                 crashPoint = Math.floor((0.96 / (1 - r)) * 100) / 100;
                 if(crashPoint < 1.00) crashPoint = 1.00;
@@ -185,28 +191,26 @@ function startAviatorEngine() {
                 const btn = document.getElementById('bet-btn');
                 if(avBet > 0 && !avCash) { 
                     avBet = 0; btn.innerText = "LOST"; btn.style.background = "#333";
-                    showToast("You Lost", 'error');
                 } else { 
                     btn.innerText = "BET NEXT ROUND"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; 
                 }
             }
+            // Countdown Text
             const sec = Math.ceil((5000 - loop)/1000);
-            document.getElementById('status-text').innerText = `STARTING IN ${sec}s`;
-            document.getElementById('countdown-display').innerText = sec + "s";
-            document.getElementById('countdown-display').classList.remove('hidden');
+            document.getElementById('status-text').innerText = `STARTS IN ${sec}s`;
 
-        } else { // FLYING
+        } else { // FLYING (15s Duration)
             avState = "FLYING";
-            document.getElementById('countdown-display').classList.add('hidden');
             const flyTime = loop - 5000;
             
-            // Standard Animation Speed (100ms ticks)
-            const x = (flyTime / 10000) * 280; 
-            const y = (flyTime / 10000) * -200;
-            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
-            
-            avMult = (1 + (flyTime/10000) * 0.2 * crashPoint).toFixed(2);
+            // SUPER SLOW GROWTH (0.05 factor)
+            avMult = (1 + (flyTime/15000) * 0.05 * crashPoint).toFixed(2);
             if(avMult > crashPoint) avMult = crashPoint;
+
+            // Plane Movement
+            const x = (flyTime / 15000) * 260; 
+            const y = (flyTime / 15000) * -180;
+            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
 
             if (parseFloat(avMult) >= crashPoint) {
                 avState = "CRASHED";
@@ -214,9 +218,7 @@ function startAviatorEngine() {
                 document.getElementById('multiplier-display').style.color = "var(--neon-red)";
                 document.getElementById('status-text').innerText = "CRASHED";
                 
-                // STOP PLANE
-                document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`; 
-                
+                // Add History Pill (Purple/Blue/Pink)
                 const hist = document.getElementById('round-history');
                 if(!hist.firstChild || hist.firstChild.innerText !== crashPoint+"x") {
                     let c = crashPoint >= 10 ? 'pink' : (crashPoint >= 2 ? 'purple' : 'blue');
@@ -224,19 +226,19 @@ function startAviatorEngine() {
                 }
             } else {
                 document.getElementById('multiplier-display').innerText = avMult + "x";
-                document.getElementById('status-text').innerText = "FLYING";
+                document.getElementById('status-text').innerText = "FLYING...";
                 if(avBet > 0 && !avCash) {
                     const btn = document.getElementById('bet-btn');
                     btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
                     btn.style.background = "var(--neon-red)"; btn.style.color = "white";
-                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) doCashout();
+                    if(document.getElementById('auto-cashout-toggle').checked && avMult >= document.getElementById('auto-cashout-val').value) window.doCashout();
                 }
             }
         }
-    }, 100); // 100ms = Smooth/Fast Updates
+    }, 500); // Update every 0.5s (Very Slow Ticks)
 }
 
-function placeAviatorBet() {
+window.placeAviatorBet = () => {
     if(avState === "WAITING" && avBet === 0) {
         const amt = parseInt(document.getElementById('bet-amount').value);
         if(amt > currentBalance) return showToast("Low Funds", 'error');
@@ -244,60 +246,22 @@ function placeAviatorBet() {
         updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Aviator", amount:-amt, date:new Date().toISOString()}) });
         document.getElementById('bet-btn').innerText = "BET PLACED";
         document.getElementById('bet-btn').style.background = "#ff9900";
-    } else if (avState === "FLYING" && avBet > 0 && !avCash) doCashout();
-}
+    } else if (avState === "FLYING" && avBet > 0 && !avCash) window.doCashout();
+};
 
-function doCashout() {
+window.doCashout = () => {
     avCash = true;
     const win = Math.floor(avBet * avMult);
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
-    document.getElementById('bet-btn').innerText = "WON " + win;
+    document.getElementById('bet-btn').innerText = "WON";
     document.getElementById('bet-btn').style.background = "var(--neon-green)";
-    document.getElementById('bet-btn').style.color = "#0a192f";
     document.getElementById('av-rcpt-text').innerText = "WON ₦" + win;
     document.getElementById('av-receipt').classList.remove('hidden');
     showToast("WON ₦" + win, 'success');
-}
+};
 
-// === SPIN ===
-function spinColor(choice) {
-    const amt = parseInt(document.getElementById('spin-amount').value);
-    if(amt > currentBalance) return showToast("Low Funds", 'error');
-    updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
-
-    const card = document.getElementById('spin-card');
-    const icon = document.getElementById('spin-result-icon');
-    card.classList.add('flip');
-    document.getElementById('spin-receipt').classList.add('hidden');
-    
-    setTimeout(() => {
-        const rand = Math.random();
-        let outcome = rand <= 0.5 ? 'lemon' : 'navy';
-        icon.className = "back " + (outcome === 'lemon' ? "bg-lemon" : "bg-navy");
-        icon.innerText = outcome === 'lemon' ? "L" : "N";
-        
-        if(choice === outcome) {
-            const win = amt * 2;
-            updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
-            document.getElementById('spin-rcpt-text').innerText = "WON ₦" + win;
-            document.getElementById('spin-rcpt-text').style.color = "var(--neon-green)";
-            showToast("WIN! ₦" + win, 'success');
-        } else {
-            document.getElementById('spin-rcpt-text').innerText = "LOST ₦" + amt;
-            document.getElementById('spin-rcpt-text').style.color = "var(--neon-red)";
-            showToast("LOST", 'error');
-        }
-        document.getElementById('spin-receipt').classList.remove('hidden');
-        setTimeout(() => card.classList.remove('flip'), 1500);
-    }, 600);
-}
-
-function adjustBet(val) {
-    let el = document.getElementById('bet-amount');
-    el.value = Math.max(50, parseInt(el.value) + val);
-}
-
-function processDeposit() {
+// === PAYMENT FUNCTIONS ===
+window.processDeposit = () => {
     const amt = parseInt(document.getElementById('deposit-input').value);
     if(amt < 100) return showToast("Min Deposit 100", 'error');
     document.getElementById('deposit-modal').style.display='none';
@@ -306,19 +270,20 @@ function processDeposit() {
         callback: function(r) { updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + amt, history: arrayUnion({type:"Deposit", amount:amt, date:new Date().toISOString()}) }); }
     });
     h.openIframe();
-}
+};
 
-function processWithdraw() {
+window.processWithdraw = () => {
     const amt = parseInt(document.getElementById('withdraw-amount').value);
     const bank = document.getElementById('withdraw-bank').value;
     const acct = document.getElementById('withdraw-acct').value;
     const name = document.getElementById('withdraw-name').value;
+    
     if(amt > currentBalance) return showToast("Insufficient Funds", 'error');
-    if(amt < 200) return showToast("Min Withdraw ₦200", 'error');
-    if(!bank || !acct) return showToast("Fill details", 'error');
+    if(amt < 200) return showToast("Min Withdraw 200", 'error');
+    if(!bank || !acct) return showToast("Fill all details", 'error');
     
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) });
     document.getElementById('withdraw-modal').style.display='none';
     const msg = `*WITHDRAW REQUEST*%0AUser: ${currentUser.uid.slice(0,5)}%0AAmt: ₦${amt}%0ABank: ${bank}%0AAcct: ${acct}%0AName: ${name}`;
     window.open(`https://wa.me/2349125297720?text=${msg}`, '_blank');
-}
+};
