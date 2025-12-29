@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -21,14 +21,16 @@ const db = getFirestore(app);
 let currentUser = null;
 let currentBalance = 0;
 
-// === SAFETY LOAD ===
 document.addEventListener('DOMContentLoaded', () => {
-    // AUTH
+    // AUTH BUTTONS
     document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+    
     document.getElementById('email-login-btn').onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
-        .catch(err => showToast(err.message, 'error'));
+        const e = document.getElementById('login-email').value;
+        const p = document.getElementById('login-pass').value;
+        if(e && p) signInWithEmailAndPassword(auth, e, p).catch(err => showToast(err.message, 'error'));
     };
+
     document.getElementById('email-register-btn').onclick = () => {
         const n = document.getElementById('reg-nick').value;
         const e = document.getElementById('reg-email').value;
@@ -39,28 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.reload();
         }).catch(err => showToast(err.message, 'error'));
     };
+
     document.getElementById('forgot-btn').onclick = () => {
         const email = document.getElementById('login-email').value;
-        if(!email) return showToast("Enter email first", 'error');
-        sendPasswordResetEmail(auth, email).then(() => showToast("Reset link sent!", 'success')).catch(e => showToast(e.message, 'error'));
+        if(email) sendPasswordResetEmail(auth, email).then(()=>showToast("Reset link sent!", 'success')).catch(e=>showToast(e.message, 'error'));
     };
 
     // NAV
-    document.getElementById('goto-register').onclick = () => toggleForms(true);
-    document.getElementById('goto-login').onclick = () => toggleForms(false);
     document.getElementById('logout-btn').onclick = () => signOut(auth).then(()=>window.location.reload());
+    document.querySelectorAll('.nav-item').forEach(btn => btn.onclick = () => switchTab(btn.innerText.trim().toLowerCase()));
 
-    document.getElementById('nav-aviator').onclick = () => switchTab('aviator');
-    document.getElementById('nav-spin').onclick = () => switchTab('spin');
-    document.getElementById('nav-profile').onclick = () => switchTab('profile');
-
-    // GAME
+    // GAME CONTROLS
     document.getElementById('bet-btn').onclick = placeAviatorBet;
-    document.querySelectorAll('.chip-btn').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.dataset.val);
-    document.getElementById('inc-bet').onclick = () => adjustBet(50);
-    document.getElementById('dec-bet').onclick = () => adjustBet(-50);
+    document.querySelectorAll('.chip').forEach(b => b.onclick = () => document.getElementById('bet-amount').value = b.innerText);
     
-    // SPIN
+    // SPIN CONTROLS
     document.getElementById('btn-lemon').onclick = () => spinColor('lemon');
     document.getElementById('btn-navy').onclick = () => spinColor('navy');
 
@@ -77,14 +72,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showToast(msg, type) {
     const box = document.getElementById('toast-box');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerText = msg;
-    box.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    const div = document.createElement('div');
+    div.className = `toast ${type}`;
+    div.innerText = msg;
+    box.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
 }
 
-function toggleForms(showReg) {
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    // Convert text to ID format
+    const id = "tab-" + (tabName.includes("aviator") ? "aviator" : tabName.includes("spin") ? "spin" : "profile");
+    document.getElementById(id).classList.remove('hidden');
+    document.getElementById(id).classList.add('active');
+    
+    // Nav highlight (simple logic)
+    const navs = document.querySelectorAll('.nav-item');
+    if(id.includes('aviator')) navs[0].classList.add('active');
+    else if(id.includes('spin')) navs[1].classList.add('active');
+    else navs[2].classList.add('active');
+}
+
+function toggleAuth(showReg) {
     document.getElementById('login-form').classList.toggle('hidden', showReg);
     document.getElementById('register-form').classList.toggle('hidden', !showReg);
 }
@@ -96,17 +108,17 @@ onAuthStateChanged(auth, async (user) => {
         const userRef = doc(db, "users", user.uid);
         try {
             const snap = await getDoc(userRef);
-            if (snap.exists() && snap.data().nickname) initDashboard(snap.data());
-            else {
+            if (snap.exists() && snap.data().nickname) {
+                initDashboard(snap.data());
+            } else {
                 if(!snap.exists()) await setDoc(userRef, { email: user.email, balance: 0, uid: user.uid, history: [] }, {merge:true});
-                document.getElementById('auth-screen').classList.remove('active');
+                document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('nickname-modal').style.display = 'flex';
             }
         } catch (e) { initDashboard({ nickname: "Guest", balance: 0 }); }
     } else {
-        document.getElementById('dashboard-screen').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('auth-screen').classList.add('active');
+        document.getElementById('dashboard-screen').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'block';
     }
 });
 
@@ -116,10 +128,9 @@ async function saveNick() {
 }
 
 function initDashboard(data) {
-    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'none'; // HARD HIDE
     document.getElementById('nickname-modal').style.display = 'none';
-    document.getElementById('dashboard-screen').classList.remove('hidden');
-    document.getElementById('dashboard-screen').classList.add('active');
+    document.getElementById('dashboard-screen').style.display = 'block'; // HARD SHOW
 
     document.getElementById('header-nick').innerText = data.nickname || "Player";
     document.getElementById('profile-name').innerText = data.nickname || "Player";
@@ -143,70 +154,77 @@ function renderTxHistory(hist) {
     hist.slice(-20).reverse().forEach((tx, i) => {
         const div = document.createElement('div');
         div.className = 'tx-item';
-        div.innerHTML = `<div><b>${tx.type}</b><br><small>${new Date(tx.date).toLocaleDateString()}</small></div><div class="tx-amount ${tx.amount>0?'pos':'neg'}">${tx.amount>0?'+':''}₦${Math.abs(tx.amount)}</div>`;
-        div.onclick = () => showReceipt(tx, i);
+        div.innerHTML = `<div><b>${tx.type}</b><br><small style="color:#888">${new Date(tx.date).toLocaleDateString()}</small></div>
+                         <div class="tx-amt ${tx.amount>0?'pos':'neg'}">${tx.amount>0?'+':''}₦${Math.abs(tx.amount)}</div>`;
+        
+        // CLICK FOR RECEIPT
+        div.onclick = () => {
+            document.getElementById('rcpt-type').innerText = tx.type;
+            document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount);
+            document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
+            document.getElementById('receipt-modal').style.display = 'flex';
+        };
         list.appendChild(div);
     });
 }
 
-function showReceipt(tx, i) {
-    document.getElementById('rcpt-type').innerText = tx.type;
-    document.getElementById('rcpt-amt').innerText = "₦" + Math.abs(tx.amount).toLocaleString();
-    document.getElementById('rcpt-date').innerText = new Date(tx.date).toLocaleString();
-    document.getElementById('receipt-modal').style.display = 'flex';
-}
-
-// === AVIATOR LOGIC (SLOWED DOWN) ===
-function generateCrashPoint() {
-    const random = Math.random();
-    const houseEdge = 0.96; 
-    let crashPoint = Math.floor((houseEdge / (1 - random)) * 100) / 100;
-    if (crashPoint < 1.00) return 1.00;
-    if (crashPoint > 1000) return 1000.00;
-    return crashPoint;
-}
-
+// === SLOW AVIATOR ===
 let avState="WAITING", avMult=1.00, avBet=0, avCash=false, crashPoint=1.00;
 
 function startAviatorEngine() {
     setInterval(() => {
-        const now = Date.now(), loop = now % 12000;
+        const now = Date.now(), loop = now % 15000; // 15 Seconds Loop (Slower)
         
-        if (loop < 4000) { 
+        if (loop < 5000) { // 5s Waiting Time
             if(avState !== "WAITING") {
                 avState = "WAITING";
-                crashPoint = generateCrashPoint();
+                // Math: 96% RTP
+                const r = Math.random();
+                crashPoint = Math.floor((0.96 / (1 - r)) * 100) / 100;
+                if(crashPoint < 1.00) crashPoint = 1.00;
+                if(crashPoint > 1000) crashPoint = 1000;
+
                 document.getElementById('status-text').innerText = "NEXT ROUND...";
                 document.getElementById('multiplier-display').innerText = "1.00x";
                 document.getElementById('multiplier-display').style.color = "white";
                 document.getElementById('plane-icon').style.transform = "translate(0,0)";
+                document.getElementById('av-receipt').classList.add('hidden');
                 
                 const btn = document.getElementById('bet-btn');
                 if(avBet > 0 && !avCash) { 
                     avBet = 0; btn.innerText = "LOST"; btn.style.background = "#333";
+                    showToast("You Lost", 'error');
                 } else { 
                     btn.innerText = "BET NEXT ROUND"; btn.style.background = "var(--neon-green)"; btn.style.color = "#0a192f"; 
                 }
             }
         } else { 
             avState = "FLYING";
-            const flyTime = loop - 4000;
-            // SLOWER ANIMATION
-            const x = (flyTime / 8000) * 260; 
-            const y = (flyTime / 8000) * -180;
-            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
-            
-            avMult = (1 + (flyTime/1000) * 0.15 * crashPoint).toFixed(2);
+            const flyTime = loop - 5000;
+            // SLOW GROWTH: 0.01 per step approximately
+            avMult = (1 + (flyTime/10000) * 0.2 * crashPoint).toFixed(2);
             if(avMult > crashPoint) avMult = crashPoint;
+
+            // Slow Plane Movement
+            const x = (flyTime / 10000) * 280; 
+            const y = (flyTime / 10000) * -200;
+            document.getElementById('plane-icon').style.transform = `translate(${x}px, ${y}px)`;
 
             if (parseFloat(avMult) >= crashPoint) {
                 avState = "CRASHED";
                 document.getElementById('multiplier-display').innerText = crashPoint + "x";
                 document.getElementById('multiplier-display').style.color = "var(--neon-red)";
                 document.getElementById('status-text').innerText = "CRASHED";
+                
+                const hist = document.getElementById('round-history');
+                if(!hist.firstChild || hist.firstChild.innerText !== crashPoint+"x") {
+                    let c = crashPoint >= 10 ? 'big' : (crashPoint >= 2 ? 'win' : '');
+                    hist.innerHTML = `<span class="pill ${c}">${crashPoint}x</span>` + hist.innerHTML;
+                }
             } else {
                 document.getElementById('multiplier-display').innerText = avMult + "x";
                 document.getElementById('status-text').innerText = "FLYING";
+                
                 if(avBet > 0 && !avCash) {
                     const btn = document.getElementById('bet-btn');
                     btn.innerText = "CASH OUT " + Math.floor(avBet * avMult);
@@ -215,7 +233,7 @@ function startAviatorEngine() {
                 }
             }
         }
-    }, 300); // 300ms UPDATE RATE (SLOWER)
+    }, 400); // 400ms update = Slow Ticks
 }
 
 function placeAviatorBet() {
@@ -233,9 +251,10 @@ function doCashout() {
     avCash = true;
     const win = Math.floor(avBet * avMult);
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Aviator", amount:win, date:new Date().toISOString()}) });
-    document.getElementById('bet-btn').innerText = "WON " + win;
+    document.getElementById('bet-btn').innerText = "WON";
     document.getElementById('bet-btn').style.background = "var(--neon-green)";
-    document.getElementById('bet-btn').style.color = "#0a192f";
+    document.getElementById('av-rcpt-text').innerText = "WON ₦" + win;
+    document.getElementById('av-receipt').classList.remove('hidden');
 }
 
 // === SPIN ===
@@ -245,43 +264,34 @@ function spinColor(choice) {
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Bet Spin", amount:-amt, date:new Date().toISOString()}) });
 
     const card = document.getElementById('spin-card');
-    const resultIcon = document.getElementById('spin-result-icon');
+    const icon = document.getElementById('spin-result-icon');
     card.classList.add('flip');
+    document.getElementById('spin-receipt').classList.add('hidden');
     
     setTimeout(() => {
         const rand = Math.random();
         let outcome = rand <= 0.5 ? 'lemon' : 'navy';
-        resultIcon.className = "back " + (outcome === 'lemon' ? "bg-lemon" : "bg-navy");
-        resultIcon.innerText = outcome === 'lemon' ? "L" : "N";
+        icon.className = "back " + (outcome === 'lemon' ? "lemon" : "navy");
+        icon.innerText = outcome === 'lemon' ? "L" : "N";
         
         if(choice === outcome) {
             const win = amt * 2;
             updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance + win, history: arrayUnion({type:"Win Spin", amount:win, date:new Date().toISOString()}) });
-            showToast("YOU WON ₦" + win, 'success');
+            document.getElementById('spin-rcpt-text').innerText = "WON ₦" + win;
+            document.getElementById('spin-rcpt-text').style.color = "var(--neon-green)";
         } else {
-            showToast("YOU LOST", 'error');
+            document.getElementById('spin-rcpt-text').innerText = "LOST ₦" + amt;
+            document.getElementById('spin-rcpt-text').style.color = "var(--neon-red)";
         }
+        document.getElementById('spin-receipt').classList.remove('hidden');
         setTimeout(() => card.classList.remove('flip'), 1500);
     }, 600);
 }
 
-// UTILS
-function switchTab(tab) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.remove('hidden');
-    document.getElementById('tab-' + tab).classList.add('active');
-    document.getElementById('nav-' + tab).classList.add('active');
-}
-
-function adjustBet(val) {
-    let el = document.getElementById('bet-amount');
-    el.value = Math.max(50, parseInt(el.value) + val);
-}
-
+// === DEPOSIT & WITHDRAW ===
 function processDeposit() {
     const amt = parseInt(document.getElementById('deposit-input').value);
-    if(amt < 100) return showToast("Min Deposit 100", 'error');
+    if(amt < 100) return showToast("Min Deposit ₦100", 'error');
     document.getElementById('deposit-modal').style.display='none';
     let h = PaystackPop.setup({
         key: PAYSTACK_PUB_KEY, email: currentUser.email, amount: amt*100, currency: "NGN",
@@ -292,16 +302,21 @@ function processDeposit() {
 
 function processWithdraw() {
     const amt = parseInt(document.getElementById('withdraw-amount').value);
+    if(amt < 200) return showToast("Min Withdraw ₦200", 'error');
+    if(amt > currentBalance) return showToast("Insufficient Funds", 'error');
+    
     const bank = document.getElementById('withdraw-bank').value;
     const acct = document.getElementById('withdraw-acct').value;
     const name = document.getElementById('withdraw-name').value;
-    
-    if(amt > currentBalance) return showToast("Insufficient Funds", 'error');
-    if(amt < 200) return showToast("Min Withdraw 200", 'error');
-    if(!bank || !acct) return showToast("Fill Bank Details", 'error');
-    
+    if(!bank || !acct || !name) return showToast("Fill all details", 'error');
+
     updateDoc(doc(db, "users", currentUser.uid), { balance: currentBalance - amt, history: arrayUnion({type:"Withdrawal", amount:-amt, date:new Date().toISOString()}) });
     document.getElementById('withdraw-modal').style.display='none';
     const msg = `*WITHDRAW REQUEST*%0AUser: ${currentUser.uid.slice(0,5)}%0AAmt: ₦${amt}%0ABank: ${bank}%0AAcct: ${acct}%0AName: ${name}`;
     window.open(`https://wa.me/2349125297720?text=${msg}`, '_blank');
+}
+
+function adjustBet(val) {
+    let el = document.getElementById('bet-amount');
+    el.value = Math.max(50, parseInt(el.value) + val);
 }
