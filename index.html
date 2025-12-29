@@ -17,21 +17,17 @@
             <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
             <p>High Velocity Trading</p>
         </div>
-
         <div id="login-form" class="auth-box">
-            <input type="email" id="login-email" placeholder="Email Address">
+            <input type="email" id="login-email" placeholder="Email">
             <input type="password" id="login-pass" placeholder="Password">
             <div style="text-align:right; margin-bottom:15px;">
                 <span id="forgot-btn" style="color:#64ffda; font-size:12px; cursor:pointer;">Forgot Password?</span>
             </div>
             <button id="email-login-btn" class="neon-btn">Log In</button>
             <div class="divider">OR</div>
-            <button id="google-login-btn" class="neon-btn white-btn">
-                <i class="ri-google-fill"></i> Google Sign In
-            </button>
+            <button id="google-login-btn" class="neon-btn white-btn"><i class="ri-google-fill"></i> Google Sign In</button>
             <p class="switch-text" id="goto-register">New? <b>Create Account</b></p>
         </div>
-
         <div id="register-form" class="auth-box hidden">
             <input type="text" id="reg-nick" placeholder="Username">
             <input type="email" id="reg-email" placeholder="Email">
@@ -54,11 +50,13 @@
                 <div class="flight-area">
                     <i id="plane-icon" class="ri-plane-fill"></i>
                 </div>
-                
                 <div class="multiplier-overlay">
                     <span id="multiplier-display">1.00x</span>
                     <div id="status-text">WAITING</div>
-                    <div id="countdown-display" class="hidden">15s</div>
+                    <div id="countdown-display" class="hidden">5s</div>
+                </div>
+                <div id="av-receipt" class="live-receipt hidden">
+                    RESULT: <b id="av-res-text">WON</b> <span id="av-res-amt">₦0</span>
                 </div>
             </div>
 
@@ -88,11 +86,12 @@
 
         <div id="tab-spin" class="tab-content hidden">
             <div class="spin-stage">
-                <div class="card-container">
-                    <div id="spin-card" class="spin-card">
-                        <div class="front"><i class="ri-question-mark"></i></div>
-                        <div class="back" id="spin-result-icon"></div>
-                    </div>
+                <div id="spin-card" class="spin-card">
+                    <div class="front"><i class="ri-question-mark"></i></div>
+                    <div class="back" id="spin-result-icon"></div>
+                </div>
+                <div id="spin-receipt" class="live-receipt hidden" style="margin-top:15px;">
+                    RESULT: <b id="spin-res-text">LOST</b> <span id="spin-res-amt">₦100</span>
                 </div>
             </div>
             <div class="control-panel">
@@ -114,22 +113,30 @@
             </div>
 
             <div class="wallet-grid">
-                <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
-                <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
+                <button id="open-deposit-modal" class="w-btn deposit">
+                    <i class="ri-add-circle-fill"></i> Deposit
+                </button>
+                <button id="open-withdraw-modal" class="w-btn withdraw">
+                    <i class="ri-bank-card-2-line"></i> Withdraw
+                </button>
             </div>
 
-            <a href="https://wa.me/2349125297720" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
-            
-            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transaction History</h3>
-            <div id="tx-history" class="tx-list"></div>
+            <a href="https://wa.me/2349125297720" class="menu-item highlight">
+                <i class="ri-whatsapp-line"></i> Contact Support
+            </a>
 
-            <button id="logout-btn" class="logout-btn">Log Out</button>
+            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transactions</h3>
+            <div id="tx-history"></div>
+
+            <button id="logout-btn" class="logout-btn">
+                <i class="ri-logout-box-r-line"></i> Log Out
+            </button>
         </div>
 
         <nav class="game-nav">
-            <button class="nav-btn active" id="nav-aviator"><i class="ri-rocket-2-fill"></i><span>Aviator</span></button>
-            <button class="nav-btn" id="nav-spin"><i class="ri-copper-coin-line"></i><span>Spin</span></button>
-            <button class="nav-btn" id="nav-profile"><i class="ri-user-3-line"></i><span>Profile</span></button>
+            <button class="nav-item active" id="nav-aviator"><i class="ri-rocket-2-fill"></i><span>Aviator</span></button>
+            <button class="nav-item" id="nav-spin"><i class="ri-copper-coin-line"></i><span>Spin</span></button>
+            <button class="nav-item" id="nav-profile"><i class="ri-user-3-line"></i><span>Profile</span></button>
         </nav>
     </div>
 
@@ -150,8 +157,6 @@
                 <option value="Kuda">Kuda</option>
                 <option value="GTBank">GTBank</option>
                 <option value="Access">Access</option>
-                <option value="Zenith">Zenith</option>
-                <option value="FirstBank">FirstBank</option>
                 <option value="UBA">UBA</option>
             </select>
             <input type="text" id="withdraw-acct" placeholder="Account Number">
@@ -159,12 +164,11 @@
             <div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div>
         </div>
     </div>
-    
     <div id="receipt-modal" class="modal-overlay">
         <div class="modal-box receipt-box">
             <h2 style="color:var(--neon-green)">Transaction Receipt</h2>
             <div class="receipt-row"><span>Type</span> <b id="rcpt-type">-</b></div>
-            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt">-</b></div>
+            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt" style="color:white">-</b></div>
             <div class="receipt-row"><span>Date</span> <small id="rcpt-date">-</small></div>
             <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green)">SUCCESS</b></div>
             <button onclick="document.getElementById('receipt-modal').style.display='none'" class="neon-btn full" style="margin-top:15px;">Close</button>
