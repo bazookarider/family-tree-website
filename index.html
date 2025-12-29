@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VeloBet | Casino</title>
+    <title>VeloBet</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+    <div id="toast-box"></div>
 
     <div id="auth-screen" class="screen active">
         <div class="logo-area">
@@ -44,23 +46,14 @@
         <div id="tab-aviator" class="tab-content active">
             <div class="game-stage-galaxy">
                 <div class="flight-curve">
-                    <svg width="100%" height="100%" viewBox="0 0 300 200" preserveAspectRatio="none">
-                        <path id="curve-line" d="M0,200 Q150,200 280,20" fill="none" stroke="#ff2d55" stroke-width="3" stroke-dasharray="10,5" style="opacity:0.5"/>
-                    </svg>
                     <i id="plane-icon" class="ri-plane-fill"></i>
                 </div>
-                
                 <div class="multiplier-overlay">
                     <span id="multiplier-display">1.00x</span>
                     <div id="status-text">WAITING</div>
                 </div>
-                <div id="av-receipt" class="live-receipt hidden">
-                    RESULT: <b id="av-res-text">WON</b> <span id="av-res-amt">₦0</span>
-                </div>
             </div>
-
             <div class="round-history-bar" id="round-history"></div>
-
             <div class="aviator-controls">
                 <div class="quick-chips">
                     <button class="chip-btn" data-val="50">50</button>
@@ -91,11 +84,7 @@
                     <div class="front"><i class="ri-question-mark"></i></div>
                     <div class="back" id="spin-result-icon"></div>
                 </div>
-                <div id="spin-receipt" class="live-receipt hidden" style="margin-top:15px;">
-                    RESULT: <b id="spin-res-text">LOST</b> <span id="spin-res-amt">₦100</span>
-                </div>
             </div>
-
             <div class="aviator-controls">
                 <p style="text-align:center; color:#888; font-size:12px;">DOUBLE YOUR MONEY (x2)</p>
                 <input type="number" id="spin-amount" value="100" style="text-align:center; font-weight:bold; margin-bottom:10px;">
@@ -113,19 +102,14 @@
                 <p id="profile-email">email</p>
                 <div class="id-badge" id="profile-id">ID: ---</div>
             </div>
-
             <div class="wallet-grid">
                 <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
                 <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
             </div>
-
-            <div class="simple-actions">
-                <a href="https://wa.me/2349125297720" class="simple-link">Contact Support</a>
-                <button id="logout-btn" class="simple-link text-red">Log Out</button>
-            </div>
-
+            <a href="https://wa.me/2349125297720" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
             <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transactions</h3>
             <div id="tx-history"></div>
+            <button id="logout-btn" class="logout-btn">Log Out</button>
         </div>
 
         <nav class="game-nav">
@@ -136,15 +120,15 @@
     </div>
 
     <div id="nickname-modal" class="modal-overlay" style="z-index:9999;">
-        <div class="modal-box"><h3>Set Username</h3><input type="text" id="google-nickname-input" placeholder="Username"><button id="save-nickname-btn" class="neon-btn">Start Playing</button></div>
+        <div class="modal-box"><h3>Set Username</h3><input type="text" id="google-nickname-input" placeholder="Username"><button id="save-nickname-btn" class="neon-btn">Start</button></div>
     </div>
     <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Amount"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
+        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Min 100"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
     </div>
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-box">
             <h3>Withdraw</h3>
-            <input type="number" id="withdraw-amount" placeholder="Amount">
+            <input type="number" id="withdraw-amount" placeholder="Min 200">
             <select id="withdraw-bank" class="bank-select">
                 <option value="">Select Bank</option>
                 <option value="OPay">OPay</option>
@@ -159,6 +143,17 @@
             <input type="text" id="withdraw-acct" placeholder="Account Number">
             <input type="text" id="withdraw-name" placeholder="Account Name">
             <div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="modal-overlay">
+        <div class="modal-box receipt-box">
+            <h2 style="margin:10px 0; color:var(--neon-green);">Transaction Details</h2>
+            <div class="receipt-row"><span>Type</span> <b id="rcpt-type">Deposit</b></div>
+            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt" style="color:white;">₦5,000</b></div>
+            <div class="receipt-row"><span>Date</span> <small id="rcpt-date">Dec 28, 10:30 PM</small></div>
+            <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green);">SUCCESS</b></div>
+            <button onclick="document.getElementById('receipt-modal').style.display='none'" class="neon-btn" style="margin-top:20px;">Close</button>
         </div>
     </div>
 
