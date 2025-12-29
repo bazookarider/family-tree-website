@@ -6,203 +6,143 @@
     <title>VeloBet</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://js.paystack.co/v1/inline.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="toast-box"></div>
 
-    <section id="auth-screen" class="full-screen active">
-        <div class="auth-container">
-            <div class="logo-area">
-                <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
-                <p>High Velocity Trading</p>
-            </div>
-
-            <div id="login-form">
-                <div class="input-group">
-                    <i class="ri-mail-line"></i>
-                    <input type="email" id="login-email" placeholder="Email Address">
-                </div>
-                <div class="input-group">
-                    <i class="ri-lock-line"></i>
-                    <input type="password" id="login-pass" placeholder="Password">
-                </div>
-                <div style="text-align:right; margin-bottom:15px;">
-                    <span id="forgot-btn" class="link-text">Forgot Password?</span>
-                </div>
-                <button id="email-login-btn" class="neon-btn full">Log In</button>
-                
-                <div class="divider"><span>OR</span></div>
-                
-                <button id="google-login-btn" class="neon-btn white full">
-                    <i class="ri-google-fill"></i> Google Sign In
-                </button>
-                
-                <p class="switch-text" onclick="toggleAuth(true)">Don't have an account? <b style="color:var(--neon-green)">Register</b></p>
-            </div>
-
-            <div id="register-form" class="hidden">
-                <div class="input-group">
-                    <i class="ri-user-line"></i>
-                    <input type="text" id="reg-nick" placeholder="Choose Username">
-                </div>
-                <div class="input-group">
-                    <i class="ri-mail-line"></i>
-                    <input type="email" id="reg-email" placeholder="Email Address">
-                </div>
-                <div class="input-group">
-                    <i class="ri-lock-line"></i>
-                    <input type="password" id="reg-pass" placeholder="Password">
-                </div>
-                <button id="email-register-btn" class="neon-btn full">Create Account</button>
-                <p class="switch-text" onclick="toggleAuth(false)">Already have an account? <b style="color:var(--neon-green)">Log In</b></p>
-            </div>
+    <div id="auth-screen" class="screen active">
+        <div class="logo-area">
+            <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
+            <p>High Velocity Trading</p>
         </div>
-    </section>
 
-    <section id="dashboard-screen" class="full-screen hidden">
-        
+        <div id="login-form" class="auth-box">
+            <input type="email" id="login-email" placeholder="Email Address">
+            <input type="password" id="login-pass" placeholder="Password">
+            <div style="text-align:right; margin-bottom:15px;">
+                <span id="forgot-btn" style="color:#64ffda; font-size:12px; cursor:pointer;">Forgot Password?</span>
+            </div>
+            <button id="email-login-btn" class="neon-btn">Log In</button>
+            <div class="divider">OR</div>
+            <button id="google-login-btn" class="neon-btn white-btn">
+                <i class="ri-google-fill"></i> Google Sign In
+            </button>
+            <p class="switch-text" id="goto-register">New? <b>Create Account</b></p>
+        </div>
+
+        <div id="register-form" class="auth-box hidden">
+            <input type="text" id="reg-nick" placeholder="Username">
+            <input type="email" id="reg-email" placeholder="Email">
+            <input type="password" id="reg-pass" placeholder="Password">
+            <button id="email-register-btn" class="neon-btn">Register</button>
+            <p class="switch-text" id="goto-login">Have account? <b>Log In</b></p>
+        </div>
+    </div>
+
+    <div id="dashboard-screen" class="screen hidden">
         <header>
-            <div class="user-info">
-                <div class="avatar-small"><i class="ri-user-3-fill"></i></div>
-                <span id="header-nick">Guest</span>
-            </div>
-            <div class="balance-badge">
-                <small>NGN</small>
-                <span id="wallet-balance">0.00</span>
-            </div>
+            <div class="user-pill"><i class="ri-user-3-fill"></i> <span id="header-nick">Guest</span></div>
+            <div class="balance-pill"><small>NGN</small> <span id="wallet-balance">0.00</span></div>
         </header>
 
         <div id="tab-aviator" class="tab-content active">
-            <div class="game-stage">
+            <div class="round-history-bar" id="round-history"></div>
+            
+            <div class="game-stage-galaxy">
                 <div class="flight-area">
                     <i id="plane-icon" class="ri-plane-fill"></i>
                 </div>
-                <div class="multiplier-center">
+                
+                <div class="multiplier-overlay">
                     <span id="multiplier-display">1.00x</span>
                     <div id="status-text">WAITING</div>
-                </div>
-                <div id="av-receipt" class="mini-receipt hidden">
-                    <i class="ri-check-double-line"></i> <span id="av-rcpt-text">WON ₦0</span>
+                    <div id="countdown-display" class="hidden">15s</div>
                 </div>
             </div>
 
-            <div class="history-bar" id="round-history"></div>
-
-            <div class="control-panel">
-                <div class="chip-row">
-                    <button class="chip" onclick="setBet(50)">50</button>
-                    <button class="chip" onclick="setBet(100)">100</button>
-                    <button class="chip" onclick="setBet(200)">200</button>
-                    <button class="chip" onclick="setBet(500)">500</button>
+            <div class="aviator-controls">
+                <div class="quick-chips">
+                    <button class="chip-btn" data-val="50">50</button>
+                    <button class="chip-btn" data-val="100">100</button>
+                    <button class="chip-btn" data-val="200">200</button>
+                    <button class="chip-btn" data-val="500">500</button>
                 </div>
-                
-                <div class="bet-adjuster">
-                    <button onclick="adjustBet(-50)">-</button>
+                <div class="bet-input-row">
+                    <button class="adjust-btn" id="dec-bet">-</button>
                     <input type="number" id="bet-amount" value="100">
-                    <button onclick="adjustBet(50)">+</button>
+                    <button class="adjust-btn" id="inc-bet">+</button>
                 </div>
-
-                <div class="auto-options">
+                <div class="auto-row">
                     <span>Auto Cashout</span>
                     <label class="switch">
                         <input type="checkbox" id="auto-cashout-toggle">
-                        <span class="slider"></span>
+                        <span class="slider round"></span>
                     </label>
-                    <input type="number" id="auto-cashout-val" value="2.00">
+                    <input type="number" id="auto-cashout-val" value="2.00" class="small-input">
                 </div>
-
-                <button id="bet-btn" class="action-btn">BET NEXT ROUND</button>
+                <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
             </div>
         </div>
 
         <div id="tab-spin" class="tab-content hidden">
             <div class="spin-stage">
                 <div class="card-container">
-                    <div id="spin-card" class="the-card">
+                    <div id="spin-card" class="spin-card">
                         <div class="front"><i class="ri-question-mark"></i></div>
                         <div class="back" id="spin-result-icon"></div>
                     </div>
                 </div>
-                <div id="spin-receipt" class="mini-receipt hidden" style="margin-top:20px;">
-                    <span id="spin-rcpt-text">RESULT</span>
-                </div>
             </div>
-
             <div class="control-panel">
-                <p class="guide-text">DOUBLE YOUR MONEY (x2)</p>
+                <p style="text-align:center; color:#888; font-size:12px;">DOUBLE YOUR MONEY (x2)</p>
                 <input type="number" id="spin-amount" value="100" class="main-input">
-                
-                <div class="spin-buttons">
-                    <button id="btn-lemon" class="color-btn lemon">LEMON</button>
-                    <button id="btn-navy" class="color-btn navy">NAVY</button>
+                <div class="spin-actions">
+                    <button id="btn-lemon" class="spin-btn lemon">LEMON</button>
+                    <button id="btn-navy" class="spin-btn navy">NAVY</button>
                 </div>
             </div>
         </div>
 
         <div id="tab-profile" class="tab-content hidden">
-            <div class="profile-card">
-                <div class="avatar-large"><i class="ri-user-smile-line"></i></div>
+            <div class="profile-header-card">
+                <div class="avatar-circle"><i class="ri-user-smile-line"></i></div>
                 <h2 id="profile-name">User</h2>
-                <p id="profile-email">...</p>
-                <span class="id-tag" id="profile-id">ID: ---</span>
+                <p id="profile-email">email</p>
+                <div class="id-badge" id="profile-id">ID: ---</div>
             </div>
 
-            <div class="wallet-buttons">
-                <button id="open-deposit-modal" class="w-btn deposit">Deposit</button>
-                <button id="open-withdraw-modal" class="w-btn withdraw">Withdraw</button>
+            <div class="wallet-grid">
+                <button id="open-deposit-modal" class="wallet-btn deposit">Deposit</button>
+                <button id="open-withdraw-modal" class="wallet-btn withdraw">Withdraw</button>
             </div>
 
-            <a href="https://wa.me/2349125297720" class="support-btn">
-                <i class="ri-whatsapp-line"></i> Contact Support
-            </a>
+            <a href="https://wa.me/2349125297720" class="menu-item"><i class="ri-whatsapp-line"></i> Contact Support</a>
+            
+            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transaction History</h3>
+            <div id="tx-history" class="tx-list"></div>
 
-            <div class="history-section">
-                <h3>Transaction History</h3>
-                <div id="tx-history" class="tx-list"></div>
-            </div>
-
-            <button id="logout-btn" class="logout-link">Log Out</button>
+            <button id="logout-btn" class="logout-btn">Log Out</button>
         </div>
 
-        <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('aviator')">
-                <i class="ri-rocket-2-fill"></i> Aviator
-            </button>
-            <button class="nav-item" onclick="switchTab('spin')">
-                <i class="ri-copper-coin-line"></i> Spin
-            </button>
-            <button class="nav-item" onclick="switchTab('profile')">
-                <i class="ri-user-3-line"></i> Profile
-            </button>
+        <nav class="game-nav">
+            <button class="nav-btn active" id="nav-aviator"><i class="ri-rocket-2-fill"></i><span>Aviator</span></button>
+            <button class="nav-btn" id="nav-spin"><i class="ri-copper-coin-line"></i><span>Spin</span></button>
+            <button class="nav-btn" id="nav-profile"><i class="ri-user-3-line"></i><span>Profile</span></button>
         </nav>
-
-    </section>
-
-    <div id="nickname-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Set Username</h3>
-            <input type="text" id="google-nickname-input" placeholder="e.g. Winner24">
-            <button id="save-nickname-btn" class="neon-btn full">Start Playing</button>
-        </div>
     </div>
 
+    <div id="nickname-modal" class="modal-overlay" style="z-index:9999;">
+        <div class="modal-box"><h3>Set Username</h3><input type="text" id="google-nickname-input" placeholder="Username"><button id="save-nickname-btn" class="neon-btn">Start Playing</button></div>
+    </div>
     <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Deposit</h3>
-            <input type="number" id="deposit-input" placeholder="Min ₦100">
-            <div class="modal-actions">
-                <button id="cancel-deposit" class="cancel-btn">Cancel</button>
-                <button id="confirm-deposit" class="neon-btn">Pay</button>
-            </div>
-        </div>
+        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Min 100"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
     </div>
-
     <div id="withdraw-modal" class="modal-overlay">
         <div class="modal-box">
             <h3>Withdraw</h3>
-            <input type="number" id="withdraw-amount" placeholder="Min ₦200">
+            <input type="number" id="withdraw-amount" placeholder="Min 200">
             <select id="withdraw-bank" class="bank-select">
                 <option value="">Select Bank</option>
                 <option value="OPay">OPay</option>
@@ -216,21 +156,17 @@
             </select>
             <input type="text" id="withdraw-acct" placeholder="Account Number">
             <input type="text" id="withdraw-name" placeholder="Account Name">
-            <div class="modal-actions">
-                <button id="cancel-withdraw" class="cancel-btn">Cancel</button>
-                <button id="confirm-withdraw" class="neon-btn">Request</button>
-            </div>
+            <div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div>
         </div>
     </div>
-
+    
     <div id="receipt-modal" class="modal-overlay">
         <div class="modal-box receipt-box">
-            <i class="ri-file-list-3-line" style="font-size:40px; color:var(--neon-green)"></i>
-            <h3>Transaction Receipt</h3>
+            <h2 style="color:var(--neon-green)">Transaction Receipt</h2>
             <div class="receipt-row"><span>Type</span> <b id="rcpt-type">-</b></div>
-            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt" style="color:white">-</b></div>
-            <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green)">SUCCESS</b></div>
+            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt">-</b></div>
             <div class="receipt-row"><span>Date</span> <small id="rcpt-date">-</small></div>
+            <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green)">SUCCESS</b></div>
             <button onclick="document.getElementById('receipt-modal').style.display='none'" class="neon-btn full" style="margin-top:15px;">Close</button>
         </div>
     </div>
