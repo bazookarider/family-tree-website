@@ -7,15 +7,23 @@
 
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header class="navbar">
-  <div class="logo"><i class="fa-solid fa-trophy"></i> League Manager</div>
+  <div class="logo">
+    <i class="fa-solid fa-trophy"></i>
+    <span>League Manager</span>
+  </div>
   <div class="nav-actions">
-    <button id="loginBtn" class="btn primary"><i class="fa-brands fa-google"></i> Sign In</button>
-    <button id="logoutBtn" class="btn danger" style="display:none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    <button id="loginBtn" class="btn primary">
+      <i class="fa-brands fa-google"></i> Sign In
+    </button>
+    <button id="logoutBtn" class="btn danger" style="display:none;">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
   </div>
 </header>
 
@@ -31,7 +39,9 @@
     <h2><i class="fa-solid fa-plus"></i> Create League</h2>
     <div class="form-group">
       <input type="text" id="leagueName" placeholder="Enter league name">
-      <button id="createLeagueBtn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save League</button>
+      <button id="createLeagueBtn" class="btn primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save League
+      </button>
     </div>
   </section>
 
@@ -44,7 +54,6 @@
   <!-- League Detail -->
   <section id="leagueDetail" class="card" style="display:none;">
     <h2 id="leagueTitle"></h2>
-
     <div class="form-group">
       <input type="text" id="playerName" placeholder="Add Player">
       <button id="addPlayerBtn" class="btn primary"><i class="fa-solid fa-user-plus"></i> Add Player</button>
@@ -102,6 +111,7 @@
         <tbody></tbody>
       </table>
     </section>
+
   </section>
 
 </main>
