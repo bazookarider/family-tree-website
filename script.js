@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
@@ -37,21 +37,51 @@ const leagueTableBody = document.querySelector("#leagueTable tbody");
 const playersListContainer = document.getElementById("playersList");
 const matchesTableBody = document.querySelector("#matchesTable tbody");
 
+// Admin Hook Elements
+const playerInputGroup = document.getElementById("playerInputGroup");
+const matchInputGroup = document.getElementById("matchInputGroup");
+const actionsHeader = document.getElementById("actionsHeader");
+
 let currentLeagueId = null;
 let players = [];
 let prevPositions = {};
+let isAdmin = false; // Tracks if you are logged in
 
 // -------------------- AUTH --------------------
 loginBtn.onclick = () => signInWithPopup(auth, provider);
 logoutBtn.onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
-  if (user) { loginBtn.style.display="none"; logoutBtn.style.display="flex"; adminPanel.style.display="block"; }
-  else { loginBtn.style.display="flex"; logoutBtn.style.display="none"; adminPanel.style.display="none"; }
+  if (user) { 
+    isAdmin = true;
+    loginBtn.style.display="none"; 
+    logoutBtn.style.display="flex"; 
+    adminPanel.style.display="block"; 
+    actionsHeader.style.display="table-cell";
+    if (currentLeagueId) {
+      playerInputGroup.style.display = "flex";
+      matchInputGroup.style.display = "block";
+    }
+  } else { 
+    isAdmin = false;
+    loginBtn.style.display="flex"; 
+    logoutBtn.style.display="none"; 
+    adminPanel.style.display="none"; 
+    playerInputGroup.style.display = "none";
+    matchInputGroup.style.display = "none";
+    actionsHeader.style.display="none";
+  }
+  
+  // Refresh lists to hide/show edit buttons dynamically
+  if(currentLeagueId) {
+    loadPlayersList();
+    loadMatchesList();
+  }
 });
 
 // -------------------- CREATE LEAGUE --------------------
 document.getElementById("createLeagueBtn").onclick = async () => {
+  if (!isAdmin) return; // Extra security
   const name = document.getElementById("leagueName").value.trim();
   const user = auth.currentUser;
   if (!name || !user) return;
@@ -60,11 +90,10 @@ document.getElementById("createLeagueBtn").onclick = async () => {
   loadLeagues();
 };
 
-// -------------------- LOAD LEAGUES --------------------
+// -------------------- LOAD LEAGUES (Public View) --------------------
 async function loadLeagues() {
   leaguesGrid.innerHTML="";
   const snapshot = await getDocs(collection(db,"leagues"));
-  // FIXED: Changed 'doc' to 'leagueDoc' to prevent naming collision with Firebase's doc() function
   snapshot.forEach(leagueDoc => {
     const league = leagueDoc.data();
     const div = document.createElement("div");
@@ -80,6 +109,16 @@ async function showLeagueDetail(leagueId, leagueName){
   currentLeagueId=leagueId;
   leagueDetailSection.style.display="block";
   leagueTitle.textContent=leagueName;
+  
+  // Show admin inputs only if logged in
+  if (isAdmin) {
+    playerInputGroup.style.display = "flex";
+    matchInputGroup.style.display = "block";
+  } else {
+    playerInputGroup.style.display = "none";
+    matchInputGroup.style.display = "none";
+  }
+
   await loadPlayers();
   await loadPlayersList();
   await loadLeagueTable();
@@ -88,6 +127,7 @@ async function showLeagueDetail(leagueId, leagueName){
 
 // -------------------- ADD PLAYER --------------------
 addPlayerBtn.onclick=async()=>{
+  if (!isAdmin) return;
   const name=playerNameInput.value.trim();
   if(!name || !currentLeagueId) return;
   await addDoc(collection(db,`leagues/${currentLeagueId}/players`),{
@@ -103,7 +143,6 @@ addPlayerBtn.onclick=async()=>{
 async function loadPlayers(){
   players=[]; homePlayerSelect.innerHTML=""; awayPlayerSelect.innerHTML="";
   const snapshot=await getDocs(collection(db,`leagues/${currentLeagueId}/players`));
-  // FIXED: Changed 'doc' to 'pDoc'
   snapshot.forEach(pDoc => {
     const player={id:pDoc.id,...pDoc.data()};
     players.push(player);
@@ -114,6 +153,7 @@ async function loadPlayers(){
 
 // -------------------- RECORD MATCH --------------------
 recordMatchBtn.onclick=async()=>{
+  if (!isAdmin) return;
   const date=matchDateInput.value;
   const homeId=homePlayerSelect.value;
   const awayId=awayPlayerSelect.value;
@@ -132,13 +172,10 @@ async function loadLeagueTable(){
   const matchesSnapshot=await getDocs(collection(db,`leagues/${currentLeagueId}/matches`));
   let stats={};
   
-  // FIXED: Changed 'doc' to 'pDoc'
   playersSnapshot.forEach(pDoc => {stats[pDoc.id]={...pDoc.data().stats,name:pDoc.data().name};});
   
-  // FIXED: Changed 'doc' to 'mDoc'
   matchesSnapshot.forEach(mDoc => {
     const m = mDoc.data();
-    // Safegaurd just in case a player was deleted but the match still exists
     if (!stats[m.homeId] || !stats[m.awayId]) return; 
 
     stats[m.homeId].P++; stats[m.awayId].P++;
@@ -165,28 +202,33 @@ async function loadLeagueTable(){
 async function loadPlayersList(){
   playersListContainer.innerHTML="";
   const snapshot=await getDocs(collection(db,`leagues/${currentLeagueId}/players`));
-  // FIXED: Changed 'doc' to 'pDoc'
   snapshot.forEach(pDoc => {
     const player={id:pDoc.id,...pDoc.data()};
     const div=document.createElement("div"); div.className="card";
-    div.innerHTML=`<span>${player.name}</span><button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button>`;
-    const [editBtn,deleteBtn]=div.querySelectorAll("button");
-    editBtn.onclick=async()=>{
-      const newName=prompt("Enter new player name:",player.name);
-      if(!newName) return;
-      await updateDoc(doc(db,`leagues/${currentLeagueId}/players`,player.id),{name:newName});
-      await loadPlayers(); await loadPlayersList(); await loadLeagueTable(); await loadMatchesList();
-    };
-    deleteBtn.onclick=async()=>{
-      if(!confirm("Delete player and their matches?")) return;
-      await deleteDoc(doc(db,`leagues/${currentLeagueId}/players`,player.id));
-      const matchesSnap=await getDocs(collection(db,`leagues/${currentLeagueId}/matches`));
-      matchesSnap.forEach(async mDoc=>{
-        const m=mDoc.data();
-        if(m.homeId===player.id||m.awayId===player.id){ await deleteDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id)); }
-      });
-      await loadPlayers(); await loadPlayersList(); await loadLeagueTable(); await loadMatchesList();
-    };
+    
+    // Admin check: Only render buttons if logged in
+    let actionButtons = isAdmin ? `<button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button>` : ``;
+    div.innerHTML=`<span>${player.name}</span>${actionButtons}`;
+    
+    if (isAdmin) {
+      const [editBtn,deleteBtn]=div.querySelectorAll("button");
+      editBtn.onclick=async()=>{
+        const newName=prompt("Enter new player name:",player.name);
+        if(!newName) return;
+        await updateDoc(doc(db,`leagues/${currentLeagueId}/players`,player.id),{name:newName});
+        await loadPlayers(); await loadPlayersList(); await loadLeagueTable(); await loadMatchesList();
+      };
+      deleteBtn.onclick=async()=>{
+        if(!confirm("Delete player and their matches?")) return;
+        await deleteDoc(doc(db,`leagues/${currentLeagueId}/players`,player.id));
+        const matchesSnap=await getDocs(collection(db,`leagues/${currentLeagueId}/matches`));
+        matchesSnap.forEach(async mDoc=>{
+          const m=mDoc.data();
+          if(m.homeId===player.id||m.awayId===player.id){ await deleteDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id)); }
+        });
+        await loadPlayers(); await loadPlayersList(); await loadLeagueTable(); await loadMatchesList();
+      };
+    }
     playersListContainer.appendChild(div);
   });
 }
@@ -196,34 +238,34 @@ async function loadMatchesList(){
   matchesTableBody.innerHTML="";
   const snapshot=await getDocs(collection(db,`leagues/${currentLeagueId}/matches`));
   
-  // FIXED: Changed 'doc' to 'mDoc' to stop collision and completed the cut-off code
   snapshot.forEach(mDoc => {
     const m=mDoc.data();
     const home=players.find(p=>p.id===m.homeId)?.name||"Unknown";
     const away=players.find(p=>p.id===m.awayId)?.name||"Unknown";
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${m.date}</td><td>${home}</td><td>${m.homeGoals} - ${m.awayGoals}</td><td>${away}</td><td><button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button></td>`;
     
-    const [editBtn,deleteBtn]=tr.querySelectorAll("button");
+    // Admin check: Only render buttons if logged in
+    let actionCells = isAdmin ? `<td><button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button></td>` : `<td style="display:none;"></td>`;
     
-    editBtn.onclick=async()=>{
-      const newHome=parseInt(prompt("New home goals:",m.homeGoals));
-      const newAway=parseInt(prompt("New away goals:",m.awayGoals));
-      if(isNaN(newHome)||isNaN(newAway)) return;
-      await updateDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id),{homeGoals:newHome,awayGoals:newAway});
-      await loadLeagueTable(); await loadMatchesList();
-    };
+    tr.innerHTML=`<td>${m.date}</td><td>${home}</td><td>${m.homeGoals} - ${m.awayGoals}</td><td>${away}</td>${actionCells}`;
     
-    // FIXED: Added the missing delete match logic that was cut off
-    deleteBtn.onclick=async()=>{
-      if(!confirm("Are you sure you want to delete this match?")) return;
-      await deleteDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id));
-      await loadLeagueTable(); await loadMatchesList();
-    };
-    
+    if (isAdmin) {
+      const [editBtn,deleteBtn]=tr.querySelectorAll("button");
+      editBtn.onclick=async()=>{
+        const newHome=parseInt(prompt("New home goals:",m.homeGoals));
+        const newAway=parseInt(prompt("New away goals:",m.awayGoals));
+        if(isNaN(newHome)||isNaN(newAway)) return;
+        await updateDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id),{homeGoals:newHome,awayGoals:newAway});
+        await loadLeagueTable(); await loadMatchesList();
+      };
+      deleteBtn.onclick=async()=>{
+        if(!confirm("Are you sure you want to delete this match?")) return;
+        await deleteDoc(doc(db,`leagues/${currentLeagueId}/matches`,mDoc.id));
+        await loadLeagueTable(); await loadMatchesList();
+      };
+    }
     matchesTableBody.appendChild(tr);
   });
 }
 
-// FIXED: Actually call loadLeagues so they display when you open the page!
 loadLeagues();
