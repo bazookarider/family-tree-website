@@ -1,29 +1,19 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>PS5 FIFA League Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header class="navbar">
-  <div class="logo">
-    <i class="fa-solid fa-trophy"></i>
-    <span>League Manager</span>
-  </div>
+  <div class="logo"><i class="fa-solid fa-trophy"></i> League Manager</div>
   <div class="nav-actions">
-    <button id="loginBtn" class="btn primary">
-      <i class="fa-brands fa-google"></i> Sign In
-    </button>
-    <button id="logoutBtn" class="btn danger" style="display:none;">
-      <i class="fa-solid fa-right-from-bracket"></i> Logout
-    </button>
+    <button id="loginBtn" class="btn primary"><i class="fa-brands fa-google"></i> Sign In</button>
+    <button id="logoutBtn" class="btn danger" style="display:none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
   </div>
 </header>
 
@@ -34,24 +24,19 @@
 
 <main class="container">
 
-  <!-- Admin Panel -->
   <section id="adminPanel" class="card" style="display:none;">
     <h2><i class="fa-solid fa-plus"></i> Create League</h2>
     <div class="form-group">
       <input type="text" id="leagueName" placeholder="Enter league name">
-      <button id="createLeagueBtn" class="btn primary">
-        <i class="fa-solid fa-floppy-disk"></i> Save League
-      </button>
+      <button id="createLeagueBtn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save League</button>
     </div>
   </section>
 
-  <!-- Leagues Grid -->
   <section>
     <h2><i class="fa-solid fa-table"></i> Available Leagues</h2>
     <div id="leaguesGrid" class="grid"></div>
   </section>
 
-  <!-- League Detail -->
   <section id="leagueDetail" class="card" style="display:none;">
     <h2 id="leagueTitle"></h2>
     <div class="form-group">
@@ -73,45 +58,26 @@
     <table id="leagueTable">
       <thead>
         <tr>
-          <th>Pos</th>
-          <th>Player</th>
-          <th>P</th>
-          <th>W</th>
-          <th>D</th>
-          <th>L</th>
-          <th>G</th>
-          <th>GA</th>
-          <th>GD</th>
-          <th>Pts</th>
-          <th>▲▼</th>
+          <th>Pos</th><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>G</th><th>GA</th><th>GD</th><th>Pts</th><th>▲▼</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <!-- Players List -->
     <section class="card">
       <h3>Players</h3>
       <div id="playersList"></div>
     </section>
 
-    <!-- Matches List -->
     <section class="card">
       <h3>Played Matches</h3>
       <table id="matchesTable">
         <thead>
-          <tr>
-            <th>Date</th>
-            <th>Home</th>
-            <th>Score</th>
-            <th>Away</th>
-            <th>Actions</th>
-          </tr>
+          <tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th><th>Actions</th></tr>
         </thead>
         <tbody></tbody>
       </table>
     </section>
-
   </section>
 
 </main>
