@@ -1,186 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VeloBet</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <script src="https://js.paystack.co/v1/inline.js"></script>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>League Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="toast-box"></div>
+<header class="navbar">
+  <div class="logo">
+    <i class="fa-solid fa-trophy"></i>
+    <span>League Manager</span>
+  </div>
 
-    <div id="auth-screen" class="screen active">
-        <div class="logo-area">
-            <h1><i class="ri-flashlight-fill"></i> VeloBet</h1>
-            <p>High Velocity </p>
-        </div>
+  <div class="nav-actions">
+    <button id="loginBtn" class="btn primary">
+      <i class="fa-brands fa-google"></i> Sign In
+    </button>
 
-        <div id="login-form" class="auth-box">
-            <input type="email" id="login-email" placeholder="Email Address">
-            <input type="password" id="login-pass" placeholder="Password">
-            <div style="text-align:right; margin-bottom:15px;">
-                <span id="forgot-btn" style="color:#64ffda; font-size:12px; cursor:pointer;">Forgot Password?</span>
-            </div>
-            <button id="email-login-btn" class="neon-btn">Log In</button>
-            <div class="divider">OR</div>
-            <button id="google-login-btn" class="neon-btn white-btn">
-                <i class="ri-google-fill"></i> Google Sign In
-            </button>
-            <p class="switch-text" id="btn-goto-register">New? <b>Create Account</b></p>
-        </div>
+    <button id="logoutBtn" class="btn danger" style="display:none;">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+  </div>
+</header>
 
-        <div id="register-form" class="auth-box hidden">
-            <input type="text" id="reg-nick" placeholder="Username">
-            <input type="email" id="reg-email" placeholder="Email">
-            <input type="password" id="reg-pass" placeholder="Password">
-            <button id="email-register-btn" class="neon-btn">Register</button>
-            <p class="switch-text" id="btn-goto-login">Have account? <b>Log In</b></p>
-        </div>
+<section class="hero">
+  <h1>Professional PS5 League Management</h1>
+  <p>Create leagues, track standings, calculate points automatically and monitor ranking movement.</p>
+</section>
+
+<main class="container">
+
+  <section id="adminPanel" class="card" style="display:none;">
+    <h2><i class="fa-solid fa-plus"></i> Create League</h2>
+
+    <div class="form-group">
+      <input type="text" id="leagueName" placeholder="Enter league name">
+      <button id="createLeagueBtn" class="btn primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save League
+      </button>
     </div>
+  </section>
 
-    <div id="dashboard-screen" class="screen hidden">
-        <header>
-            <div class="user-pill"><i class="ri-user-3-fill"></i> <span id="header-nick">Guest</span></div>
-            <div class="balance-pill"><small>NGN</small> <span id="wallet-balance">0.00</span></div>
-        </header>
+  <section>
+    <h2><i class="fa-solid fa-table"></i> Available Leagues</h2>
+    <div id="leaguesGrid" class="grid"></div>
+  </section>
 
-        <div id="tab-aviator" class="tab-content active">
-            <div class="round-history-bar" id="round-history"></div>
-            
-            <div class="game-stage-galaxy">
-                <div class="flight-area">
-                    <i id="plane-icon" class="ri-plane-fill"></i>
-                </div>
-                
-                <div class="multiplier-overlay">
-                    <span id="multiplier-display">1.00x</span>
-                    <div id="status-text">WAITING</div>
-                    <div id="countdown-display" class="hidden">15s</div>
-                </div>
-                <div id="av-receipt" class="live-receipt hidden">
-                    <b id="av-res-text">WON</b> <span id="av-res-amt">₦0</span>
-                </div>
-            </div>
+</main>
 
-            <div class="aviator-controls">
-                <div class="quick-chips">
-                    <button class="chip-btn" id="chip-50">50</button>
-                    <button class="chip-btn" id="chip-100">100</button>
-                    <button class="chip-btn" id="chip-200">200</button>
-                    <button class="chip-btn" id="chip-500">500</button>
-                </div>
-                <div class="bet-input-row">
-                    <button class="adjust-btn" id="dec-bet">-</button>
-                    <input type="number" id="bet-amount" value="100">
-                    <button class="adjust-btn" id="inc-bet">+</button>
-                </div>
-                <div class="auto-row">
-                    <span>Auto Cashout</span>
-                    <label class="switch">
-                        <input type="checkbox" id="auto-cashout-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <input type="number" id="auto-cashout-val" value="2.00" class="small-input">
-                </div>
-                <button id="bet-btn" class="neon-btn large">BET NEXT ROUND</button>
-            </div>
-        </div>
+<footer>
+  <p>© 2026 League Manager. All rights reserved.</p>
+</footer>
 
-        <div id="tab-spin" class="tab-content hidden">
-            <div class="spin-stage">
-                <div class="card-container">
-                    <div id="spin-card" class="spin-card">
-                        <div class="front"><i class="ri-question-mark"></i></div>
-                        <div class="back" id="spin-result-icon"></div>
-                    </div>
-                </div>
-                <div id="spin-receipt" class="live-receipt hidden" style="margin-top:10px;">
-                    <b id="spin-res-text">RESULT</b>
-                </div>
-            </div>
-            <div class="control-panel">
-                <p style="text-align:center; color:#888; font-size:12px;">DOUBLE YOUR MONEY (x2)</p>
-                <input type="number" id="spin-amount" value="100" class="main-input">
-                <div class="spin-actions">
-                    <button id="btn-lemon" class="spin-btn lemon">LEMON</button>
-                    <button id="btn-navy" class="spin-btn navy">NAVY</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-profile" class="tab-content hidden">
-            <div class="profile-header-card">
-                <div class="avatar-circle"><i class="ri-user-smile-line"></i></div>
-                <h2 id="profile-name">User</h2>
-                <p id="profile-email">email</p>
-                <div class="id-badge" id="profile-id">ID: ---</div>
-            </div>
-
-            <div class="wallet-grid">
-                <button id="btn-open-deposit" class="w-btn deposit">Deposit</button>
-                <button id="btn-open-withdraw" class="w-btn withdraw">Withdraw</button>
-            </div>
-
-            <button id="btn-contact" class="menu-item highlight">
-                <i class="ri-whatsapp-line"></i> Contact Support
-            </button>
-
-            <h3 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">Transactions</h3>
-            <div id="tx-history" class="tx-list"></div>
-
-            <button id="logout-btn" class="logout-btn">Log Out</button>
-        </div>
-
-        <nav class="game-nav">
-            <button class="nav-item active" id="nav-aviator"><i class="ri-rocket-2-fill"></i><span>Aviator</span></button>
-            <button class="nav-item" id="nav-spin"><i class="ri-copper-coin-line"></i><span>Spin</span></button>
-            <button class="nav-item" id="nav-profile"><i class="ri-user-3-line"></i><span>Profile</span></button>
-        </nav>
-    </div>
-
-    <div id="nickname-modal" class="modal-overlay" style="z-index:9999;">
-        <div class="modal-box"><h3>Set Username</h3><input type="text" id="google-nickname-input" placeholder="Username"><button id="save-nickname-btn" class="neon-btn">Start Playing</button></div>
-    </div>
-    
-    <div id="deposit-modal" class="modal-overlay">
-        <div class="modal-box"><h3>Deposit</h3><input type="number" id="deposit-input" placeholder="Min 100"><div class="modal-actions"><button id="cancel-deposit" class="cancel-btn">Cancel</button><button id="confirm-deposit" class="neon-btn">Pay</button></div></div>
-    </div>
-    
-    <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Withdraw</h3>
-            <input type="number" id="withdraw-amount" placeholder="Min 200">
-            <select id="withdraw-bank" class="bank-select">
-                <option value="">Select Bank</option>
-                <option value="OPay">OPay</option>
-                <option value="PalmPay">PalmPay</option>
-                <option value="Kuda">Kuda</option>
-                <option value="GTBank">GTBank</option>
-                <option value="Zenith">Zenith</option>
-                <option value="Access">Access</option>
-                <option value="FirstBank">FirstBank</option>
-                <option value="UBA">UBA</option>
-            </select>
-            <input type="text" id="withdraw-acct" placeholder="Account Number">
-            <input type="text" id="withdraw-name" placeholder="Account Name">
-            <div class="modal-actions"><button id="cancel-withdraw" class="cancel-btn">Cancel</button><button id="confirm-withdraw" class="neon-btn">Request</button></div>
-        </div>
-    </div>
-
-    <div id="receipt-modal" class="modal-overlay">
-        <div class="modal-box receipt-box">
-            <h2 style="color:var(--neon-green)">Transaction Receipt</h2>
-            <div class="receipt-row"><span>Type</span> <b id="rcpt-type">-</b></div>
-            <div class="receipt-row"><span>Amount</span> <b id="rcpt-amt" style="color:white">-</b></div>
-            <div class="receipt-row"><span>Date</span> <small id="rcpt-date">-</small></div>
-            <div class="receipt-row"><span>Status</span> <b style="color:var(--neon-green)">SUCCESS</b></div>
-            <button id="close-receipt" class="neon-btn full" style="margin-top:15px;">Close</button>
-        </div>
-    </div>
-
-    <script type="module" src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>
