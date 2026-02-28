@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>League Manager</title>
+  <title>PS5 FIFA League Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Icons -->
@@ -17,12 +17,10 @@
     <i class="fa-solid fa-trophy"></i>
     <span>League Manager</span>
   </div>
-
   <div class="nav-actions">
     <button id="loginBtn" class="btn primary">
       <i class="fa-brands fa-google"></i> Sign In
     </button>
-
     <button id="logoutBtn" class="btn danger" style="display:none;">
       <i class="fa-solid fa-right-from-bracket"></i> Logout
     </button>
@@ -31,14 +29,14 @@
 
 <section class="hero">
   <h1>Professional PS5 League Management</h1>
-  <p>Create leagues, track standings, calculate points automatically and monitor ranking movement.</p>
+  <p>Create leagues, add players, record matches, and track stats automatically.</p>
 </section>
 
 <main class="container">
 
+  <!-- Admin Panel -->
   <section id="adminPanel" class="card" style="display:none;">
     <h2><i class="fa-solid fa-plus"></i> Create League</h2>
-
     <div class="form-group">
       <input type="text" id="leagueName" placeholder="Enter league name">
       <button id="createLeagueBtn" class="btn primary">
@@ -47,9 +45,49 @@
     </div>
   </section>
 
+  <!-- Leagues Grid -->
   <section>
     <h2><i class="fa-solid fa-table"></i> Available Leagues</h2>
     <div id="leaguesGrid" class="grid"></div>
+  </section>
+
+  <!-- League Detail -->
+  <section id="leagueDetail" class="card" style="display:none;">
+    <h2 id="leagueTitle"></h2>
+    <div class="form-group">
+      <input type="text" id="playerName" placeholder="Add Player">
+      <button id="addPlayerBtn" class="btn primary"><i class="fa-solid fa-user-plus"></i> Add Player</button>
+    </div>
+
+    <div class="match-entry card">
+      <h3>Record Match</h3>
+      <input type="date" id="matchDate">
+      <select id="homePlayer"></select>
+      <input type="number" id="homeGoals" placeholder="Home Goals">
+      <select id="awayPlayer"></select>
+      <input type="number" id="awayGoals" placeholder="Away Goals">
+      <button id="recordMatchBtn" class="btn primary"><i class="fa-solid fa-futbol"></i> Save Match</button>
+    </div>
+
+    <h3>League Table</h3>
+    <table id="leagueTable">
+      <thead>
+        <tr>
+          <th>Pos</th>
+          <th>Player</th>
+          <th>P</th>
+          <th>W</th>
+          <th>D</th>
+          <th>L</th>
+          <th>G</th>
+          <th>GA</th>
+          <th>GD</th>
+          <th>Pts</th>
+          <th>▲▼</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </section>
 
 </main>
