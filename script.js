@@ -2,15 +2,15 @@
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-// 🔥 Paste your Firebase config here
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: "AIzaSyDSmyGbIfE0TQOpsrocU9EpY5f6oFlhz2k",
+  authDomain: "fifa-league-manager-2f64f.firebaseapp.com",
+  projectId: "fifa-league-manager-2f64f",
+  storageBucket: "fifa-league-manager-2f64f.firebasestorage.app",
+  messagingSenderId: "682215688542",
+  appId: "1:682215688542:web:1d441e9c741861d45267cf",
+  measurementId: "G-X8QQ1N8J4M"
 };
 
 const app = initializeApp(firebaseConfig);
