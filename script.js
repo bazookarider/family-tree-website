@@ -1,4 +1,4 @@
- import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
@@ -37,15 +37,15 @@ const leagueTableBody = document.querySelector("#leagueTable tbody");
 const playersListContainer = document.getElementById("playersList");
 const matchesTableBody = document.querySelector("#matchesTable tbody");
 
-// Admin Hook Elements
 const playerInputGroup = document.getElementById("playerInputGroup");
 const matchInputGroup = document.getElementById("matchInputGroup");
 const actionsHeader = document.getElementById("actionsHeader");
 
 let currentLeagueId = null;
+let currentLeagueOwnerId = null; // We now track WHO owns the active league
 let players = [];
 let prevPositions = {};
-let isAdmin = false; // Tracks if you are logged in
+let isLeagueOwner = false; // True ONLY if the logged-in user created this specific league
 
 // -------------------- AUTH --------------------
 loginBtn.onclick = () => signInWithPopup(auth, provider);
@@ -53,35 +53,42 @@ logoutBtn.onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, (user) => {
   if (user) { 
-    isAdmin = true;
     loginBtn.style.display="none"; 
     logoutBtn.style.display="flex"; 
-    adminPanel.style.display="block"; 
-    actionsHeader.style.display="table-cell";
-    if (currentLeagueId) {
-      playerInputGroup.style.display = "flex";
-      matchInputGroup.style.display = "block";
-    }
+    adminPanel.style.display="block"; // Logged in users can create a new league
   } else { 
-    isAdmin = false;
     loginBtn.style.display="flex"; 
     logoutBtn.style.display="none"; 
-    adminPanel.style.display="none"; 
-    playerInputGroup.style.display = "none";
-    matchInputGroup.style.display = "none";
-    actionsHeader.style.display="none";
+    adminPanel.style.display="none"; // Visitors cannot create leagues
   }
   
-  // Refresh lists to hide/show edit buttons dynamically
-  if(currentLeagueId) {
-    loadPlayersList();
-    loadMatchesList();
+  // If we are currently looking at a league, re-verify ownership
+  if (currentLeagueId) {
+    verifyOwnershipAndRender();
   }
 });
 
+// Helper function to check if the current user owns the league they are viewing
+async function verifyOwnershipAndRender() {
+  const user = auth.currentUser;
+  isLeagueOwner = (user && user.uid === currentLeagueOwnerId);
+
+  if (isLeagueOwner) {
+    playerInputGroup.style.display = "flex";
+    matchInputGroup.style.display = "block";
+    actionsHeader.style.display = "table-cell";
+  } else {
+    playerInputGroup.style.display = "none";
+    matchInputGroup.style.display = "none";
+    actionsHeader.style.display = "none";
+  }
+  
+  await loadPlayersList();
+  await loadMatchesList();
+}
+
 // -------------------- CREATE LEAGUE --------------------
 document.getElementById("createLeagueBtn").onclick = async () => {
-  if (!isAdmin) return; // Extra security
   const name = document.getElementById("leagueName").value.trim();
   const user = auth.currentUser;
   if (!name || !user) return;
@@ -99,35 +106,27 @@ async function loadLeagues() {
     const div = document.createElement("div");
     div.className = "league-card";
     div.innerHTML = `<h3>${league.name}</h3><p>Owner: ${league.ownerName}</p>`;
-    div.onclick = () => showLeagueDetail(leagueDoc.id, league.name);
+    // Pass the ownerId to the detail view so we know who the boss is
+    div.onclick = () => showLeagueDetail(leagueDoc.id, league.name, league.ownerId);
     leaguesGrid.appendChild(div);
   });
 }
 
 // -------------------- SHOW LEAGUE DETAIL --------------------
-async function showLeagueDetail(leagueId, leagueName){
-  currentLeagueId=leagueId;
+async function showLeagueDetail(leagueId, leagueName, ownerId){
+  currentLeagueId = leagueId;
+  currentLeagueOwnerId = ownerId; 
   leagueDetailSection.style.display="block";
   leagueTitle.textContent=leagueName;
   
-  // Show admin inputs only if logged in
-  if (isAdmin) {
-    playerInputGroup.style.display = "flex";
-    matchInputGroup.style.display = "block";
-  } else {
-    playerInputGroup.style.display = "none";
-    matchInputGroup.style.display = "none";
-  }
-
   await loadPlayers();
-  await loadPlayersList();
   await loadLeagueTable();
-  await loadMatchesList();
+  await verifyOwnershipAndRender(); // This handles showing/hiding admin tools
 }
 
 // -------------------- ADD PLAYER --------------------
 addPlayerBtn.onclick=async()=>{
-  if (!isAdmin) return;
+  if (!isLeagueOwner) return; // Strict block
   const name=playerNameInput.value.trim();
   if(!name || !currentLeagueId) return;
   await addDoc(collection(db,`leagues/${currentLeagueId}/players`),{
@@ -153,7 +152,7 @@ async function loadPlayers(){
 
 // -------------------- RECORD MATCH --------------------
 recordMatchBtn.onclick=async()=>{
-  if (!isAdmin) return;
+  if (!isLeagueOwner) return; // Strict block
   const date=matchDateInput.value;
   const homeId=homePlayerSelect.value;
   const awayId=awayPlayerSelect.value;
@@ -206,11 +205,11 @@ async function loadPlayersList(){
     const player={id:pDoc.id,...pDoc.data()};
     const div=document.createElement("div"); div.className="card";
     
-    // Admin check: Only render buttons if logged in
-    let actionButtons = isAdmin ? `<button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button>` : ``;
+    // Only show action buttons if the current user OWNS this league
+    let actionButtons = isLeagueOwner ? `<button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button>` : ``;
     div.innerHTML=`<span>${player.name}</span>${actionButtons}`;
     
-    if (isAdmin) {
+    if (isLeagueOwner) {
       const [editBtn,deleteBtn]=div.querySelectorAll("button");
       editBtn.onclick=async()=>{
         const newName=prompt("Enter new player name:",player.name);
@@ -244,12 +243,12 @@ async function loadMatchesList(){
     const away=players.find(p=>p.id===m.awayId)?.name||"Unknown";
     const tr=document.createElement("tr");
     
-    // Admin check: Only render buttons if logged in
-    let actionCells = isAdmin ? `<td><button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button></td>` : `<td style="display:none;"></td>`;
+    // Only show action cells if the current user OWNS this league
+    let actionCells = isLeagueOwner ? `<td><button class="action-btn edit">Edit</button><button class="action-btn delete">Delete</button></td>` : `<td style="display:none;"></td>`;
     
     tr.innerHTML=`<td>${m.date}</td><td>${home}</td><td>${m.homeGoals} - ${m.awayGoals}</td><td>${away}</td>${actionCells}`;
     
-    if (isAdmin) {
+    if (isLeagueOwner) {
       const [editBtn,deleteBtn]=tr.querySelectorAll("button");
       editBtn.onclick=async()=>{
         const newHome=parseInt(prompt("New home goals:",m.homeGoals));
