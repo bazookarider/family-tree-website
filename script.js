@@ -1,222 +1,208 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const GEMINI_API_KEY="AIzaSyDjUPs9Dn2dhn-kArE-8xc6FHbLRuAHSNg";
 
-// Replace this with your real Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAG6jDGHVoZ-yHSqvgxbU2RHewvCURcTZI",
-  authDomain: "study-hub-ai-a6591.firebaseapp.com",
-  projectId: "study-hub-ai-a6591",
-  storageBucket: "study-hub-ai-a6591.firebasestorage.app",
-  messagingSenderId: "535236262155",
-  appId: "1:535236262155:web:9aa462da354c0dbd9e8a0e",
-  measurementId: "G-5K2GNV8QVB"
-};
+let currentHandoutText="";
+let textChunks=[];
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const uploadBtn=document.getElementById("uploadBtn");
+const handoutFile=document.getElementById("handoutFile");
+const uploadMessage=document.getElementById("uploadMessage");
+const aiOutput=document.getElementById("aiOutput");
 
-// AUTH ELEMENTS
-const authScreen = document.getElementById("authScreen");
-const appShell = document.getElementById("appShell");
+uploadBtn.addEventListener("click",async()=>{
 
-const showLogin = document.getElementById("showLogin");
-const showRegister = document.getElementById("showRegister");
+const file=handoutFile.files[0];
 
-const loginForm = document.getElementById("loginForm");
-const registerForm = document.getElementById("registerForm");
-
-const loginBtn = document.getElementById("loginBtn");
-const registerBtn = document.getElementById("registerBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-
-// INPUTS
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-
-const registerName = document.getElementById("registerName");
-const registerEmail = document.getElementById("registerEmail");
-const registerPassword = document.getElementById("registerPassword");
-
-// MESSAGES
-const loginMessage = document.getElementById("loginMessage");
-const registerMessage = document.getElementById("registerMessage");
-const uploadMessage = document.getElementById("uploadMessage");
-
-// DASHBOARD
-const welcomeText = document.getElementById("welcomeText");
-const handoutFile = document.getElementById("handoutFile");
-const uploadBtn = document.getElementById("uploadBtn");
-
-const toolButtons = document.querySelectorAll(".tool-btn");
-const aiPrompt = document.getElementById("aiPrompt");
-const askAiBtn = document.getElementById("askAiBtn");
-const aiOutput = document.getElementById("aiOutput");
-
-// SWITCH TABS
-showLogin.addEventListener("click", () => {
-  showLogin.classList.add("active");
-  showRegister.classList.remove("active");
-  loginForm.classList.remove("hidden");
-  registerForm.classList.add("hidden");
-  loginMessage.textContent = "";
-  registerMessage.textContent = "";
-});
-
-showRegister.addEventListener("click", () => {
-  showRegister.classList.add("active");
-  showLogin.classList.remove("active");
-  registerForm.classList.remove("hidden");
-  loginForm.classList.add("hidden");
-  loginMessage.textContent = "";
-  registerMessage.textContent = "";
-});
-
-// REGISTER
-registerBtn.addEventListener("click", async () => {
-  const name = registerName.value.trim();
-  const email = registerEmail.value.trim();
-  const password = registerPassword.value.trim();
-
-  registerMessage.textContent = "";
-
-  if (!name || !email || !password) {
-    registerMessage.textContent = "Please fill in all registration fields.";
-    return;
-  }
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-
-    await updateProfile(userCredential.user, {
-      displayName: name
-    });
-
-    registerMessage.textContent = "Registration successful.";
-    registerName.value = "";
-    registerEmail.value = "";
-    registerPassword.value = "";
-  } catch (error) {
-    registerMessage.textContent = formatFirebaseError(error.code);
-  }
-});
-
-// LOGIN
-loginBtn.addEventListener("click", async () => {
-  const email = loginEmail.value.trim();
-  const password = loginPassword.value.trim();
-
-  loginMessage.textContent = "";
-
-  if (!email || !password) {
-    loginMessage.textContent = "Please enter your email and password.";
-    return;
-  }
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    loginMessage.textContent = "Login successful.";
-    loginEmail.value = "";
-    loginPassword.value = "";
-  } catch (error) {
-    loginMessage.textContent = formatFirebaseError(error.code);
-  }
-});
-
-// LOGOUT
-logoutBtn.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-});
-
-// AUTH STATE
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    authScreen.classList.add("hidden");
-    appShell.classList.remove("hidden");
-
-    const displayName = user.displayName || user.email || "Student";
-    welcomeText.textContent = `Hello, ${displayName}. Your study dashboard is ready.`;
-
-    loginMessage.textContent = "";
-    registerMessage.textContent = "";
-  } else {
-    authScreen.classList.remove("hidden");
-    appShell.classList.add("hidden");
-
-    welcomeText.textContent = "Your study dashboard is ready.";
-    loginMessage.textContent = "";
-    registerMessage.textContent = "";
-  }
-});
-
-// UPLOAD PLACEHOLDER
-uploadBtn.addEventListener("click", () => {
-  if (!handoutFile.files.length) {
-    uploadMessage.textContent = "Please select a handout file first.";
-    return;
-  }
-
-  const fileName = handoutFile.files[0].name;
-  uploadMessage.textContent = `Handout "${fileName}" selected successfully.`;
-});
-
-// TOOL BUTTON PLACEHOLDERS
-toolButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const action = button.dataset.action;
-
-    const responses = {
-      summary:
-        "Summary will appear here after Gemini integration.",
-      questions:
-        "Likely exam questions will appear here after Gemini integration.",
-      quiz:
-        "Quiz questions will appear here after Gemini integration.",
-      explain:
-        "Simple explanations will appear here after Gemini integration.",
-      revision:
-        "Short revision notes will appear here after Gemini integration.",
-      topics:
-        "Extracted key topics will appear here after Gemini integration."
-    };
-
-    aiOutput.textContent = responses[action];
-  });
-});
-
-// ASK AI PLACEHOLDER
-askAiBtn.addEventListener("click", () => {
-  const prompt = aiPrompt.value.trim();
-
-  if (!prompt) {
-    aiOutput.textContent = "Please type a question or topic first.";
-    return;
-  }
-
-  aiOutput.textContent = `AI response for: "${prompt}" will appear here after Gemini integration.`;
-});
-
-// HELPER
-function formatFirebaseError(code) {
-  const errors = {
-    "auth/email-already-in-use": "This email is already in use.",
-    "auth/invalid-email": "Please enter a valid email address.",
-    "auth/weak-password": "Password should be at least 6 characters.",
-    "auth/user-not-found": "No user found with this email.",
-    "auth/wrong-password": "Incorrect password.",
-    "auth/invalid-credential": "Invalid login details.",
-    "auth/network-request-failed": "Network error. Check your internet connection."
-  };
-
-  return errors[code] || "Something went wrong. Please try again.";
+if(!file){
+uploadMessage.textContent="Select a file first";
+return;
 }
+
+uploadMessage.textContent="Reading file...";
+
+const text=await extractTextFromFile(file);
+
+currentHandoutText=text;
+
+textChunks=splitIntoChunks(text);
+
+uploadMessage.textContent="Handout loaded. AI ready.";
+
+aiOutput.textContent="Handout loaded successfully.";
+
+});
+
+async function extractTextFromFile(file){
+
+const ext=file.name.split(".").pop().toLowerCase();
+
+if(ext==="txt"){
+return await file.text();
+}
+
+if(ext==="pdf"){
+
+const buffer=await file.arrayBuffer();
+
+const pdf=await pdfjsLib.getDocument({data:buffer}).promise;
+
+let text="";
+
+for(let i=1;i<=pdf.numPages;i++){
+
+const page=await pdf.getPage(i);
+
+const content=await page.getTextContent();
+
+text+=content.items.map(s=>s.str).join(" ");
+
+}
+
+return text;
+}
+
+if(ext==="docx"){
+
+const buffer=await file.arrayBuffer();
+
+const result=await mammoth.extractRawText({arrayBuffer:buffer});
+
+return result.value;
+
+}
+
+return "";
+}
+
+function splitIntoChunks(text){
+
+const size=1000;
+
+let chunks=[];
+
+for(let i=0;i<text.length;i+=size){
+
+chunks.push(text.substring(i,i+size));
+
+}
+
+return chunks;
+
+}
+
+function findRelevantChunks(question){
+
+const words=question.toLowerCase().split(" ");
+
+let scores=textChunks.map(chunk=>{
+
+let score=0;
+
+words.forEach(word=>{
+if(chunk.toLowerCase().includes(word)){
+score++;
+}
+});
+
+return {chunk,score};
+
+});
+
+scores.sort((a,b)=>b.score-a.score);
+
+return scores.slice(0,3).map(s=>s.chunk).join("\n");
+
+}
+
+async function callGemini(prompt){
+
+const response=await fetch(
+"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+GEMINI_API_KEY,
+{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+contents:[{parts:[{text:prompt}]}]
+})
+}
+);
+
+const data=await response.json();
+
+return data.candidates[0].content.parts[0].text;
+
+}
+
+document.querySelectorAll(".tool-btn").forEach(btn=>{
+
+btn.addEventListener("click",async()=>{
+
+if(!currentHandoutText){
+aiOutput.textContent="Upload a handout first.";
+return;
+}
+
+const tool=btn.dataset.tool;
+
+let prompt="";
+
+if(tool==="summary"){
+prompt=`Summarize this handout:\n${currentHandoutText}`;
+}
+
+if(tool==="notes"){
+prompt=`Create revision notes:\n${currentHandoutText}`;
+}
+
+if(tool==="quiz"){
+prompt=`Create quiz questions with answers:\n${currentHandoutText}`;
+}
+
+if(tool==="questions"){
+prompt=`Generate likely exam questions:\n${currentHandoutText}`;
+}
+
+if(tool==="predictor"){
+prompt=`Predict most likely exam topics:\n${currentHandoutText}`;
+}
+
+aiOutput.textContent="Generating...";
+
+const result=await callGemini(prompt);
+
+aiOutput.textContent=result;
+
+});
+
+});
+
+const askAiBtn=document.getElementById("askAiBtn");
+const aiPrompt=document.getElementById("aiPrompt");
+
+askAiBtn.addEventListener("click",async()=>{
+
+const question=aiPrompt.value;
+
+if(!currentHandoutText){
+aiOutput.textContent="Upload a handout first.";
+return;
+}
+
+aiOutput.textContent="Searching handout...";
+
+const relevantText=findRelevantChunks(question);
+
+const prompt=`
+Use the following lecture material to answer clearly.
+
+Material:
+${relevantText}
+
+Question:
+${question}
+`;
+
+const result=await callGemini(prompt);
+
+aiOutput.textContent=result;
+
+});
