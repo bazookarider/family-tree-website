@@ -4,80 +4,319 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StudyHub AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-container">
-    <header class="topbar">
-      <h1>StudyHub AI</h1>
-      <p>Your private study assistant for handouts, summaries, quizzes, and exam prep.</p>
-    </header>
-
-    <main class="main-content">
-      <section class="auth-section card">
-        <div class="tabs">
-          <button class="tab-btn active" id="showLogin">Login</button>
-          <button class="tab-btn" id="showRegister">Register</button>
+  <div class="site-wrapper">
+    <!-- AUTH SCREEN -->
+    <section class="auth-screen" id="authScreen">
+      <div class="auth-left">
+        <div class="brand-badge">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>StudyHub AI</span>
         </div>
 
-        <div id="loginForm" class="form-box">
-          <h2>Login</h2>
-          <input type="email" id="loginEmail" placeholder="Enter your email" />
-          <input type="password" id="loginPassword" placeholder="Enter your password" />
-          <button id="loginBtn" class="primary-btn">Login</button>
-          <p id="loginMessage" class="message"></p>
-        </div>
+        <h1>Smarter study, faster revision, better exam preparation.</h1>
+        <p>
+          A private AI-powered learning platform for students to upload handouts,
+          generate summaries, create quizzes, and prepare for exams with confidence.
+        </p>
 
-        <div id="registerForm" class="form-box hidden">
-          <h2>Create Account</h2>
-          <input type="text" id="registerName" placeholder="Full name" />
-          <input type="email" id="registerEmail" placeholder="Enter your email" />
-          <input type="password" id="registerPassword" placeholder="Create password" />
-          <button id="registerBtn" class="primary-btn">Register</button>
-          <p id="registerMessage" class="message"></p>
-        </div>
-      </section>
+        <div class="feature-list">
+          <div class="feature-item">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <div>
+              <h3>Upload Handouts</h3>
+              <p>Store and organize course materials in one place.</p>
+            </div>
+          </div>
 
-      <section class="dashboard-section card hidden" id="dashboard">
-        <div class="dashboard-header">
-          <h2>Student Dashboard</h2>
-          <button id="logoutBtn" class="danger-btn">Logout</button>
-        </div>
+          <div class="feature-item">
+            <i class="fa-solid fa-brain"></i>
+            <div>
+              <h3>AI Study Support</h3>
+              <p>Generate summaries, revision notes, and likely exam questions.</p>
+            </div>
+          </div>
 
-        <div class="welcome-box">
-          <p id="welcomeText">Welcome, Student</p>
-        </div>
-
-        <div class="upload-box">
-          <h3>Upload Handout</h3>
-          <input type="file" id="handoutFile" accept=".pdf,.txt,.doc,.docx" />
-          <button id="uploadBtn" class="primary-btn">Upload Handout</button>
-          <p id="uploadMessage" class="message"></p>
-        </div>
-
-        <div class="tools-grid">
-          <button class="tool-btn" data-action="summary">Generate Summary</button>
-          <button class="tool-btn" data-action="questions">Likely Exam Questions</button>
-          <button class="tool-btn" data-action="quiz">Create Quiz</button>
-          <button class="tool-btn" data-action="explain">Explain Difficult Parts</button>
-          <button class="tool-btn" data-action="revision">Short Revision Notes</button>
-          <button class="tool-btn" data-action="topics">Extract Key Topics</button>
-        </div>
-
-        <div class="ask-ai-box">
-          <h3>Ask AI About a Topic</h3>
-          <textarea id="aiPrompt" rows="5" placeholder="Example: Explain Big O notation in a very simple way"></textarea>
-          <button id="askAiBtn" class="primary-btn">Ask AI</button>
-        </div>
-
-        <div class="result-box">
-          <h3>Output</h3>
-          <div id="aiOutput">
-            <p>Your generated summary, quiz, explanation, or answer will appear here.</p>
+          <div class="feature-item">
+            <i class="fa-solid fa-chart-line"></i>
+            <div>
+              <h3>Track Progress</h3>
+              <p>Practice smarter and follow your personal study growth.</p>
+            </div>
           </div>
         </div>
-      </section>
-    </main>
+      </div>
+
+      <div class="auth-right">
+        <div class="auth-card">
+          <div class="tabs">
+            <button class="tab-btn active" id="showLogin">Login</button>
+            <button class="tab-btn" id="showRegister">Register</button>
+          </div>
+
+          <div id="loginForm" class="form-box">
+            <h2>Welcome back</h2>
+            <p class="sub-text">Sign in to continue to your student workspace.</p>
+
+            <div class="input-group">
+              <label>Email</label>
+              <div class="input-icon">
+                <i class="fa-regular fa-envelope"></i>
+                <input type="email" id="loginEmail" placeholder="Enter your email" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Password</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="loginPassword" placeholder="Enter your password" />
+              </div>
+            </div>
+
+            <button id="loginBtn" class="primary-btn">Login</button>
+            <p id="loginMessage" class="message"></p>
+          </div>
+
+          <div id="registerForm" class="form-box hidden">
+            <h2>Create account</h2>
+            <p class="sub-text">Join your private study platform and start learning better.</p>
+
+            <div class="input-group">
+              <label>Full Name</label>
+              <div class="input-icon">
+                <i class="fa-regular fa-user"></i>
+                <input type="text" id="registerName" placeholder="Enter your full name" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Email</label>
+              <div class="input-icon">
+                <i class="fa-regular fa-envelope"></i>
+                <input type="email" id="registerEmail" placeholder="Enter your email" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Password</label>
+              <div class="input-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="registerPassword" placeholder="Create password" />
+              </div>
+            </div>
+
+            <button id="registerBtn" class="primary-btn">Create Account</button>
+            <p id="registerMessage" class="message"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APP SHELL -->
+    <section class="app-shell hidden" id="appShell">
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="logo-box">
+            <div class="logo-icon">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+              <h2>StudyHub AI</h2>
+              <p>Student Workspace</p>
+            </div>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>My Handouts</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fa-solid fa-book-open-reader"></i>
+            <span>Revision Notes</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fa-solid fa-circle-question"></i>
+            <span>Practice Quiz</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>AI Tools</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fa-solid fa-chart-column"></i>
+            <span>Performance</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <button id="logoutBtn" class="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <h1>Welcome back</h1>
+            <p id="welcomeText">Your study dashboard is ready.</p>
+          </div>
+          <div class="topbar-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Private Group Access</span>
+          </div>
+        </header>
+
+        <section class="hero-card">
+          <div class="hero-text">
+            <h2>Upload handouts, study faster, and prepare with AI.</h2>
+            <p>
+              Organize materials, generate smart summaries, ask difficult questions,
+              and build revision confidence from one professional dashboard.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-btn">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                Start Uploading
+              </button>
+              <button class="secondary-btn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                Explore AI Tools
+              </button>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-card">
+              <i class="fa-solid fa-file-lines"></i>
+              <div>
+                <h3>12</h3>
+                <p>Saved Handouts</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fa-solid fa-list-check"></i>
+              <div>
+                <h3>28</h3>
+                <p>Quiz Sessions</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="fa-solid fa-lightbulb"></i>
+              <div>
+                <h3>64</h3>
+                <p>AI Insights</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <div class="panel-card upload-panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-file-arrow-up"></i> Upload Handout</h3>
+              <span>PDF, TXT, DOC, DOCX</span>
+            </div>
+
+            <label for="handoutFile" class="upload-dropzone">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <h4>Choose a handout file</h4>
+              <p>Click here to select and prepare a file for upload.</p>
+              <input type="file" id="handoutFile" accept=".pdf,.txt,.doc,.docx" hidden />
+            </label>
+
+            <button id="uploadBtn" class="primary-btn full-btn">
+              <i class="fa-solid fa-upload"></i>
+              Upload Handout
+            </button>
+            <p id="uploadMessage" class="message"></p>
+          </div>
+
+          <div class="panel-card tools-panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-toolbox"></i> AI Study Tools</h3>
+              <span>Choose a study action</span>
+            </div>
+
+            <div class="tools-grid">
+              <button class="tool-btn" data-action="summary">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Generate Summary</span>
+              </button>
+              <button class="tool-btn" data-action="questions">
+                <i class="fa-solid fa-circle-question"></i>
+                <span>Likely Exam Questions</span>
+              </button>
+              <button class="tool-btn" data-action="quiz">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Create Quiz</span>
+              </button>
+              <button class="tool-btn" data-action="explain">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Explain Difficult Parts</span>
+              </button>
+              <button class="tool-btn" data-action="revision">
+                <i class="fa-solid fa-note-sticky"></i>
+                <span>Short Revision Notes</span>
+              </button>
+              <button class="tool-btn" data-action="topics">
+                <i class="fa-solid fa-diagram-project"></i>
+                <span>Extract Key Topics</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="panel-card ask-panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-comments"></i> Ask AI</h3>
+              <span>Ask about any topic from your course</span>
+            </div>
+
+            <textarea
+              id="aiPrompt"
+              rows="7"
+              placeholder="Example: Explain time complexity and Big O notation in the simplest possible way with examples."
+            ></textarea>
+
+            <button id="askAiBtn" class="primary-btn full-btn">
+              <i class="fa-solid fa-paper-plane"></i>
+              Ask AI
+            </button>
+          </div>
+
+          <div class="panel-card output-panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-sparkles"></i> Output</h3>
+              <span>Generated result will appear here</span>
+            </div>
+
+            <div id="aiOutput" class="output-box">
+              <p>Your generated summary, quiz, explanation, or AI response will appear here.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </section>
   </div>
 
   <script type="module" src="script.js"></script>
