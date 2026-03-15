@@ -1,92 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>PS5 FIFA League Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyHub AI</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="app-container">
+    <header class="topbar">
+      <h1>StudyHub AI</h1>
+      <p>Your private study assistant for handouts, summaries, quizzes, and exam prep.</p>
+    </header>
 
-<header class="navbar">
-  <div class="logo"><i class="fa-solid fa-trophy"></i> League Manager</div>
-  <div class="nav-actions">
-    <button id="loginBtn" class="btn primary"><i class="fa-brands fa-google"></i> Sign In</button>
-    <button id="logoutBtn" class="btn danger" style="display:none;"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    <main class="main-content">
+      <section class="auth-section card">
+        <div class="tabs">
+          <button class="tab-btn active" id="showLogin">Login</button>
+          <button class="tab-btn" id="showRegister">Register</button>
+        </div>
+
+        <div id="loginForm" class="form-box">
+          <h2>Login</h2>
+          <input type="email" id="loginEmail" placeholder="Enter your email" />
+          <input type="password" id="loginPassword" placeholder="Enter your password" />
+          <button id="loginBtn" class="primary-btn">Login</button>
+          <p id="loginMessage" class="message"></p>
+        </div>
+
+        <div id="registerForm" class="form-box hidden">
+          <h2>Create Account</h2>
+          <input type="text" id="registerName" placeholder="Full name" />
+          <input type="email" id="registerEmail" placeholder="Enter your email" />
+          <input type="password" id="registerPassword" placeholder="Create password" />
+          <button id="registerBtn" class="primary-btn">Register</button>
+          <p id="registerMessage" class="message"></p>
+        </div>
+      </section>
+
+      <section class="dashboard-section card hidden" id="dashboard">
+        <div class="dashboard-header">
+          <h2>Student Dashboard</h2>
+          <button id="logoutBtn" class="danger-btn">Logout</button>
+        </div>
+
+        <div class="welcome-box">
+          <p id="welcomeText">Welcome, Student</p>
+        </div>
+
+        <div class="upload-box">
+          <h3>Upload Handout</h3>
+          <input type="file" id="handoutFile" accept=".pdf,.txt,.doc,.docx" />
+          <button id="uploadBtn" class="primary-btn">Upload Handout</button>
+          <p id="uploadMessage" class="message"></p>
+        </div>
+
+        <div class="tools-grid">
+          <button class="tool-btn" data-action="summary">Generate Summary</button>
+          <button class="tool-btn" data-action="questions">Likely Exam Questions</button>
+          <button class="tool-btn" data-action="quiz">Create Quiz</button>
+          <button class="tool-btn" data-action="explain">Explain Difficult Parts</button>
+          <button class="tool-btn" data-action="revision">Short Revision Notes</button>
+          <button class="tool-btn" data-action="topics">Extract Key Topics</button>
+        </div>
+
+        <div class="ask-ai-box">
+          <h3>Ask AI About a Topic</h3>
+          <textarea id="aiPrompt" rows="5" placeholder="Example: Explain Big O notation in a very simple way"></textarea>
+          <button id="askAiBtn" class="primary-btn">Ask AI</button>
+        </div>
+
+        <div class="result-box">
+          <h3>Output</h3>
+          <div id="aiOutput">
+            <p>Your generated summary, quiz, explanation, or answer will appear here.</p>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
-</header>
 
-<section class="hero">
-  <h1>Professional PS5 League Management</h1>
-  <p>Create leagues, add players, record matches, and track stats automatically.</p>
-</section>
-
-<main class="container">
-
-  <section id="adminPanel" class="card" style="display:none;">
-    <h2><i class="fa-solid fa-plus"></i> Create League</h2>
-    <div class="form-group">
-      <input type="text" id="leagueName" placeholder="Enter league name">
-      <button id="createLeagueBtn" class="btn primary"><i class="fa-solid fa-floppy-disk"></i> Save League</button>
-    </div>
-  </section>
-
-  <section>
-    <h2><i class="fa-solid fa-table"></i> Available Leagues</h2>
-    <div id="leaguesGrid" class="grid"></div>
-  </section>
-
-  <section id="leagueDetail" class="card" style="display:none;">
-    <h2 id="leagueTitle"></h2>
-    
-    <div class="form-group" id="playerInputGroup" style="display:none;">
-      <input type="text" id="playerName" placeholder="Add Player">
-      <button id="addPlayerBtn" class="btn primary"><i class="fa-solid fa-user-plus"></i> Add Player</button>
-    </div>
-
-    <div class="match-entry card" id="matchInputGroup" style="display:none;">
-      <h3>Record Match</h3>
-      <input type="date" id="matchDate">
-      <select id="homePlayer"></select>
-      <input type="number" id="homeGoals" placeholder="Home Goals">
-      <select id="awayPlayer"></select>
-      <input type="number" id="awayGoals" placeholder="Away Goals">
-      <button id="recordMatchBtn" class="btn primary"><i class="fa-solid fa-futbol"></i> Save Match</button>
-    </div>
-
-    <h3>League Table</h3>
-    <table id="leagueTable">
-      <thead>
-        <tr>
-          <th>Pos</th><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>G</th><th>GA</th><th>GD</th><th>Pts</th><th>▲▼</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <section class="card">
-      <h3>Players</h3>
-      <div id="playersList"></div>
-    </section>
-
-    <section class="card">
-      <h3>Played Matches</h3>
-      <table id="matchesTable">
-        <thead>
-          <tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th><th id="actionsHeader" style="display:none;">Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-  </section>
-
-</main>
-
-<footer>
-  <p>© 2026 League Manager. All rights reserved.</p>
-</footer>
-
-<script type="module" src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
