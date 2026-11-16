@@ -1,81 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>StudyHub AI</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mr. Manager League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<!-- PDF reader -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<!-- DOCX reader -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-
 </head>
-
 <body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+<div id="app"></div>
+<div id="toast" class="toast" role="status"></div>
 
-<div class="container">
-
-<header>
-<h1>StudyHub AI</h1>
-<p>Your private AI learning assistant</p>
-</header>
-
-<section class="upload-section">
-<h2>Upload Handout</h2>
-
-<input type="file" id="handoutFile">
-<button id="uploadBtn">Upload Handout</button>
-
-<p id="uploadMessage"></p>
-</section>
-
-<section class="tools">
-
-<h2>AI Study Tools</h2>
-
-<div class="tool-buttons">
-
-<button class="tool-btn" data-tool="summary">Summary</button>
-<button class="tool-btn" data-tool="notes">Revision Notes</button>
-<button class="tool-btn" data-tool="quiz">Practice Quiz</button>
-<button class="tool-btn" data-tool="questions">Exam Questions</button>
-<button class="tool-btn" data-tool="predictor">Exam Predictor</button>
-
-</div>
-
-</section>
-
-<section class="ask-ai">
-
-<h2>Ask AI</h2>
-
-<textarea id="aiPrompt"
-placeholder="Ask something about the handout..."></textarea>
-
-<button id="askAiBtn">Ask AI</button>
-
-</section>
-
-<section class="output">
-
-<h2>AI Output</h2>
-
-<div id="aiOutput"></div>
-
-</section>
-
-</div>
-
-<script type="module" src="script.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
