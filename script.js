@@ -3,8 +3,7 @@
    Sections: 1 Config | 2 Icons | 3 Helpers | 4 Auth screen
              5 Dashboard | 6 League page | 7 Router
    ===================================================== */
-
-/* ---------- 1. CONFIG: paste your Firebase config // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+//CONFIG: paste your Firebase config // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBooMceicbbKVpYHGDuZ6HvmYkP7t8J8_c",
   authDomain: "mr-manager-league.firebaseapp.com",
