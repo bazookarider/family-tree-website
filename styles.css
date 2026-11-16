@@ -105,98 +105,6 @@ input:focus,select:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px
 @media(max-width:760px){.auth{grid-template-columns:1fr;gap:24px;min-height:auto}.hero-ico{width:90px;height:90px}.hero-ico .ico{width:52px;height:52px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.ico *{stroke-dashoffset:0}}
 
-/* ===== League page: table, fixtures, stats, players ===== */
-.tabs{overflow-x:auto}.tab{white-space:nowrap}
-.tw{padding:8px;overflow-x:auto}
-.tbl{width:100%;min-width:560px;border-collapse:collapse;font-size:.9rem;text-align:center}
-.tbl th{color:var(--muted);font-weight:600;padding:12px 8px;font-size:.8rem}
-.tbl td{padding:13px 8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.tbl .l{text-align:left}.nmc{font-weight:600}
-.tbl .pts{font-weight:800;color:var(--cyan);font-size:1rem}
-.tbl tr.lead td{background:linear-gradient(90deg,rgba(47,107,255,.2),transparent)}
-.tbl tr.lead td:first-child{box-shadow:inset 3px 0 var(--cyan);font-weight:800}
-.fm span{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:3px;color:#04101f}
-.fm .W{background:var(--ok)}.fm .D{background:#8c98b8}.fm .L{background:var(--danger)}
-.note{color:var(--muted);font-size:.82rem;margin-top:12px}
-.mdnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.mdnav small{color:var(--muted);font-weight:500;font-size:.85rem}
-.list{padding:8px 18px}
-.fxw{border-top:1px solid var(--line);padding:12px 0}.fxw:first-child{border-top:0}
-.fx{display:grid;grid-template-columns:1fr auto 1fr auto;align-items:center;gap:10px}
-.fx:not(:has(.fa)){grid-template-columns:1fr auto 1fr}
-.tm{font-weight:600;font-size:.92rem;overflow-wrap:anywhere}.tm.r{text-align:right}
-.tm.win{color:var(--cyan)}
-.sc{display:flex;align-items:center;gap:6px}
-.sc input,.pen input{width:48px;padding:9px 4px;text-align:center;border-radius:10px}
-.sc.ro b{font-size:1.1rem;min-width:18px;text-align:center}.sc.ro span{color:var(--muted);padding:0 10px}
-.fa{display:flex;gap:6px}
-.pen{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:var(--muted);font-size:.8rem}
-.rh{margin:24px 0 10px;font-size:1rem;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:14px}
-.stat{padding:18px;display:flex;flex-direction:column;gap:4px}
-.stat span{color:var(--muted);font-size:.82rem}.stat b{font-size:1.5rem;color:var(--cyan)}.stat small{color:var(--text);opacity:.8;font-size:.85rem}
-.prog{height:8px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:12px;overflow:hidden}
-.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .8s}
-.champ{display:flex;align-items:center;gap:18px;margin-bottom:18px;border-color:rgba(56,214,255,.5);background:linear-gradient(120deg,rgba(47,107,255,.28),rgba(56,214,255,.06));box-shadow:0 0 40px -14px var(--cyan)}
-.champ .ico{width:46px;height:46px;color:var(--cyan);filter:drop-shadow(0 0 10px var(--cyan))}.champ small{color:var(--muted)}
-.prow{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}.prow:first-child{border-top:0}
-.prow .pn{flex:1;font-weight:600;overflow-wrap:anywhere}.prow .idx{width:26px;color:var(--muted);font-size:.85rem}
-textarea{width:100%;margin-top:12px;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28);color:var(--text);font:500 .95rem 'Sora',sans-serif;resize:vertical}
-textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,214,255,.14)}
-@media(max-width:560px){.fx{grid-template-columns:1fr auto 1fr}.fa{grid-column:1/-1;justify-content:center}.list{padding:6px 12px}}
-
-/* ===== League page: tabs, table, fixtures, bracket, players ===== */
-:root{--gold:#ffc857}
-.hbtns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.tabs{overflow-x:auto}
-.tab{display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;padding:10px 14px}
-.tab .ico{width:16px;height:16px}
-.meta2{color:var(--muted);font-size:.85rem;margin:6px 0 16px}
-textarea{width:100%;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28);color:var(--text);font:500 .95rem 'Sora',sans-serif;resize:vertical}
-textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,214,255,.14)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:2px}
-.tile span,.tile small{color:var(--muted);font-size:.8rem}.tile b{font-size:1.1rem}
-.prog{height:6px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}
-.prog div{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:9px;transition:width .8s}
-.tbl{padding:8px;overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:560px}
-th{color:var(--muted);font-weight:600;font-size:.78rem;padding:10px 8px;text-align:center}
-td{padding:13px 8px;text-align:center;border-top:1px solid var(--line)}
-th:nth-child(2),td.nm{text-align:left}td.nm{font-weight:600}
-td:first-child{color:var(--muted);font-weight:700}
-tr.lead td:first-child{box-shadow:inset 3px 0 var(--gold);color:var(--gold)}
-tr.lead{background:linear-gradient(90deg,rgba(255,200,87,.09),transparent)}
-tr.last td:first-child{box-shadow:inset 3px 0 var(--danger)}
-td.pts{font-weight:800;color:var(--cyan);font-size:1rem}
-td.up{color:var(--ok)}td.dn{color:var(--danger)}
-.form{display:inline-flex;gap:4px}
-.form i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.68rem;font-weight:700;color:#06101f}
-.dW{background:var(--ok)}.dD{background:#9aa6c4}.dL{background:var(--danger)}
-.genbar{display:flex;align-items:center;gap:14px;margin-bottom:14px}.genbar .meta2{margin:0}
-.notice{background:rgba(255,200,87,.1);border:1px solid rgba(255,200,87,.4);color:var(--gold);padding:12px 16px;border-radius:14px;font-size:.88rem;margin-bottom:14px}
-.pager{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.icon-btn[disabled]{opacity:.35;pointer-events:none}
-.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:10px}
-.wk{margin:22px 0 12px;font-size:1.05rem}
-.match{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 16px;transition:.25s}
-.match.click{cursor:pointer}.match.click:hover{border-color:var(--cyan);box-shadow:0 10px 28px -14px var(--blue);transform:translateY(-2px)}
-.side{display:flex;justify-content:space-between;gap:10px;padding:11px 0;color:var(--muted)}
-.side+.side{border-top:1px solid var(--line)}
-.side b{font-variant-numeric:tabular-nums}
-.side.win{color:var(--text);font-weight:700}.side.win b{color:var(--cyan)}
-.pens{display:block;color:var(--muted);font-size:.74rem;padding:0 0 9px}
-.champ{display:flex;align-items:center;gap:16px;padding:20px 24px;margin-bottom:6px;border-radius:var(--radius);border:1px solid rgba(255,200,87,.5);background:linear-gradient(120deg,rgba(255,200,87,.18),rgba(47,107,255,.1));box-shadow:0 0 50px -14px var(--gold)}
-.champ .ico{width:44px;height:44px;color:var(--gold)}.champ span{display:block;color:var(--gold);font-size:.85rem}.champ b{font-size:1.5rem}
-.addrow{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}.addrow input{flex:1;min-width:180px}
-.plist{display:grid;gap:10px}
-.prow{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
-.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff}
-.acts2{margin-left:auto;display:flex;gap:8px}
-.score{display:flex;align-items:flex-end;gap:12px}.score label{flex:1;font-size:.85rem;color:var(--muted);text-align:center}
-.score input{margin-top:8px;text-align:center;font-size:1.6rem;font-weight:800;padding:12px}
-.score span{padding-bottom:18px;color:var(--muted);font-size:1.4rem}
-
 /* ===== League page: table, fixtures, bracket, players ===== */
 textarea{width:100%;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28);color:var(--text);font:500 .95rem 'Sora',sans-serif;resize:vertical;margin-bottom:6px}
 textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,214,255,.14)}
@@ -250,3 +158,4 @@ textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,2
 .score input{margin-top:8px;text-align:center;font-size:1.6rem;font-weight:800;padding:12px 6px}
 .score b{padding-bottom:18px;color:var(--muted)}
 @media(max-width:560px){.fx{grid-template-columns:1fr 70px 1fr auto;padding:10px;font-size:.88rem}}
+.boot{color:var(--muted);text-align:center;padding:90px 0}
