@@ -20,12 +20,6 @@ const firebaseConfig = {
    ===================================================== */
 
 /* ---------- 1. CONFIG: paste your Firebase config here ---------- */
-const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  appId: "PASTE_YOUR_APP_ID"
-};
 if (firebaseConfig.apiKey.startsWith('PASTE')) {
   document.getElementById('app').innerHTML = '<div class="panel" style="margin-top:40px"><h2>Firebase config missing</h2><p class="lead">Open script.js and replace the PASTE_YOUR values in firebaseConfig with the ones from Firebase Project settings.</p></div>';
   throw new Error('Firebase config missing');
