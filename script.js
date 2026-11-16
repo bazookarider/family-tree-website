@@ -58,7 +58,7 @@ function friendlyError(e) {
     'auth/network-request-failed': 'No internet connection. Check your network.',
     'permission-denied': 'You do not have permission to do that.'
   };
-  return m[e.code] || 'Something went wrong. Please try again.';
+   return m[e.code] || ('Error: ' + (e.code || e.message));
 }
 function topBar(user) {
   return `<header class="bar">
