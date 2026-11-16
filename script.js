@@ -3,7 +3,8 @@
    Sections: 1 Config | 2 Icons | 3 Helpers | 4 Auth screen
              5 Dashboard | 6 League page | 7 Router
    ===================================================== */
-//CONFIG: paste your Firebase config // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+/* ---------- 1. CONFIG: paste your Firebase config here ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBooMceicbbKVpYHGDuZ6HvmYkP7t8J8_c",
   authDomain: "mr-manager-league.firebaseapp.com",
@@ -13,13 +14,12 @@ const firebaseConfig = {
   messagingSenderId: "140892814639",
   appId: "1:140892814639:web:0a51ca99eb2454dfd3f5da",
   measurementId: "G-PHPG7QDFW8"
-};/* =====================================================
-   MR. MANAGER LEAGUE  -  Steps 1 and 2
-   Sections: 1 Config | 2 Icons | 3 Helpers | 4 Auth screen
-             5 Dashboard | 6 League page | 7 Router
-   ===================================================== */
-
-/* ---------- 1. CONFIG: paste your Firebase config here ---------- */
+};
+/* If anything crashes, show the error on screen instead of a blank page */
+window.addEventListener('error', e => {
+  const a = document.getElementById('app');
+  if (a && !a.innerHTML.trim()) a.innerHTML = '<div class="panel" style="margin-top:40px"><h2>Something broke</h2><p class="lead">' + String(e.message).replace(/</g, '&lt;') + '</p></div>';
+});
 if (firebaseConfig.apiKey.startsWith('PASTE')) {
   document.getElementById('app').innerHTML = '<div class="panel" style="margin-top:40px"><h2>Firebase config missing</h2><p class="lead">Open script.js and replace the PASTE_YOUR values in firebaseConfig with the ones from Firebase Project settings.</p></div>';
   throw new Error('Firebase config missing');
@@ -423,7 +423,6 @@ app.onclick = e => {
 let currentUser = null, ready = false;
 function route() {
   if (!ready) return;
-  if (unsub) { unsub(); unsub = null; }
   const m = location.hash.match(/^#\/league\/([\w-]+)/);
   if (m) showLeague(m[1], currentUser);
   else if (currentUser) showDashboard(currentUser);
