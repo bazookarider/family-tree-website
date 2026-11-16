@@ -13,8 +13,23 @@ const firebaseConfig = {
   messagingSenderId: "140892814639",
   appId: "1:140892814639:web:0a51ca99eb2454dfd3f5da",
   measurementId: "G-PHPG7QDFW8"
-};
+};/* =====================================================
+   MR. MANAGER LEAGUE  -  Steps 1 and 2
+   Sections: 1 Config | 2 Icons | 3 Helpers | 4 Auth screen
+             5 Dashboard | 6 League page | 7 Router
+   ===================================================== */
 
+/* ---------- 1. CONFIG: paste your Firebase config here ---------- */
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+if (firebaseConfig.apiKey.startsWith('PASTE')) {
+  document.getElementById('app').innerHTML = '<div class="panel" style="margin-top:40px"><h2>Firebase config missing</h2><p class="lead">Open script.js and replace the PASTE_YOUR values in firebaseConfig with the ones from Firebase Project settings.</p></div>';
+  throw new Error('Firebase config missing');
+}
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
