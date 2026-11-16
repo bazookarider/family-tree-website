@@ -16,9 +16,17 @@ const firebaseConfig = {
   measurementId: "G-PHPG7QDFW8"
 };
 /* If anything crashes, show the error on screen instead of a blank page */
+function fatal(msg) {
+  const a = document.getElementById('app');
+  a.innerHTML = '<div class="panel" style="margin-top:40px"><h2>Something went wrong</h2><p class="lead">' + String(msg).replace(/</g, '&lt;') + '</p></div>';
+}
 window.addEventListener('error', e => {
   const a = document.getElementById('app');
-  if (a && !a.innerHTML.trim()) a.innerHTML = '<div class="panel" style="margin-top:40px"><h2>Something broke</h2><p class="lead">' + String(e.message).replace(/</g, '&lt;') + '</p></div>';
+  if (a && (!a.innerHTML.trim() || a.querySelector('.boot'))) fatal(e.message);
+});
+window.addEventListener('unhandledrejection', e => {
+  const a = document.getElementById('app');
+  if (a && a.querySelector('.boot')) fatal((e.reason && (e.reason.code || e.reason.message)) || e.reason);
 });
 if (firebaseConfig.apiKey.startsWith('PASTE')) {
   document.getElementById('app').innerHTML = '<div class="panel" style="margin-top:40px"><h2>Firebase config missing</h2><p class="lead">Open script.js and replace the PASTE_YOUR values in firebaseConfig with the ones from Firebase Project settings.</p></div>';
@@ -423,10 +431,13 @@ app.onclick = e => {
 let currentUser = null, ready = false;
 function route() {
   if (!ready) return;
-  const m = location.hash.match(/^#\/league\/([\w-]+)/);
-  if (m) showLeague(m[1], currentUser);
-  else if (currentUser) showDashboard(currentUser);
-  else showAuth('login');
+  try {
+    const m = location.hash.match(/^#\/league\/([\w-]+)/);
+    if (m) showLeague(m[1], currentUser);
+    else if (currentUser) showDashboard(currentUser);
+    else showAuth('login');
+  } catch (x) { fatal(x.message); }
 }
+setTimeout(() => { if (!ready) fatal('Could not reach Firebase sign-in. Check your internet, turn off any content blocker, and make sure your Firebase config is correct.'); }, 8000);
 auth.onAuthStateChanged(u => { currentUser = u; ready = true; route(); });
 window.addEventListener('hashchange', route);
