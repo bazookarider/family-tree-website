@@ -1,5 +1,5 @@
 /* =====================================================
-   MR. MANAGER LEAGUE  -  Steps 1 to 5
+   MR. MANAGER LEAGUE  -  Steps 1 to 6
    Sections: 1 Config | 2 Icons | 3 Helpers | 4 Auth screen
              5 Dashboard | 6 League page | 7 Router
    ===================================================== */
@@ -55,6 +55,8 @@ const ico = (n, cls = '') =>
 /* ---------- 3. HELPERS ---------- */
 const $ = (s, r = document) => r.querySelector(s);
 const app = $('#app');
+let PROFILE = null;
+const isReal = u => !!u && !u.isAnonymous;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let toastTimer;
 function toast(msg) {
@@ -72,16 +74,22 @@ function friendlyError(e) {
     'auth/user-not-found': 'No account found with this email.',
     'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
     'auth/network-request-failed': 'No internet connection. Check your network.',
-    'permission-denied': 'You do not have permission to do that.'
+    'permission-denied': 'You do not have permission to do that.',
+    'name-taken': 'That username is already taken. Try another.',
+    'bad-name': 'Use 3 to 20 letters, numbers or underscores.',
+    'auth/operation-not-allowed': 'This sign-in method is not turned on in Firebase yet.',
+    'auth/admin-restricted-operation': 'Guest sign-in is not turned on in Firebase yet.'
   };
   return m[e.code] || ('Error: ' + (e.code || e.message));
 }
 function topBar(user) {
+  const chip = PROFILE ? `<span class="chip">${ico('user')}@${esc(PROFILE.display)}</span>` : '';
   return `<header class="bar">
     <div class="brand" onclick="location.hash='#/'">${ico('pad')}<span>Mr. Manager League</span></div>
+    <div class="tb"><button class="btn ghost small" onclick="location.hash='#/explore'">${ico('globe')}Explore</button>${chip}
     ${user
       ? `<button class="btn ghost small" id="logout">${ico('out')}Log out</button>`
-      : `<button class="btn ghost small" onclick="location.hash='#/'">Log in</button>`}
+      : `<button class="btn ghost small" onclick="location.hash='#/'">Log in</button>`}</div>
   </header>`;
 }
 function bindLogout() { const b = $('#logout'); if (b) b.onclick = () => auth.signOut(); }
@@ -130,7 +138,7 @@ function showAuth(mode = 'login') {
 /* ---------- 5. DASHBOARD (My Leagues) ---------- */
 async function showDashboard(user) {
   app.innerHTML = topBar(user) + `
-  <div class="head"><div><h2>My leagues</h2><p class="meta" style="color:var(--muted);font-size:.9rem">${esc(user.email)}</p></div>
+  <div class="head"><div><h2>My leagues</h2><p class="meta" style="color:var(--muted);font-size:.9rem">${PROFILE ? '@' + esc(PROFILE.display) : esc(user.email)}</p></div>
     <button class="btn" id="new">${ico('plus')}New league</button></div>
   <div id="list" class="grid"></div>`;
   bindLogout();
@@ -150,7 +158,7 @@ async function showDashboard(user) {
           <button class="icon-btn" data-copy="${l.id}" title="Copy share link">${ico('link')}</button>
           <button class="icon-btn del" data-del="${l.id}" title="Delete league">${ico('trash')}</button>
         </div>
-        <span class="badge">${ico(l.type === 'cup' ? 'cup' : 'trophy')}${typeName(l.type)}</span>
+        <span class="badge">${ico(l.type === 'cup' ? 'cup' : 'trophy')}${typeName(l.type)}</span>${l.isPublic ? '<span class="tag cold">Public</span>' : ''}
         <h3>${esc(l.name)}</h3>
         <div class="meta">${(l.players || []).length} players</div>
       </article>`).join('');
@@ -160,7 +168,7 @@ async function showDashboard(user) {
       else if (del) {
         e.stopPropagation();
         if (!confirm('Delete this league for good? This cannot be undone.')) return;
-        try { await db.collection('leagues').doc(del.dataset.del).delete(); toast('League deleted'); showDashboard(user); }
+        try { await removeLeague(del.dataset.del); toast('League deleted'); showDashboard(user); }
         catch (x) { toast(friendlyError(x)); }
       } else if (card) location.hash = '#/league/' + card.dataset.id;
     };
@@ -178,6 +186,7 @@ function openCreate(user) {
         <label><input type="radio" name="t" value="combo"><div>${ico('trophy')}League + Cup<small style="font-weight:400">Groups, then knockout</small></div></label>
       </div>
       <label class="field"><span>Name</span><input id="nm" maxlength="40" placeholder="Friday Night FC League"></label>
+      <label class="chk"><input type="checkbox" id="pub"> Show in Public leagues</label>
       <div class="err" id="cerr"></div>
       <div class="row"><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn" id="mk" type="submit">Create</button></div>
     </form></div>`;
@@ -194,7 +203,7 @@ function openCreate(user) {
     try {
       const ref = await db.collection('leagues').add({
         name, type: m.querySelector('[name=t]:checked').value, ownerId: user.uid,
-        players: [], matches: [], createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        players: [], matches: [], ownerKey: PROFILE.username, ownerName: PROFILE.display, isPublic: m.querySelector('#pub').checked, chatOn: true, blocked: [], createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       close(); toast('Created. Share link is ready.'); location.hash = '#/league/' + ref.id;
     } catch (x) { $('#cerr', m).textContent = friendlyError(x); busy(btn, false, 'Create'); }
@@ -207,6 +216,11 @@ Object.assign(PATHS, {
   cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   shuffle: '<path d="M4 7h3c5 0 5 10 10 10h3M4 17h3c1.6 0 2.7-.8 3.5-2M13.5 9c.8-1.2 2-2 3.5-2h3M17 4l3 3-3 3M17 14l3 3-3 3"/>',
   list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4V5z"/>',
+  send: '<path d="M21 3L3 10.5l7 2.5 2.5 7L21 3zM10 13l5-5"/>',
+  ban: '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>'
 });
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -220,6 +234,7 @@ const shuffle = a => a.slice().sort(() => Math.random() - .5);
 
 /* live: every change by the owner appears on everyone's screen instantly */
 function showLeague(id, user) {
+  user = isReal(user) ? user : null; chatWatch(false);
   USER = user; TAB = 'main'; LID = id; L = null;
   app.innerHTML = topBar(user) + '<div class="empty"><span class="spin" style="display:inline-block"></span></div>';
   bindLogout();
@@ -227,6 +242,7 @@ function showLeague(id, user) {
     if (!doc.exists) { app.innerHTML = topBar(user) + `<div class="panel empty">${ico('trophy')}<h2>League not found</h2><p>The link may be wrong or the league was deleted.</p></div>`; bindLogout(); return; }
     L = doc.data(); OWNER = !!user && user.uid === L.ownerId;
     L.players = L.players || []; L.matches = L.matches || [];
+    if (OWNER && PROFILE && L.ownerKey !== PROFILE.username) db.collection('leagues').doc(id).update({ ownerKey: PROFILE.username, ownerName: PROFILE.display }).catch(() => {});
     renderLeague();
   }, x => { app.innerHTML = topBar(user) + `<div class="panel empty">${esc(friendlyError(x))}</div>`; bindLogout(); });
 }
@@ -240,16 +256,17 @@ async function save(msg) {
 }
 
 function renderLeague() {
+  const draft = $('#cm') ? $('#cm').value : '';
   const t = L.type;
-  const tabs = t === 'cup' ? [['main', 'Bracket'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']]
-    : t === 'combo' ? [['main', 'Table'], ['fix', 'Fixtures'], ['ko', 'Knockout'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']]
-    : [['main', 'Table'], ['fix', 'Fixtures'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']];
-  const body = TAB === 'players' ? playersView() : TAB === 'hl' ? highlightsView() : TAB === 'stats' ? statsView()
+  const tabs = t === 'cup' ? [['main', 'Bracket'], ['players', 'Players'], ['hl', 'Highlights'], ['chat', 'Chat'], ['stats', 'Stats']]
+    : t === 'combo' ? [['main', 'Table'], ['fix', 'Fixtures'], ['ko', 'Knockout'], ['players', 'Players'], ['hl', 'Highlights'], ['chat', 'Chat'], ['stats', 'Stats']]
+    : [['main', 'Table'], ['fix', 'Fixtures'], ['players', 'Players'], ['hl', 'Highlights'], ['chat', 'Chat'], ['stats', 'Stats']];
+  const body = TAB === 'players' ? playersView() : TAB === 'chat' ? chatView() : TAB === 'hl' ? highlightsView() : TAB === 'stats' ? statsView()
     : (TAB === 'ko' || (t === 'cup' && TAB === 'main')) ? bracketView() : TAB === 'fix' ? fixturesView() : tableView();
   app.innerHTML = topBar(USER) + `<div id="lg">
     <div class="head"><div>
       <button class="link" onclick="location.hash='#/'" style="display:flex;align-items:center;gap:6px;margin-bottom:10px">${ico('back')}${USER ? 'My leagues' : 'Home'}</button>
-      <h1 style="font-size:clamp(1.8rem,5vw,2.6rem)">${esc(L.name)}</h1></div>
+      <h1 style="font-size:clamp(1.8rem,5vw,2.6rem)">${esc(L.name)}</h1>${/^[a-z0-9_]{3,20}$/.test(L.ownerKey || '') ? `<button class="link" onclick="location.hash='#/u/${L.ownerKey}'" style="display:flex;align-items:center;gap:6px;margin-top:6px">${ico('user')}by @${esc(L.ownerName || L.ownerKey)}</button>` : ''}</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <span class="badge ${OWNER ? '' : 'view'}">${ico(OWNER ? 'pad' : 'eye')}${OWNER ? 'You manage this' : 'View only'}</span>
         <button class="btn ghost small" data-a="wa">${ico('share')}Share</button>
@@ -258,6 +275,8 @@ function renderLeague() {
     ${body}</div>`;
   bindLogout();
   const f = $('#addf'); if (f) f.onsubmit = addPlayer;
+  const f2 = $('#chatf'); if (f2) { f2.onsubmit = sendMsg; if (draft) $('#cm').value = draft; }
+  const mb = $('#msgs'); if (mb) mb.scrollTop = mb.scrollHeight;
 }
 
 /* ----- standings (league matches only) ----- */
@@ -451,21 +470,26 @@ function playersView() {
     <label class="chk"><input type="radio" name="fmt" value="2"> Home and away (everyone plays twice)</label>`}
     <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-a="${cup ? 'ko' : 'gen'}">${ico('shuffle')}${cup ? 'Set up knockout' : 'Generate fixtures'}</button>
     ${!cup && hasLeague ? '<button class="btn ghost" data-a="reset">Clear all results</button>' : ''}</div></div>` : '';
-  return add + `<div class="plist">${list}</div>` + gen;
+  const settings = OWNER ? `<div class="panel" style="margin-top:16px"><h2 style="margin-bottom:14px">League settings</h2>
+    <label class="field"><span>League name</span><div class="row"><input id="rnl" maxlength="40" value="${esc(L.name)}"><button type="button" class="btn" data-a="rnl" style="flex:0 0 auto">Save</button></div></label>
+    <label class="chk"><input type="checkbox" id="spub" ${L.isPublic ? 'checked' : ''}> Public: show in the Public leagues page</label>
+    <label class="chk"><input type="checkbox" id="schat" ${L.chatOn !== false ? 'checked' : ''}> Chat enabled</label>
+    ${(L.blocked || []).length ? `<button type="button" class="btn ghost small" data-a="unblock">Unblock ${(L.blocked || []).length} user(s)</button>` : ''}</div>` : '';
+  return add + `<div class="plist">${list}</div>` + gen + settings;
 }
 
-function modal(html, onSubmit) {
+function modal(html, onSubmit, sticky) {
   const m = document.createElement('div'); m.className = 'modal';
   m.innerHTML = `<div class="panel"><form novalidate>${html}</form></div>`;
   document.body.appendChild(m);
   const close = () => m.remove();
-  m.onclick = e => { if (e.target === m || e.target.closest('[data-x]')) close(); };
+  m.onclick = e => { if ((!sticky && e.target === m) || e.target.closest('[data-x]')) close(); };
   m.querySelector('form').onsubmit = e => { e.preventDefault(); onSubmit(m, close); };
   const i = m.querySelector('input,textarea'); if (i) i.focus();
   return m;
 }
 const dup = (v, skip) => L.players.some(p => p.id !== skip && p.name.toLowerCase() === v.toLowerCase());
-const btns = ok => `<div class="err" id="e"></div><div class="row"><button type="button" class="btn ghost" data-x>Cancel</button><button class="btn">${ok}</button></div>`;
+const btns = (ok, nc) => `<div class="err" id="e"></div><div class="row">${nc ? '' : '<button type="button" class="btn ghost" data-x>Cancel</button>'}<button class="btn">${ok}</button></div>`;
 const radio = (name, val, label, on) => `<label class="chk"><input type="radio" name="${name}" value="${val}" ${on ? 'checked' : ''}> ${label}</label>`;
 
 function addPlayer(e) {
@@ -589,18 +613,124 @@ function shareText() {
   return t + '\n' + shareLink(LID);
 }
 
+/* ----- usernames ----- */
+async function claimUsername(raw) {
+  const display = raw.trim(), key = display.toLowerCase(), u = auth.currentUser;
+  if (!/^[a-z0-9_]{3,20}$/.test(key)) throw { code: 'bad-name' };
+  const ref = db.collection('usernames').doc(key);
+  if ((await ref.get()).exists) throw { code: 'name-taken' };
+  const b = db.batch();
+  b.set(ref, { uid: u.uid, display });
+  b.set(db.collection('users').doc(u.uid), { username: key, display });
+  try { await b.commit(); } catch (x) { throw { code: x.code === 'permission-denied' ? 'name-taken' : x.code }; }
+  PROFILE = { username: key, display };
+}
+function openClaim(done, sticky) {
+  modal(`<h2 style="margin-bottom:6px">Choose your username</h2><p class="lead" style="margin:0 0 14px">3 to 20 letters, numbers or underscores. It is unique to you and cannot be changed later.</p>
+    <label class="field"><span>Username</span><input id="un" maxlength="20" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="for example kareem_10"></label>${btns('Save username', sticky)}
+    ${sticky ? '<button type="button" class="link" id="lo" style="margin-top:10px">Log out</button>' : ''}`, async (m, close) => {
+    try { await claimUsername(m.querySelector('#un').value); close(); done(); }
+    catch (x) { m.querySelector('#e').textContent = friendlyError(x); }
+  }, sticky);
+  const lo = document.querySelector('#lo'); if (lo) lo.onclick = () => { document.querySelector('.modal').remove(); auth.signOut(); };
+}
+
+/* ----- league chat ----- */
+let CUNSUB = null, MSGS = [], LASTSEND = 0;
+const ago = t => { if (!t) return 'now'; const s = Math.max(0, Math.floor(Date.now() / 1000 - t.seconds)); return s < 60 ? 'now' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd'; };
+function chatWatch(on) {
+  if (CUNSUB) { CUNSUB(); CUNSUB = null; }
+  if (!on) return;
+  MSGS = [];
+  CUNSUB = db.collection('leagues').doc(LID).collection('messages').orderBy('at', 'desc').limit(60).onSnapshot(s => {
+    MSGS = s.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
+    const box = $('#msgs'); if (box) { box.innerHTML = msgList(); box.scrollTop = box.scrollHeight; }
+  }, x => toast(friendlyError(x)));
+}
+function msgList() {
+  if (!MSGS.length) return '<p class="empty" style="padding:30px 0">No messages yet. Start the conversation.</p>';
+  const me = auth.currentUser;
+  return MSGS.map(m => {
+    const mine = me && m.uid === me.uid, mgr = m.uid === L.ownerId;
+    return `<div class="msg ${mine ? 'me' : ''}"><span class="av">${esc((m.name || '?')[0].toUpperCase())}</span>
+      <div class="mb"><div class="mh"><b>@${esc(m.name)}</b>${mgr ? '<span class="tag cold">Manager</span>' : ''}<small>${ago(m.at)}</small></div><p>${esc(m.text)}</p></div>
+      <div class="ma">${mine || OWNER ? `<button class="icon-btn" data-a="dm" data-id="${m.id}" title="Delete message">${ico('trash')}</button>` : ''}${OWNER && !mine ? `<button class="icon-btn del" data-a="bm" data-u="${esc(m.uid)}" title="Block this user">${ico('ban')}</button>` : ''}</div></div>`;
+  }).join('');
+}
+function chatView() {
+  const me = auth.currentUser, can = me && PROFILE, on = L.chatOn !== false, blocked = can && (L.blocked || []).includes(me.uid);
+  const composer = !on ? '<div class="notice">Chat is turned off by the manager.</div>'
+    : blocked ? '<div class="notice">You are blocked from this chat.</div>'
+    : can ? `<form id="chatf" class="row" style="margin-top:12px"><input id="cm" maxlength="300" autocomplete="off" placeholder="Message as @${esc(PROFILE.display)}"><button class="btn" style="flex:0 0 auto" aria-label="Send">${ico('send')}</button></form>`
+    : `<div class="panel" style="margin-top:12px;text-align:center"><p class="lead" style="margin:0 auto 14px">Pick a unique username to join the chat. No email needed.</p><button class="btn" data-a="join">${ico('user')}Join the chat</button></div>`;
+  return `<div class="panel chatbox"><div id="msgs" class="msgs">${msgList()}</div></div>${composer}`;
+}
+async function sendMsg(e) {
+  e.preventDefault();
+  const i = $('#cm'), t = i.value.trim();
+  if (!t || !PROFILE || Date.now() - LASTSEND < 2000) return;
+  LASTSEND = Date.now(); i.value = '';
+  try { await db.collection('leagues').doc(LID).collection('messages').add({ uid: auth.currentUser.uid, name: PROFILE.display, text: t.slice(0, 300), at: firebase.firestore.FieldValue.serverTimestamp() }); }
+  catch (x) { toast(friendlyError(x)); i.value = t; }
+}
+async function joinChat() {
+  try { if (!auth.currentUser) await auth.signInAnonymously(); } catch (x) { toast(friendlyError(x)); return; }
+  openClaim(() => renderLeague());
+}
+const updateLeague = (f, msg) => db.collection('leagues').doc(LID).update(f).then(() => toast(msg || 'Saved')).catch(x => toast(friendlyError(x)));
+
+/* ----- explore and profiles ----- */
+const publicCard = (l, i) => `<article class="card" style="animation-delay:${i * 50}ms" data-id="${l.id}"><span class="badge">${ico(l.type === 'cup' ? 'cup' : 'trophy')}${typeName(l.type)}</span>
+  <h3>${esc(l.name)}</h3><div class="meta">${l.ownerName ? 'by @' + esc(l.ownerName) + ' - ' : ''}${(l.players || []).length} players, ${(l.matches || []).filter(m => m.played).length} results</div></article>`;
+async function fillList(q, empty) {
+  const list = $('#list');
+  try {
+    const s = await q.get(), items = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    list.innerHTML = items.length ? items.map(publicCard).join('') : `<div class="panel empty" style="grid-column:1/-1">${ico('globe')}<h2>Nothing here yet</h2><p>${empty}</p></div>`;
+    list.onclick = e => { const c = e.target.closest('.card'); if (c) location.hash = '#/league/' + c.dataset.id; };
+  } catch (x) { list.innerHTML = `<div class="panel empty" style="grid-column:1/-1">${esc(friendlyError(x))}</div>`; }
+}
+function showExplore(user) {
+  app.innerHTML = topBar(user) + `<div class="head"><div><h2>Public leagues</h2><p style="color:var(--muted);font-size:.9rem">Leagues whose managers chose to share them with everyone.</p></div>
+    <form id="usf" class="row" style="max-width:340px"><input id="us" placeholder="Find a player by username" autocapitalize="off"><button class="btn small" style="flex:0 0 auto">${ico('user')}Find</button></form></div><div id="list" class="grid"></div>`;
+  bindLogout();
+  $('#usf').onsubmit = e => { e.preventDefault(); const v = $('#us').value.trim().toLowerCase().replace(/^@/, ''); if (/^[a-z0-9_]{3,20}$/.test(v)) location.hash = '#/u/' + v; else toast('Enter a valid username'); };
+  fillList(db.collection('leagues').where('isPublic', '==', true).limit(40), 'Managers can make a league public in its settings.');
+}
+async function showProfile(key, user) {
+  app.innerHTML = topBar(user) + '<div id="ph"></div><div id="list" class="grid"></div>'; bindLogout();
+  try {
+    const u = await db.collection('usernames').doc(key).get();
+    if (!u.exists) { $('#ph').innerHTML = emptyMsg('Player not found', 'No one has this username.'); return; }
+    const d = u.data().display;
+    $('#ph').innerHTML = `<div class="head"><div style="display:flex;align-items:center;gap:14px"><span class="av" style="width:58px;height:58px;font-size:1.5rem;border-radius:17px">${esc(d[0].toUpperCase())}</span>
+      <div><h2>@${esc(d)}</h2><p style="color:var(--muted);font-size:.9rem">League manager</p></div></div></div>`;
+    fillList(db.collection('leagues').where('ownerKey', '==', key).where('isPublic', '==', true), 'No public leagues from this player yet.');
+  } catch (x) { $('#ph').innerHTML = `<div class="panel empty">${esc(friendlyError(x))}</div>`; }
+}
+async function removeLeague(id) {
+  const ref = db.collection('leagues').doc(id), s = await ref.collection('messages').limit(400).get();
+  if (!s.empty) { const b = db.batch(); s.docs.forEach(d => b.delete(d.ref)); await b.commit(); }
+  await ref.delete();
+}
+
 /* ----- clicks ----- */
 app.onclick = e => {
   const t = e.target.closest('[data-a]'); if (!t || !$('#lg')) return;
   const a = t.dataset.a, id = t.dataset.id;
-  if (a === 'tab') { TAB = t.dataset.t; renderLeague(); return; }
+  if (a === 'tab') { TAB = t.dataset.t; chatWatch(TAB === 'chat'); renderLeague(); return; }
   if (a === 'copy') { navigator.clipboard.writeText(shareLink(LID)); toast('Share link copied'); return; }
   if (a === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank'); return; }
+  if (a === 'join') { joinChat(); return; }
+  if (a === 'dm') { db.collection('leagues').doc(LID).collection('messages').doc(id).delete().catch(x => toast(friendlyError(x))); return; }
   if (!OWNER) return;
   if (a === 'res') openResult(id);
   else if (a === 'bulk') openBulk();
   else if (a === 'ren') openRename(id);
   else if (a === 'ko') openKO();
+  else if (a === 'bm') { if (confirm('Block this user from chatting in this league?')) updateLeague({ blocked: firebase.firestore.FieldValue.arrayUnion(t.dataset.u) }, 'User blocked'); }
+  else if (a === 'unblock') updateLeague({ blocked: [] }, 'Users unblocked');
+  else if (a === 'rnl') { const v = $('#rnl').value.trim(); if (v) updateLeague({ name: v }, 'League renamed'); }
   else if (a === 'delp') {
     if (!confirm('Delete this player?' + (L.matches.length ? ' All fixtures and results will be cleared.' : ''))) return;
     L.players = L.players.filter(p => p.id !== id); L.matches = []; save('Player deleted');
@@ -614,20 +744,39 @@ app.onclick = e => {
     L.matches.forEach(m => Object.assign(m, { played: false, sa: null, sb: null })); save('Results cleared');
   }
 };
-app.onchange = e => { if (e.target.id === 'h1' || e.target.id === 'h2') { H = [$('#h1').value, $('#h2').value]; renderLeague(); } };
+app.onchange = e => {
+  const id = e.target.id;
+  if (id === 'h1' || id === 'h2') { H = [$('#h1').value, $('#h2').value]; renderLeague(); }
+  else if (OWNER && id === 'spub') updateLeague({ isPublic: e.target.checked }, e.target.checked ? 'League is now public' : 'League is now private');
+  else if (OWNER && id === 'schat') updateLeague({ chatOn: e.target.checked }, e.target.checked ? 'Chat enabled' : 'Chat turned off');
+};
 
 /* ---------- 7. ROUTER ---------- */
 let currentUser = null, ready = false;
 function route() {
   if (!ready) return;
   if (UNSUB) { UNSUB(); UNSUB = null; }
+  chatWatch(false);
+  const real = isReal(currentUser) ? currentUser : null;
   try {
-    const m = location.hash.match(/^#\/league\/([\w-]+)/);
+    if (real && !PROFILE) {
+      app.innerHTML = topBar(real) + '<div class="empty"><span class="spin" style="display:inline-block"></span></div>'; bindLogout();
+      if (!document.querySelector('.modal')) openClaim(route, true);
+      return;
+    }
+    const h = location.hash, m = h.match(/^#\/league\/([\w-]+)/), u = h.match(/^#\/u\/([A-Za-z0-9_]+)/);
     if (m) showLeague(m[1], currentUser);
-    else if (currentUser) showDashboard(currentUser);
+    else if (u) showProfile(u[1].toLowerCase(), real);
+    else if (h === '#/explore') showExplore(real);
+    else if (real) showDashboard(real);
     else showAuth('login');
   } catch (x) { fatal(x.message); }
 }
 setTimeout(() => { if (!ready) fatal('Could not reach Firebase sign-in. Check your internet, turn off any content blocker, and make sure your Firebase config is correct.'); }, 8000);
-auth.onAuthStateChanged(u => { currentUser = u; ready = true; route(); });
-window.addEventListener('hashchange', route); 
+auth.onAuthStateChanged(async u => {
+  const first = !ready; currentUser = u; PROFILE = null;
+  if (u) { try { const d = await db.collection('users').doc(u.uid).get(); if (d.exists) PROFILE = d.data(); } catch (x) {} }
+  ready = true;
+  if (!first && u && u.isAnonymous && L && $('#lg')) renderLeague(); else route();
+});
+window.addEventListener('hashchange', route);
