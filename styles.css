@@ -164,3 +164,8 @@ textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,2
 .choice small{font-size:.7rem}
 .modal .panel{max-height:90vh;overflow-y:auto}
 .row select{min-width:0}
+.tabs{overflow-x:auto}.tab{white-space:nowrap;padding:10px 14px}
+.tag{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;font-size:.66rem;font-weight:700;vertical-align:middle}
+.tag.hot{background:rgba(255,176,74,.16);color:#ffb04a}.tag.cold{background:rgba(56,214,255,.14);color:var(--cyan)}
+.chart svg{width:100%;height:auto;display:block}
+.award b{font-size:1.15rem;overflow-wrap:anywhere}
