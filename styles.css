@@ -159,3 +159,8 @@ textarea:focus{outline:0;border-color:var(--cyan);box-shadow:0 0 0 4px rgba(56,2
 .score b{padding-bottom:18px;color:var(--muted)}
 @media(max-width:560px){.fx{grid-template-columns:1fr 70px 1fr auto;padding:10px;font-size:.88rem}}
 .boot{color:var(--muted);text-align:center;padding:90px 0}
+.choice{grid-template-columns:repeat(3,1fr)}
+.choice div{padding:14px 4px;font-size:.82rem;gap:6px}
+.choice small{font-size:.7rem}
+.modal .panel{max-height:90vh;overflow-y:auto}
+.row select{min-width:0}
