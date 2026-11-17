@@ -241,10 +241,10 @@ async function save(msg) {
 
 function renderLeague() {
   const t = L.type;
-  const tabs = t === 'cup' ? [['main', 'Bracket'], ['players', 'Players'], ['stats', 'Stats']]
-    : t === 'combo' ? [['main', 'Table'], ['fix', 'Fixtures'], ['ko', 'Knockout'], ['players', 'Players'], ['stats', 'Stats']]
-    : [['main', 'Table'], ['fix', 'Fixtures'], ['players', 'Players'], ['stats', 'Stats']];
-  const body = TAB === 'players' ? playersView() : TAB === 'stats' ? statsView()
+  const tabs = t === 'cup' ? [['main', 'Bracket'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']]
+    : t === 'combo' ? [['main', 'Table'], ['fix', 'Fixtures'], ['ko', 'Knockout'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']]
+    : [['main', 'Table'], ['fix', 'Fixtures'], ['players', 'Players'], ['hl', 'Highlights'], ['stats', 'Stats']];
+  const body = TAB === 'players' ? playersView() : TAB === 'hl' ? highlightsView() : TAB === 'stats' ? statsView()
     : (TAB === 'ko' || (t === 'cup' && TAB === 'main')) ? bracketView() : TAB === 'fix' ? fixturesView() : tableView();
   app.innerHTML = topBar(USER) + `<div id="lg">
     <div class="head"><div>
@@ -261,10 +261,10 @@ function renderLeague() {
 }
 
 /* ----- standings (league matches only) ----- */
-function standings() {
+function standings(upTo = Infinity) {
   const t = {};
   L.players.forEach(p => t[p.id] = { id: p.id, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0, form: [] });
-  L.matches.filter(m => m.played && !ko(m)).sort((a, b) => a.round - b.round).forEach(m => {
+  L.matches.filter(m => m.played && !ko(m) && m.round <= upTo).sort((a, b) => a.round - b.round).forEach(m => {
     const A = t[m.a], B = t[m.b]; if (!A || !B) return;
     A.P++; B.P++; A.GF += m.sa; A.GA += m.sb; B.GF += m.sb; B.GA += m.sa;
     if (m.sa > m.sb) { A.W++; B.L++; A.Pts += 3; A.form.push('W'); B.form.push('L'); }
@@ -280,7 +280,7 @@ function tableView() {
   const goals = done.reduce((a, m) => a + m.sa + m.sb, 0);
   const big = done.slice().sort((a, b) => Math.abs(b.sa - b.sb) - Math.abs(a.sa - a.sb))[0];
   const champ = L.type === 'league' && total && done.length === total ? s[0] : null;
-  const rows = s.map((r, i) => `<tr class="${i === 0 && r.P ? 'top1' : ''}"><td class="pos">${i + 1}</td><td class="who">${esc(nm(r.id))}</td>
+  const rows = s.map((r, i) => `<tr class="${i === 0 && r.P ? 'top1' : ''}"><td class="pos">${i + 1}</td><td class="who">${esc(nm(r.id))}${streak(r.form, 'W') >= 3 ? '<span class="tag hot">On fire</span>' : streak(r.form, 'L') >= 3 ? '<span class="tag cold">Cold</span>' : ''}</td>
     <td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GF}</td><td>${r.GA}</td><td>${r.GF - r.GA > 0 ? '+' : ''}${r.GF - r.GA}</td><td class="pts">${r.Pts}</td>
     <td><div class="form">${r.form.slice(-5).map(f => `<i class="f ${f}">${f}</i>`).join('')}</div></td></tr>`).join('');
   return (champ ? `<div class="champ">${ico('trophy')}<div><b>${esc(nm(champ.id))}</b><span>League champion with ${champ.Pts} points</span></div></div>` : '') +
@@ -366,6 +366,74 @@ function statsView() {
     <h3 class="mw">Head to head</h3><div class="panel">${ids.length > 1 ? `<div class="row">${sel('h1', H[0])}${sel('h2', H[1])}</div>
     <div class="stats"><div class="stat"><b>${w0}</b><span>${esc(nm(H[0]))} wins</span></div><div class="stat"><b>${d}</b><span>Draws</span></div>
     <div class="stat"><b>${w1}</b><span>${esc(nm(H[1]))} wins</span></div><div class="stat"><b>${g0} - ${g1}</b><span>Goals</span></div></div>` : '<p>Add at least two players.</p>'}</div>`;
+}
+
+/* ----- highlights: awards, rivalry, title race, power rankings ----- */
+const streak = (f, c) => { let n = 0; for (let i = f.length - 1; i >= 0 && f[i] === c; i--) n++; return n; };
+function eloRatings(ms) {
+  const R = {}; L.players.forEach(p => R[p.id] = { id: p.id, r: 1000, g: 0 });
+  ms.forEach(m => {
+    const A = R[m.a], B = R[m.b]; if (!A || !B) return;
+    const ea = 1 / (1 + Math.pow(10, (B.r - A.r) / 400)), sa = m.sa > m.sb ? 1 : m.sa < m.sb ? 0 : .5;
+    A.r += 32 * (sa - ea); B.r -= 32 * (sa - ea); A.g++; B.g++;
+  });
+  return Object.values(R).filter(x => x.g).sort((x, y) => y.r - x.r);
+}
+function awards(ms) {
+  const P = {}; L.players.forEach(p => P[p.id] = { id: p.id, P: 0, GF: 0, GA: 0, L: 0, run: 0, best: 0 });
+  ms.forEach(m => [[m.a, m.sa, m.sb], [m.b, m.sb, m.sa]].forEach(([id, f, g]) => {
+    const p = P[id]; if (!p) return;
+    p.P++; p.GF += f; p.GA += g; if (f < g) p.L++;
+    if (f > g) { p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
+  }));
+  const a = Object.values(P).filter(p => p.P), top = (fn, asc) => a.slice().sort((x, y) => asc ? fn(x) - fn(y) : fn(y) - fn(x))[0];
+  const out = [], att = top(p => p.GF / p.P), def = top(p => p.GA / p.P, true), hard = top(p => (p.P - p.L) / p.P + p.P / 1000), fire = top(p => p.best);
+  out.push(['Best attack', nm(att.id), (att.GF / att.P).toFixed(1) + ' goals per game']);
+  out.push(['Best defence', nm(def.id), (def.GA / def.P).toFixed(1) + ' conceded per game']);
+  out.push(['Hardest to beat', nm(hard.id), Math.round((hard.P - hard.L) / hard.P * 100) + '% of games unbeaten']);
+  if (fire.best >= 2) out.push(['On fire', nm(fire.id), fire.best + ' wins in a row']);
+  const lab = m => nm(m.a) + ' ' + m.sa + '-' + m.sb + ' ' + nm(m.b);
+  const th = ms.slice().sort((x, y) => Math.abs(y.sa - y.sb) - Math.abs(x.sa - x.sb))[0];
+  if (Math.abs(th.sa - th.sb) > 0) out.push(['Biggest thrashing', th.sa > th.sb ? nm(th.a) : nm(th.b), lab(th)]);
+  const gf = ms.slice().sort((x, y) => y.sa + y.sb - x.sa - x.sb)[0];
+  if (gf.sa + gf.sb > 0) out.push(['Goal fest', gf.sa + gf.sb + ' goals', lab(gf)]);
+  return out;
+}
+function rivalry(ms) {
+  const pr = {};
+  ms.forEach(m => {
+    const [x, y] = [m.a, m.b].sort(), o = pr[x + '|' + y] = pr[x + '|' + y] || { x, y, wx: 0, wy: 0, d: 0, n: 0, g: 0 };
+    o.n++; o.g += m.sa + m.sb;
+    const w = m.sa > m.sb ? m.a : m.sa < m.sb ? m.b : null;
+    if (!w) o.d++; else if (w === x) o.wx++; else o.wy++;
+  });
+  const r = Object.values(pr).filter(o => o.n >= 2).sort((p, q) => Math.abs(p.wx - p.wy) - Math.abs(q.wx - q.wy) || q.n - p.n || q.g - p.g)[0];
+  return r ? `<div class="panel"><h2>${esc(nm(r.x))} vs ${esc(nm(r.y))}</h2><p class="lead" style="margin-top:8px">${r.wx} wins, ${r.d} draws, ${r.wy} wins over ${r.n} matches and ${r.g} goals. The closest battle in the league.</p></div>`
+    : '<div class="panel"><p class="lead" style="margin:0">Rivalries appear once two players have met more than once.</p></div>';
+}
+function raceChart() {
+  const lm = L.matches.filter(m => m.played && !ko(m)), rs = [...new Set(lm.map(m => m.round))].sort((a, b) => a - b);
+  if (rs.length < 2) return '<p class="lead" style="margin:0">The title race chart appears after two matchweeks have results.</p>';
+  const N = L.players.length, W = 640, Lm = 26, Rm = 100, H = 50 + N * 26, cols = ['#38d6ff', '#2f6bff', '#35e0a1', '#ffc857', '#ff5d73', '#b48cff', '#ff9f43', '#7ee8fa', '#f78fb3', '#a3e635'];
+  const pos = rs.map(r => { const o = {}; standings(r).forEach((s, i) => o[s.id] = i + 1); return o; });
+  const X = i => Lm + i * (W - Lm - Rm) / (rs.length - 1), Y = p => 24 + (p - 1) * (H - 48) / Math.max(N - 1, 1), last = pos[pos.length - 1];
+  const lines = L.players.map((p, k) => {
+    const c = cols[k % cols.length];
+    return `<polyline points="${pos.map((o, i) => X(i) + ',' + Y(o[p.id])).join(' ')}" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${X(rs.length - 1)}" cy="${Y(last[p.id])}" r="4" fill="${c}"/><text x="${X(rs.length - 1) + 9}" y="${Y(last[p.id]) + 4}" font-size="11" fill="${c}">${esc(p.name.slice(0, 12))}</text>`;
+  }).join('');
+  const axis = [...Array(N).keys()].map(i => `<text x="6" y="${Y(i + 1) + 4}" font-size="10" fill="#8c98b8">${i + 1}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="League position after each matchweek">${axis}${lines}</svg><p style="color:var(--muted);font-size:.8rem;margin-top:8px">Position after each matchweek</p>`;
+}
+function highlightsView() {
+  const ms = statMatches();
+  if (!ms.length) return emptyMsg('Nothing to show yet', 'Highlights appear after the first result is entered.');
+  const cards = awards(ms).map(c => `<div class="stat award"><span>${c[0]}</span><b>${esc(c[1])}</b><span>${esc(c[2])}</span></div>`).join('');
+  const elo = eloRatings(ms).map((x, i) => `<tr><td class="pos">${i + 1}</td><td class="who">${esc(nm(x.id))}</td><td>${x.g}</td><td class="pts">${Math.round(x.r)}</td></tr>`).join('');
+  return `<h3 class="mw" style="margin-top:0">Awards</h3><div class="stats">${cards}</div>
+    <h3 class="mw">Biggest rivalry</h3>${rivalry(ms)}
+    ${L.type !== 'cup' ? '<h3 class="mw">Title race</h3><div class="panel chart">' + raceChart() + '</div>' : ''}
+    <h3 class="mw">Power rankings</h3><div class="panel tw"><table class="tbl" style="min-width:320px"><thead><tr><th>#</th><th>Player</th><th>Games</th><th>Rating</th></tr></thead><tbody>${elo}</tbody></table></div>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:10px">Everyone starts on 1000. Beating strong players earns more points.</p>`;
 }
 
 /* ----- players ----- */
@@ -562,4 +630,4 @@ function route() {
 }
 setTimeout(() => { if (!ready) fatal('Could not reach Firebase sign-in. Check your internet, turn off any content blocker, and make sure your Firebase config is correct.'); }, 8000);
 auth.onAuthStateChanged(u => { currentUser = u; ready = true; route(); });
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', route); 
